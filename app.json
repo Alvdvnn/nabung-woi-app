@@ -1,7 +1,8 @@
 {
   "expo": {
-    "name": "nabung-woi",
+    "name": "Nabung Woi",
     "slug": "nabung-woi",
+    "scheme": "nabung-woi",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -25,6 +26,9 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "expo-router"
+    ]
   }
 }

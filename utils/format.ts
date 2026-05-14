@@ -1,0 +1,34 @@
+export function formatIDR(amount: number): string {
+  const rounded = Math.round(amount);
+  const formatted = rounded.toLocaleString('id-ID');
+  return `Rp ${formatted}`;
+}
+
+export function formatIDRCompact(amount: number): string {
+  if (Math.abs(amount) >= 1_000_000) return `Rp ${(amount / 1_000_000).toFixed(1)}jt`;
+  if (Math.abs(amount) >= 1_000) return `Rp ${(amount / 1_000).toFixed(0)}rb`;
+  return formatIDR(amount);
+}
+
+export function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('id-ID', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
+export function formatDayMonth(iso: string): string {
+  return new Date(iso).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+}
+
+export function isoDay(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+export function sameDay(a: string, b: string): boolean {
+  return isoDay(new Date(a)) === isoDay(new Date(b));
+}
