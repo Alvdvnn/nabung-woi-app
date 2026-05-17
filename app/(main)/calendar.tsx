@@ -80,7 +80,7 @@ export default function CalendarScreen() {
               key={t.id}
               item={t}
               accountName={accName(t.accountId)}
-              onPress={(id) => router.push({ pathname: '/', params: { id } })}
+              onPress={(id) => router.push({ pathname: '/', params: { id, returnTo: 'calendar' } })}
             />
           ))
         )}

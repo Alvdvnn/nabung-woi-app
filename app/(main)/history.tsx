@@ -104,7 +104,7 @@ export default function HistoryScreen() {
               item={item}
               accountName={accName(item.accountId)}
               onDelete={handleDelete}
-              onPress={(id) => router.push({ pathname: '/', params: { id } })}
+              onPress={(id) => router.push({ pathname: '/', params: { id, returnTo: 'history' } })}
             />
           )}
           contentContainerStyle={styles.list}
