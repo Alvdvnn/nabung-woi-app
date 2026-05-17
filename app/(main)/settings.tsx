@@ -10,13 +10,13 @@ import {
   View,
 } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { Database, Download, Trash, Wallet, Tag, Plus } from 'lucide-react-native';
+import { Database, Download, Trash, Wallet, Tag, Plus, Sun, Moon, Smartphone } from 'lucide-react-native';
 import TopBar from '../../components/TopBar';
 import Fab from '../../components/Fab';
 import AccountManager from '../../components/AccountManager';
 import CategoryManager from '../../components/CategoryManager';
 import { radius, spacing, fontSize } from '../../constants/theme';
-import { useTheme } from '../../hooks/useTheme';
+import { useTheme, ThemeMode } from '../../hooks/useTheme';
 import {
   Account,
   CustomCategory,
@@ -98,6 +98,10 @@ export default function SettingsScreen() {
             <Text style={[styles.actionText, { color: colors.expense }]}>Clear all data</Text>
           </Pressable>
         </Section>
+
+        <Section Icon={Sun} title="Appearance">
+          <AppearanceRow />
+        </Section>
       </ScrollView>
       <Fab Icon={Plus} bottom={80} onPress={() => router.push('/')} />
     </SafeAreaView>
@@ -119,6 +123,46 @@ function Section({ Icon, title, children }: { Icon: any; title: string; children
         <Text style={styles.sectionTitle}>{title}</Text>
       </View>
       {children}
+    </View>
+  );
+}
+
+function AppearanceRow() {
+  const { colors, mode, setMode } = useTheme();
+  const styles = useMemo(() => StyleSheet.create({
+    row: { flexDirection: 'row', gap: spacing.sm },
+    option: {
+      flex: 1,
+      paddingVertical: spacing.md,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.card,
+      alignItems: 'center',
+      gap: 6,
+    },
+    optionActive: { borderColor: colors.primary, backgroundColor: colors.primarySoft },
+    label: { fontSize: fontSize.sm, fontWeight: '600', color: colors.textSecondary },
+    labelActive: { color: colors.primary },
+  }), [colors]);
+
+  const opts: { id: ThemeMode; label: string; Icon: typeof Sun }[] = [
+    { id: 'system', label: 'System', Icon: Smartphone },
+    { id: 'light', label: 'Light', Icon: Sun },
+    { id: 'dark', label: 'Dark', Icon: Moon },
+  ];
+
+  return (
+    <View style={styles.row}>
+      {opts.map((o) => {
+        const active = mode === o.id;
+        return (
+          <Pressable key={o.id} style={[styles.option, active && styles.optionActive]} onPress={() => setMode(o.id)}>
+            <o.Icon size={20} color={active ? colors.primary : colors.textSecondary} />
+            <Text style={[styles.label, active && styles.labelActive]}>{o.label}</Text>
+          </Pressable>
+        );
+      })}
     </View>
   );
 }
