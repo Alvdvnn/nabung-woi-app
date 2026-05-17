@@ -4,6 +4,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { ThemeProvider } from '../context/ThemeContext';
+import { ToastProvider } from '../context/ToastContext';
 import { useTheme } from '../hooks/useTheme';
 
 function ThemedStack() {
@@ -22,7 +23,9 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <ThemeProvider>
           <BottomSheetModalProvider>
-            <ThemedStack />
+            <ToastProvider>
+              <ThemedStack />
+            </ToastProvider>
           </BottomSheetModalProvider>
         </ThemeProvider>
       </SafeAreaProvider>
