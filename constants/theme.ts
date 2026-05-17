@@ -1,9 +1,9 @@
-export const colors = {
-  bg: '#faf9f6',
+export const lightColors = {
+  bg: '#f8fafc',
   card: '#ffffff',
-  primary: '#1e3a8a',
-  primaryLight: '#3b82f6',
-  primarySoft: '#dbeafe',
+  primary: '#0d9488',
+  primaryLight: '#14b8a6',
+  primarySoft: '#ccfbf1',
   textPrimary: '#0f172a',
   textSecondary: '#475569',
   textMuted: '#94a3b8',
@@ -17,6 +17,32 @@ export const colors = {
   white: '#ffffff',
   overlay: 'rgba(15, 23, 42, 0.4)',
 };
+
+export const darkColors: typeof lightColors = {
+  bg: '#0b1220',
+  card: '#111827',
+  primary: '#2dd4bf',
+  primaryLight: '#5eead4',
+  primarySoft: '#134e4a',
+  textPrimary: '#f1f5f9',
+  textSecondary: '#cbd5e1',
+  textMuted: '#64748b',
+  border: '#1f2937',
+  borderStrong: '#334155',
+  income: '#22c55e',
+  incomeLight: '#14532d',
+  expense: '#ef4444',
+  expenseLight: '#7f1d1d',
+  warning: '#fbbf24',
+  white: '#ffffff',
+  overlay: 'rgba(0, 0, 0, 0.6)',
+};
+
+export type ColorTokens = typeof lightColors;
+
+// Backwards-compatible default export so non-migrated files still build during the migration tasks.
+// All components are migrated to useTheme() in later tasks; this export is removed in Task 26.
+export const colors = lightColors;
 
 export const spacing = {
   xs: 4,
