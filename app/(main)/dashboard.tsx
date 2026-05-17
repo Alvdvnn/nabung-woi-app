@@ -8,6 +8,9 @@ import TopBar from '../../components/TopBar';
 import Fab from '../../components/Fab';
 import PeriodSelector from '../../components/PeriodSelector';
 import PieChartCard from '../../components/PieChartCard';
+import StreakCard from '../../components/StreakCard';
+import TopCategoriesRow from '../../components/TopCategoriesRow';
+import { useStreak } from '../../hooks/useStreak';
 import { colors, radius, spacing, fontSize, shadow } from '../../constants/theme';
 import { getTransactions, Transaction } from '../../utils/storage';
 import { filterByPeriod, Period, sumByCategory, totalsOf } from '../../utils/aggregate';
@@ -28,6 +31,7 @@ export default function DashboardScreen() {
   const filtered = filterByPeriod(txs, period);
   const totals = totalsOf(filtered);
   const byCategory = sumByCategory(filtered, 'expense');
+  const streak = useStreak(txs);
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -60,6 +64,8 @@ export default function DashboardScreen() {
           </View>
         </View>
 
+        <StreakCard current={streak.current} longest={streak.longest} />
+        <TopCategoriesRow data={byCategory} total={totals.expense} />
         <PieChartCard data={byCategory} total={totals.expense} />
       </ScrollView>
       <Fab Icon={Plus} bottom={fabBottomForTabScreen(insets.bottom)} onPress={() => router.push('/')} />
