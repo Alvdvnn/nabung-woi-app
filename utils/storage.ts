@@ -31,6 +31,7 @@ const KEYS = {
   accounts: 'nw.accounts',
   customCategories: 'nw.customCategories',
   lastAccount: 'nw.lastAccount',
+  themeMode: 'nw.themeMode',
 };
 
 export async function getTransactions(): Promise<Transaction[]> {
@@ -84,6 +85,18 @@ export async function getLastAccount(): Promise<string | null> {
 
 export async function setLastAccount(id: string): Promise<void> {
   await AsyncStorage.setItem(KEYS.lastAccount, id);
+}
+
+export type StoredThemeMode = 'system' | 'light' | 'dark';
+
+export async function getThemeMode(): Promise<StoredThemeMode> {
+  const raw = await AsyncStorage.getItem(KEYS.themeMode);
+  if (raw === 'light' || raw === 'dark' || raw === 'system') return raw;
+  return 'system';
+}
+
+export async function setThemeMode(mode: StoredThemeMode): Promise<void> {
+  await AsyncStorage.setItem(KEYS.themeMode, mode);
 }
 
 export async function clearAll(): Promise<void> {
