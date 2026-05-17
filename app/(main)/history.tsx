@@ -6,7 +6,8 @@ import TopBar from '../../components/TopBar';
 import Fab from '../../components/Fab';
 import TransactionItem from '../../components/TransactionItem';
 import EmptyState from '../../components/EmptyState';
-import { colors, radius, spacing, fontSize } from '../../constants/theme';
+import { radius, spacing, fontSize } from '../../constants/theme';
+import { useTheme } from '../../hooks/useTheme';
 import { deleteTransaction, getAccounts, getTransactions, Account, Transaction, TransactionType } from '../../utils/storage';
 
 type Filter = 'all' | TransactionType;
@@ -22,6 +23,28 @@ export default function HistoryScreen() {
   const [txs, setTxs] = useState<Transaction[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [filter, setFilter] = useState<Filter>('all');
+  const { colors } = useTheme();
+  const styles = useMemo(() => StyleSheet.create({
+    safe: { flex: 1, backgroundColor: colors.bg },
+    filters: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+    },
+    filterBtn: {
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      borderRadius: radius.full,
+      backgroundColor: colors.card,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    filterBtnActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+    filterLabel: { fontSize: fontSize.sm, fontWeight: '600', color: colors.textSecondary },
+    filterLabelActive: { color: colors.white },
+    list: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl },
+  }), [colors]);
 
   useFocusEffect(
     useCallback(() => {
@@ -91,25 +114,3 @@ export default function HistoryScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.bg },
-  filters: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  filterBtn: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.full,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  filterBtnActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  filterLabel: { fontSize: fontSize.sm, fontWeight: '600', color: colors.textSecondary },
-  filterLabelActive: { color: colors.white },
-  list: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl },
-});

@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView, StyleSheet, Text, View, ScrollView } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { CalendarX, Plus } from 'lucide-react-native';
 import TopBar from '../../components/TopBar';
@@ -7,7 +7,8 @@ import Fab from '../../components/Fab';
 import TransactionItem from '../../components/TransactionItem';
 import EmptyState from '../../components/EmptyState';
 import CalendarGrid from '../../components/CalendarGrid';
-import { colors, spacing, fontSize } from '../../constants/theme';
+import { spacing, fontSize } from '../../constants/theme';
+import { useTheme } from '../../hooks/useTheme';
 import { getAccounts, getTransactions, Account, Transaction } from '../../utils/storage';
 import { isoDay, formatDate } from '../../utils/format';
 import { totalsOf } from '../../utils/aggregate';
@@ -19,6 +20,20 @@ export default function CalendarScreen() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [month, setMonth] = useState(new Date());
   const [selected, setSelected] = useState(new Date());
+  const { colors } = useTheme();
+  const styles = useMemo(() => StyleSheet.create({
+    safe: { flex: 1, backgroundColor: colors.bg },
+    content: { padding: spacing.lg, paddingBottom: spacing.xl },
+    dayHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginTop: spacing.lg,
+      marginBottom: spacing.md,
+    },
+    dayTitle: { fontSize: fontSize.md, fontWeight: '700', color: colors.textPrimary },
+    dayNet: { fontSize: fontSize.md, fontWeight: '700', color: colors.primary },
+  }), [colors]);
 
   useFocusEffect(
     useCallback(() => {
@@ -74,17 +89,3 @@ export default function CalendarScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: spacing.lg, paddingBottom: spacing.xl },
-  dayHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: spacing.lg,
-    marginBottom: spacing.md,
-  },
-  dayTitle: { fontSize: fontSize.md, fontWeight: '700', color: colors.textPrimary },
-  dayNet: { fontSize: fontSize.md, fontWeight: '700', color: colors.primary },
-});

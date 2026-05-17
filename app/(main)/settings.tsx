@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   Alert,
   Pressable,
@@ -15,7 +15,8 @@ import TopBar from '../../components/TopBar';
 import Fab from '../../components/Fab';
 import AccountManager from '../../components/AccountManager';
 import CategoryManager from '../../components/CategoryManager';
-import { colors, radius, spacing, fontSize } from '../../constants/theme';
+import { radius, spacing, fontSize } from '../../constants/theme';
+import { useTheme } from '../../hooks/useTheme';
 import {
   Account,
   CustomCategory,
@@ -29,6 +30,19 @@ export default function SettingsScreen() {
   const router = useRouter();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [customCats, setCustomCats] = useState<CustomCategory[]>([]);
+  const { colors } = useTheme();
+  const styles = useMemo(() => StyleSheet.create({
+    safe: { flex: 1, backgroundColor: colors.bg },
+    content: { padding: spacing.lg, gap: spacing.lg, paddingBottom: spacing.xl },
+    actionRow: {
+      flexDirection: 'row', alignItems: 'center', gap: spacing.md,
+      backgroundColor: colors.card,
+      padding: spacing.md, borderRadius: radius.md,
+      borderWidth: 1, borderColor: colors.border,
+    },
+    danger: { borderColor: colors.expenseLight },
+    actionText: { fontSize: fontSize.md, fontWeight: '600', color: colors.textPrimary },
+  }), [colors]);
 
   useFocusEffect(
     useCallback(() => {
@@ -91,6 +105,13 @@ export default function SettingsScreen() {
 }
 
 function Section({ Icon, title, children }: { Icon: any; title: string; children: React.ReactNode }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => StyleSheet.create({
+    section: { gap: spacing.md },
+    sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xs },
+    sectionTitle: { fontSize: fontSize.lg, fontWeight: '700', color: colors.textPrimary },
+  }), [colors]);
+
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
@@ -101,19 +122,3 @@ function Section({ Icon, title, children }: { Icon: any; title: string; children
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: spacing.lg, gap: spacing.lg, paddingBottom: spacing.xl },
-  section: { gap: spacing.md },
-  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xs },
-  sectionTitle: { fontSize: fontSize.lg, fontWeight: '700', color: colors.textPrimary },
-  actionRow: {
-    flexDirection: 'row', alignItems: 'center', gap: spacing.md,
-    backgroundColor: colors.card,
-    padding: spacing.md, borderRadius: radius.md,
-    borderWidth: 1, borderColor: colors.border,
-  },
-  danger: { borderColor: colors.expenseLight },
-  actionText: { fontSize: fontSize.md, fontWeight: '600', color: colors.textPrimary },
-});
