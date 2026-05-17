@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import DatePickerField from '../components/DatePickerField';
 import {
   KeyboardAvoidingView,
@@ -36,6 +36,7 @@ import {
 export default function InputScreen() {
   const router = useRouter();
   const toast = useToast();
+  const scrollRef = useRef<ScrollView>(null);
   const { id: editId, returnTo } = useLocalSearchParams<{ id?: string; returnTo?: string }>();
   const isEditing = !!editId;
 
@@ -136,9 +137,14 @@ export default function InputScreen() {
       <TopBar />
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={0}
       >
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <ScrollView
+          ref={scrollRef}
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+        >
           <Text style={styles.heading}>{isEditing ? 'Edit Transaction' : 'Add Transaction'}</Text>
           <Text style={styles.subheading}>
             {isEditing ? 'Update any field, then save.' : 'Quick log — no extra clicks.'}
@@ -185,6 +191,7 @@ export default function InputScreen() {
             value={note}
             onChangeText={setNote}
             maxLength={80}
+            onFocus={() => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100)}
           />
 
           <View style={styles.actions}>
@@ -223,7 +230,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   flex: { flex: 1 },
   flex1: { flex: 1 },
-  content: { padding: spacing.lg, paddingBottom: 100 },
+  content: { padding: spacing.lg, paddingBottom: 160 },
   heading: { fontSize: fontSize.xxl, fontWeight: '800', color: colors.textPrimary },
   subheading: { fontSize: fontSize.sm, color: colors.textMuted, marginTop: 4 },
   label: {
