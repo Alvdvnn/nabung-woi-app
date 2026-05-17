@@ -2,7 +2,8 @@ import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Wallet, Dices, History, ChevronLeft } from 'lucide-react-native';
+import { Wallet, Dices, Calculator, ChevronLeft } from 'lucide-react-native';
+import { useCalculator } from '../hooks/useCalculator';
 import { spacing, fontSize } from '../constants/theme';
 import { useTheme } from '../hooks/useTheme';
 
@@ -15,6 +16,7 @@ interface Props {
 
 export default function TopBar({ title, showBack, showLogo = true, showActions = true }: Props) {
   const router = useRouter();
+  const calc = useCalculator();
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const styles = useMemo(() => StyleSheet.create({
@@ -73,8 +75,8 @@ export default function TopBar({ title, showBack, showLogo = true, showActions =
           <Pressable onPress={() => router.push('/gacha')} hitSlop={8} style={styles.iconBtn}>
             <Dices size={20} color={colors.primary} />
           </Pressable>
-          <Pressable onPress={() => router.push('/history')} hitSlop={8} style={styles.iconBtn}>
-            <History size={20} color={colors.primary} />
+          <Pressable onPress={calc.open} hitSlop={8} style={styles.iconBtn}>
+            <Calculator size={20} color={colors.primary} />
           </Pressable>
         </View>
       )}
