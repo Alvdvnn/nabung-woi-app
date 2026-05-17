@@ -40,9 +40,6 @@ export const darkColors: typeof lightColors = {
 
 export type ColorTokens = typeof lightColors;
 
-// Backwards-compatible default export so non-migrated files still build during the migration tasks.
-// All components are migrated to useTheme() in later tasks; this export is removed in Task 26.
-export const colors = lightColors;
 
 export const spacing = {
   xs: 4,

@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -11,7 +11,8 @@ import PieChartCard from '../../components/PieChartCard';
 import StreakCard from '../../components/StreakCard';
 import TopCategoriesRow from '../../components/TopCategoriesRow';
 import { useStreak } from '../../hooks/useStreak';
-import { colors, radius, spacing, fontSize, shadow } from '../../constants/theme';
+import { radius, spacing, fontSize, shadow } from '../../constants/theme';
+import { useTheme } from '../../hooks/useTheme';
 import { getTransactions, Transaction } from '../../utils/storage';
 import { filterByPeriod, Period, sumByCategory, totalsOf } from '../../utils/aggregate';
 import { formatIDR } from '../../utils/format';
@@ -19,6 +20,7 @@ import { formatIDR } from '../../utils/format';
 export default function DashboardScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
   const [txs, setTxs] = useState<Transaction[]>([]);
   const [period, setPeriod] = useState<Period>('month');
 
@@ -32,6 +34,37 @@ export default function DashboardScreen() {
   const totals = totalsOf(filtered);
   const byCategory = sumByCategory(filtered, 'expense');
   const streak = useStreak(txs);
+
+  const styles = useMemo(() => StyleSheet.create({
+    safe: { flex: 1, backgroundColor: colors.bg },
+    content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xl },
+    netCard: {
+      backgroundColor: colors.primary,
+      borderRadius: radius.md,
+      padding: spacing.lg,
+    },
+    netHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+    netLabel: { fontSize: fontSize.sm, color: colors.primarySoft, textTransform: 'capitalize' },
+    netValue: { fontSize: fontSize.display, fontWeight: '800', color: colors.white, marginTop: 6 },
+    statsRow: { flexDirection: 'row', gap: spacing.md },
+    statCard: {
+      flex: 1,
+      backgroundColor: colors.card,
+      borderRadius: radius.md,
+      padding: spacing.md,
+      ...shadow.card,
+    },
+    statIcon: {
+      width: 32,
+      height: 32,
+      borderRadius: radius.full,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: spacing.sm,
+    },
+    statLabel: { fontSize: fontSize.xs, color: colors.textMuted },
+    statValue: { fontSize: fontSize.md, fontWeight: '700', marginTop: 2 },
+  }), [colors]);
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -72,34 +105,3 @@ export default function DashboardScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xl },
-  netCard: {
-    backgroundColor: colors.primary,
-    borderRadius: radius.md,
-    padding: spacing.lg,
-  },
-  netHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  netLabel: { fontSize: fontSize.sm, color: colors.primarySoft, textTransform: 'capitalize' },
-  netValue: { fontSize: fontSize.display, fontWeight: '800', color: colors.white, marginTop: 6 },
-  statsRow: { flexDirection: 'row', gap: spacing.md },
-  statCard: {
-    flex: 1,
-    backgroundColor: colors.card,
-    borderRadius: radius.md,
-    padding: spacing.md,
-    ...shadow.card,
-  },
-  statIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: radius.full,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.sm,
-  },
-  statLabel: { fontSize: fontSize.xs, color: colors.textMuted },
-  statValue: { fontSize: fontSize.md, fontWeight: '700', marginTop: 2 },
-});
