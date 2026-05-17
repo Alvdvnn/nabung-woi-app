@@ -1,6 +1,8 @@
 import { useCallback, useMemo, useState } from 'react';
 import { Alert, FlatList, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { fabBottomForTabScreen } from '../../constants/layout';
 import { Inbox, Plus } from 'lucide-react-native';
 import TopBar from '../../components/TopBar';
 import Fab from '../../components/Fab';
@@ -20,6 +22,7 @@ const FILTERS: { id: Filter; label: string }[] = [
 
 export default function HistoryScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [txs, setTxs] = useState<Transaction[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [filter, setFilter] = useState<Filter>('all');
@@ -110,7 +113,7 @@ export default function HistoryScreen() {
           contentContainerStyle={styles.list}
         />
       )}
-      <Fab Icon={Plus} bottom={80} onPress={() => router.push('/')} />
+      <Fab Icon={Plus} bottom={fabBottomForTabScreen(insets.bottom)} onPress={() => router.push('/')} />
     </SafeAreaView>
   );
 }

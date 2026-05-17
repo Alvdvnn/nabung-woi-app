@@ -10,6 +10,8 @@ import {
   View,
 } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { fabBottomForTabScreen } from '../../constants/layout';
 import { Database, Download, Trash, Wallet, Tag, Plus, Sun, Moon, Smartphone } from 'lucide-react-native';
 import TopBar from '../../components/TopBar';
 import Fab from '../../components/Fab';
@@ -28,6 +30,7 @@ import {
 
 export default function SettingsScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [customCats, setCustomCats] = useState<CustomCategory[]>([]);
   const { colors } = useTheme();
@@ -103,7 +106,7 @@ export default function SettingsScreen() {
           <AppearanceRow />
         </Section>
       </ScrollView>
-      <Fab Icon={Plus} bottom={80} onPress={() => router.push('/')} />
+      <Fab Icon={Plus} bottom={fabBottomForTabScreen(insets.bottom)} onPress={() => router.push('/')} />
     </SafeAreaView>
   );
 }

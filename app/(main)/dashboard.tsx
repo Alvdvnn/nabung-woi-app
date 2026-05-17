@@ -1,6 +1,8 @@
 import { useCallback, useState } from 'react';
 import { SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { fabBottomForTabScreen } from '../../constants/layout';
 import { TrendingUp, TrendingDown, Wallet, Plus } from 'lucide-react-native';
 import TopBar from '../../components/TopBar';
 import Fab from '../../components/Fab';
@@ -13,6 +15,7 @@ import { formatIDR } from '../../utils/format';
 
 export default function DashboardScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [txs, setTxs] = useState<Transaction[]>([]);
   const [period, setPeriod] = useState<Period>('month');
 
@@ -59,7 +62,7 @@ export default function DashboardScreen() {
 
         <PieChartCard data={byCategory} total={totals.expense} />
       </ScrollView>
-      <Fab Icon={Plus} bottom={80} onPress={() => router.push('/')} />
+      <Fab Icon={Plus} bottom={fabBottomForTabScreen(insets.bottom)} onPress={() => router.push('/')} />
     </SafeAreaView>
   );
 }

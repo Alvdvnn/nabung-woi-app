@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import DatePickerField from '../components/DatePickerField';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { fabBottomForFullScreen } from '../constants/layout';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -36,6 +38,7 @@ import {
 export default function InputScreen() {
   const router = useRouter();
   const toast = useToast();
+  const insets = useSafeAreaInsets();
   const scrollRef = useRef<ScrollView>(null);
   const { id: editId, returnTo } = useLocalSearchParams<{ id?: string; returnTo?: string }>();
   const isEditing = !!editId;
@@ -213,7 +216,7 @@ export default function InputScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {!isEditing && <Fab onPress={() => router.push('/dashboard')} />}
+      {!isEditing && <Fab bottom={fabBottomForFullScreen(insets.bottom)} onPress={() => router.push('/dashboard')} />}
 
       <AccountPickerSheet
         visible={pickerOpen}

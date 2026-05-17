@@ -1,6 +1,8 @@
 import { useMemo, useRef, useState } from 'react';
 import { Animated, Easing, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { fabBottomForTabScreen } from '../../constants/layout';
 import { Dices, Check, X, Plus } from 'lucide-react-native';
 import TopBar from '../../components/TopBar';
 import Fab from '../../components/Fab';
@@ -11,6 +13,7 @@ type Result = 'buy' | 'skip' | null;
 
 export default function GachaScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [result, setResult] = useState<Result>(null);
   const [spinning, setSpinning] = useState(false);
   const rotate = useRef(new Animated.Value(0)).current;
@@ -108,7 +111,7 @@ export default function GachaScreen() {
           </Text>
         </Pressable>
       </View>
-      <Fab Icon={Plus} bottom={80} onPress={() => router.push('/')} />
+      <Fab Icon={Plus} bottom={fabBottomForTabScreen(insets.bottom)} onPress={() => router.push('/')} />
     </SafeAreaView>
   );
 }
