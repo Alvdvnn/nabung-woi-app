@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -12,6 +11,7 @@ import {
   View,
 } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useToast } from '../hooks/useToast';
 import { ChevronDown } from 'lucide-react-native';
 import TopBar from '../components/TopBar';
 import Fab from '../components/Fab';
@@ -34,6 +34,7 @@ import {
 
 export default function InputScreen() {
   const router = useRouter();
+  const toast = useToast();
   const { id: editId } = useLocalSearchParams<{ id?: string }>();
   const isEditing = !!editId;
 
@@ -89,8 +90,8 @@ export default function InputScreen() {
 
   async function handleSave() {
     const num = parseFloat(amount);
-    if (!num || num <= 0) return Alert.alert('Enter a valid amount');
-    if (!accountId) return Alert.alert('Please add and select an account first');
+    if (!num || num <= 0) { toast.show('error', 'Enter a valid amount'); return; }
+    if (!accountId) { toast.show('error', 'Add an account first'); return; }
 
     setSaving(true);
     if (isEditing && editId) {
@@ -104,9 +105,8 @@ export default function InputScreen() {
         date: originalDate ?? new Date().toISOString(),
       });
       setSaving(false);
-      Alert.alert('Updated', 'Transaction updated.', [
-        { text: 'OK', onPress: () => router.replace('/') },
-      ]);
+      toast.show('success', 'Transaction updated');
+      setTimeout(() => router.replace('/'), 200);
     } else {
       await addTransaction({
         id: Date.now().toString(),
@@ -120,7 +120,7 @@ export default function InputScreen() {
       await setLastAccount(accountId);
       resetForm();
       setSaving(false);
-      Alert.alert('Saved', `${type === 'income' ? 'Income' : 'Expense'} recorded.`);
+      toast.show('success', `${type === 'income' ? 'Income' : 'Expense'} recorded`);
     }
   }
 
