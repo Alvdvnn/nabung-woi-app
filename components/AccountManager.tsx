@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { Plus, Trash2, Building2 } from 'lucide-react-native';
-import { colors, radius, spacing, fontSize } from '../constants/theme';
+import { Plus, Trash2 } from 'lucide-react-native';
+import { radius, spacing, fontSize } from '../constants/theme';
+import { useTheme } from '../hooks/useTheme';
 import { Account, saveAccounts } from '../utils/storage';
 import { ACCOUNT_TYPES, findAccountType } from '../constants/accountTypes';
 import { formatIDR } from '../utils/format';
@@ -16,6 +17,55 @@ export default function AccountManager({ accounts, onChange }: Props) {
   const [name, setName] = useState('');
   const [typeId, setTypeId] = useState(ACCOUNT_TYPES[0].id);
   const [balance, setBalance] = useState('');
+  const { colors } = useTheme();
+  const styles = useMemo(() => StyleSheet.create({
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.card,
+      borderRadius: radius.md,
+      padding: spacing.md,
+      marginBottom: spacing.sm,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    iconWrap: {
+      width: 36, height: 36, borderRadius: radius.full,
+      backgroundColor: colors.primarySoft,
+      alignItems: 'center', justifyContent: 'center',
+      marginRight: spacing.md,
+    },
+    info: { flex: 1 },
+    name: { fontSize: fontSize.md, fontWeight: '600', color: colors.textPrimary },
+    meta: { fontSize: fontSize.xs, color: colors.textMuted, marginTop: 2 },
+    delBtn: { padding: 4 },
+    addBtn: {
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+      gap: 6, padding: spacing.md,
+      borderRadius: radius.md, borderWidth: 1, borderColor: colors.primary, borderStyle: 'dashed',
+    },
+    addText: { fontSize: fontSize.sm, fontWeight: '600', color: colors.primary },
+    form: { gap: spacing.sm, backgroundColor: colors.card, padding: spacing.md, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border },
+    input: {
+      backgroundColor: colors.bg, borderRadius: radius.sm, padding: spacing.md,
+      fontSize: fontSize.md, color: colors.textPrimary, borderWidth: 1, borderColor: colors.border,
+    },
+    typeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
+    typeBtn: {
+      flexDirection: 'row', alignItems: 'center', gap: 4,
+      paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
+      borderRadius: radius.full, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.bg,
+    },
+    typeBtnActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+    typeLabel: { fontSize: fontSize.xs, fontWeight: '600', color: colors.textSecondary },
+    typeLabelActive: { color: colors.white },
+    formActions: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xs },
+    formBtn: { flex: 1, paddingVertical: spacing.md, borderRadius: radius.full, alignItems: 'center' },
+    cancelBtn: { backgroundColor: colors.bg, borderWidth: 1, borderColor: colors.border },
+    createBtn: { backgroundColor: colors.primary },
+    cancelText: { fontSize: fontSize.sm, fontWeight: '600', color: colors.textSecondary },
+    createText: { fontSize: fontSize.sm, fontWeight: '700', color: colors.white },
+  }), [colors]);
 
   async function create() {
     if (!name.trim()) return Alert.alert('Enter an account name');
@@ -117,52 +167,3 @@ export default function AccountManager({ accounts, onChange }: Props) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.card,
-    borderRadius: radius.md,
-    padding: spacing.md,
-    marginBottom: spacing.sm,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  iconWrap: {
-    width: 36, height: 36, borderRadius: radius.full,
-    backgroundColor: colors.primarySoft,
-    alignItems: 'center', justifyContent: 'center',
-    marginRight: spacing.md,
-  },
-  info: { flex: 1 },
-  name: { fontSize: fontSize.md, fontWeight: '600', color: colors.textPrimary },
-  meta: { fontSize: fontSize.xs, color: colors.textMuted, marginTop: 2 },
-  delBtn: { padding: 4 },
-  addBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: 6, padding: spacing.md,
-    borderRadius: radius.md, borderWidth: 1, borderColor: colors.primary, borderStyle: 'dashed',
-  },
-  addText: { fontSize: fontSize.sm, fontWeight: '600', color: colors.primary },
-  form: { gap: spacing.sm, backgroundColor: colors.card, padding: spacing.md, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border },
-  input: {
-    backgroundColor: colors.bg, borderRadius: radius.sm, padding: spacing.md,
-    fontSize: fontSize.md, color: colors.textPrimary, borderWidth: 1, borderColor: colors.border,
-  },
-  typeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
-  typeBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
-    borderRadius: radius.full, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.bg,
-  },
-  typeBtnActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  typeLabel: { fontSize: fontSize.xs, fontWeight: '600', color: colors.textSecondary },
-  typeLabelActive: { color: colors.white },
-  formActions: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xs },
-  formBtn: { flex: 1, paddingVertical: spacing.md, borderRadius: radius.full, alignItems: 'center' },
-  cancelBtn: { backgroundColor: colors.bg, borderWidth: 1, borderColor: colors.border },
-  createBtn: { backgroundColor: colors.primary },
-  cancelText: { fontSize: fontSize.sm, fontWeight: '600', color: colors.textSecondary },
-  createText: { fontSize: fontSize.sm, fontWeight: '700', color: colors.white },
-});

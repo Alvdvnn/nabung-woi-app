@@ -1,6 +1,8 @@
+import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { ChevronLeft, ChevronRight } from 'lucide-react-native';
-import { colors, radius, spacing, fontSize } from '../constants/theme';
+import { radius, spacing, fontSize } from '../constants/theme';
+import { useTheme } from '../hooks/useTheme';
 import { isoDay } from '../utils/format';
 
 interface Props {
@@ -18,6 +20,45 @@ const MONTH_NAMES = [
 ];
 
 export default function CalendarGrid({ month, selected, txDates, onChangeMonth, onSelectDate }: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => StyleSheet.create({
+    container: {
+      backgroundColor: colors.card,
+      borderRadius: radius.md,
+      padding: spacing.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: spacing.md,
+    },
+    navBtn: {
+      width: 32, height: 32, borderRadius: 8,
+      alignItems: 'center', justifyContent: 'center',
+      backgroundColor: colors.primarySoft,
+    },
+    monthLabel: { fontSize: fontSize.md, fontWeight: '700', color: colors.textPrimary },
+    dowRow: { flexDirection: 'row', marginBottom: spacing.xs },
+    dow: { flex: 1, textAlign: 'center', fontSize: fontSize.xs, color: colors.textMuted, fontWeight: '600' },
+    grid: { flexDirection: 'row', flexWrap: 'wrap' },
+    cell: {
+      width: `${100 / 7}%`,
+      aspectRatio: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: radius.sm,
+    },
+    cellToday: { borderWidth: 1.5, borderColor: colors.primaryLight },
+    cellSelected: { backgroundColor: colors.primary },
+    dayNum: { fontSize: fontSize.sm, color: colors.textPrimary, fontWeight: '500' },
+    dayNumSelected: { color: colors.white, fontWeight: '700' },
+    dot: { width: 4, height: 4, borderRadius: 2, backgroundColor: colors.primary, marginTop: 2 },
+    dotOnSelected: { backgroundColor: colors.white },
+  }), [colors]);
+
   const year = month.getFullYear();
   const monthIdx = month.getMonth();
   const firstDay = new Date(year, monthIdx, 1).getDay();
@@ -78,41 +119,3 @@ export default function CalendarGrid({ month, selected, txDates, onChangeMonth, 
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: colors.card,
-    borderRadius: radius.md,
-    padding: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.md,
-  },
-  navBtn: {
-    width: 32, height: 32, borderRadius: 8,
-    alignItems: 'center', justifyContent: 'center',
-    backgroundColor: colors.primarySoft,
-  },
-  monthLabel: { fontSize: fontSize.md, fontWeight: '700', color: colors.textPrimary },
-  dowRow: { flexDirection: 'row', marginBottom: spacing.xs },
-  dow: { flex: 1, textAlign: 'center', fontSize: fontSize.xs, color: colors.textMuted, fontWeight: '600' },
-  grid: { flexDirection: 'row', flexWrap: 'wrap' },
-  cell: {
-    width: `${100 / 7}%`,
-    aspectRatio: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radius.sm,
-  },
-  cellToday: { borderWidth: 1.5, borderColor: colors.primaryLight },
-  cellSelected: { backgroundColor: colors.primary },
-  dayNum: { fontSize: fontSize.sm, color: colors.textPrimary, fontWeight: '500' },
-  dayNumSelected: { color: colors.white, fontWeight: '700' },
-  dot: { width: 4, height: 4, borderRadius: 2, backgroundColor: colors.primary, marginTop: 2 },
-  dotOnSelected: { backgroundColor: colors.white },
-});

@@ -1,6 +1,8 @@
+import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { PieChart } from 'react-native-gifted-charts';
-import { colors, radius, spacing, fontSize, shadow } from '../constants/theme';
+import { radius, spacing, fontSize, shadow } from '../constants/theme';
+import { useTheme } from '../hooks/useTheme';
 import { CategorySum } from '../utils/aggregate';
 import { findCategory } from '../constants/categories';
 import { formatIDR } from '../utils/format';
@@ -13,6 +15,26 @@ interface Props {
 const SLICE_COLORS = ['#1e3a8a', '#3b82f6', '#60a5fa', '#93c5fd', '#1e40af', '#2563eb', '#0ea5e9', '#0284c7'];
 
 export default function PieChartCard({ data, total }: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => StyleSheet.create({
+    card: {
+      backgroundColor: colors.card,
+      borderRadius: radius.md,
+      padding: spacing.lg,
+      ...shadow.card,
+    },
+    title: { fontSize: fontSize.md, fontWeight: '700', color: colors.textPrimary, marginBottom: spacing.md },
+    empty: { fontSize: fontSize.sm, color: colors.textMuted, textAlign: 'center', paddingVertical: spacing.lg },
+    chartRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+    centerLabel: { fontSize: fontSize.xs, color: colors.textMuted },
+    centerValue: { fontSize: fontSize.sm, fontWeight: '700', color: colors.textPrimary, marginTop: 2 },
+    legend: { flex: 1, gap: spacing.xs },
+    legendRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+    dot: { width: 10, height: 10, borderRadius: 5 },
+    legendName: { flex: 1, fontSize: fontSize.sm, color: colors.textPrimary },
+    legendPct: { fontSize: fontSize.sm, fontWeight: '700', color: colors.textSecondary },
+  }), [colors]);
+
   if (data.length === 0) {
     return (
       <View style={styles.card}>
@@ -61,22 +83,3 @@ export default function PieChartCard({ data, total }: Props) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.card,
-    borderRadius: radius.md,
-    padding: spacing.lg,
-    ...shadow.card,
-  },
-  title: { fontSize: fontSize.md, fontWeight: '700', color: colors.textPrimary, marginBottom: spacing.md },
-  empty: { fontSize: fontSize.sm, color: colors.textMuted, textAlign: 'center', paddingVertical: spacing.lg },
-  chartRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  centerLabel: { fontSize: fontSize.xs, color: colors.textMuted },
-  centerValue: { fontSize: fontSize.sm, fontWeight: '700', color: colors.textPrimary, marginTop: 2 },
-  legend: { flex: 1, gap: spacing.xs },
-  legendRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  dot: { width: 10, height: 10, borderRadius: 5 },
-  legendName: { flex: 1, fontSize: fontSize.sm, color: colors.textPrimary },
-  legendPct: { fontSize: fontSize.sm, fontWeight: '700', color: colors.textSecondary },
-});

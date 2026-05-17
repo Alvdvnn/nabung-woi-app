@@ -1,6 +1,8 @@
+import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { ArrowDownCircle, ArrowUpCircle } from 'lucide-react-native';
-import { colors, radius, spacing, fontSize } from '../constants/theme';
+import { radius, spacing, fontSize } from '../constants/theme';
+import { useTheme } from '../hooks/useTheme';
 import { TransactionType } from '../utils/storage';
 
 interface Props {
@@ -9,6 +11,31 @@ interface Props {
 }
 
 export default function TypeToggle({ value, onChange }: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => StyleSheet.create({
+    wrap: {
+      flexDirection: 'row',
+      backgroundColor: colors.card,
+      borderRadius: radius.full,
+      padding: 4,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    btn: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+      paddingVertical: spacing.sm + 2,
+      borderRadius: radius.full,
+    },
+    btnActiveExp: { backgroundColor: colors.expense },
+    btnActiveInc: { backgroundColor: colors.income },
+    label: { fontSize: fontSize.sm, fontWeight: '600', color: colors.textSecondary },
+    labelActive: { color: colors.white },
+  }), [colors]);
+
   const isExp = value === 'expense';
   return (
     <View style={styles.wrap}>
@@ -29,27 +56,3 @@ export default function TypeToggle({ value, onChange }: Props) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  wrap: {
-    flexDirection: 'row',
-    backgroundColor: colors.card,
-    borderRadius: radius.full,
-    padding: 4,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  btn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: spacing.sm + 2,
-    borderRadius: radius.full,
-  },
-  btnActiveExp: { backgroundColor: colors.expense },
-  btnActiveInc: { backgroundColor: colors.income },
-  label: { fontSize: fontSize.sm, fontWeight: '600', color: colors.textSecondary },
-  labelActive: { color: colors.white },
-});

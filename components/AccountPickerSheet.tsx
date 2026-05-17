@@ -1,7 +1,9 @@
+import { useMemo } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View, ScrollView } from 'react-native';
 import { Check, X, Plus } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
-import { colors, radius, spacing, fontSize } from '../constants/theme';
+import { radius, spacing, fontSize } from '../constants/theme';
+import { useTheme } from '../hooks/useTheme';
 import { Account } from '../utils/storage';
 import { findAccountType } from '../constants/accountTypes';
 
@@ -15,6 +17,69 @@ interface Props {
 
 export default function AccountPickerSheet({ visible, accounts, selectedId, onSelect, onClose }: Props) {
   const router = useRouter();
+  const { colors } = useTheme();
+  const styles = useMemo(() => StyleSheet.create({
+    backdrop: { flex: 1, backgroundColor: colors.overlay },
+    sheet: {
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      backgroundColor: colors.card,
+      borderTopLeftRadius: radius.lg,
+      borderTopRightRadius: radius.lg,
+      paddingTop: spacing.md,
+      paddingBottom: spacing.xl,
+      maxHeight: '70%',
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: spacing.lg,
+      paddingBottom: spacing.md,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    title: { fontSize: fontSize.lg, fontWeight: '700', color: colors.textPrimary },
+    list: { paddingHorizontal: spacing.lg, paddingTop: spacing.md },
+    empty: { textAlign: 'center', color: colors.textMuted, padding: spacing.lg },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      paddingVertical: spacing.md,
+      paddingHorizontal: spacing.md,
+      borderRadius: radius.md,
+      marginBottom: spacing.xs,
+    },
+    rowActive: { backgroundColor: colors.primarySoft },
+    iconWrap: {
+      width: 36,
+      height: 36,
+      borderRadius: radius.full,
+      backgroundColor: colors.primarySoft,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    info: { flex: 1 },
+    name: { fontSize: fontSize.md, fontWeight: '600', color: colors.textPrimary },
+    type: { fontSize: fontSize.xs, color: colors.textMuted, marginTop: 2 },
+    addBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+      padding: spacing.md,
+      marginTop: spacing.sm,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: colors.primary,
+      borderStyle: 'dashed',
+    },
+    addText: { fontSize: fontSize.sm, fontWeight: '600', color: colors.primary },
+  }), [colors]);
+
   return (
     <Modal transparent visible={visible} animationType="slide" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose} />
@@ -63,65 +128,3 @@ export default function AccountPickerSheet({ visible, accounts, selectedId, onSe
     </Modal>
   );
 }
-
-const styles = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: colors.overlay },
-  sheet: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: colors.card,
-    borderTopLeftRadius: radius.lg,
-    borderTopRightRadius: radius.lg,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.xl,
-    maxHeight: '70%',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  title: { fontSize: fontSize.lg, fontWeight: '700', color: colors.textPrimary },
-  list: { paddingHorizontal: spacing.lg, paddingTop: spacing.md },
-  empty: { textAlign: 'center', color: colors.textMuted, padding: spacing.lg },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.md,
-    marginBottom: spacing.xs,
-  },
-  rowActive: { backgroundColor: colors.primarySoft },
-  iconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.full,
-    backgroundColor: colors.primarySoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  info: { flex: 1 },
-  name: { fontSize: fontSize.md, fontWeight: '600', color: colors.textPrimary },
-  type: { fontSize: fontSize.xs, color: colors.textMuted, marginTop: 2 },
-  addBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    padding: spacing.md,
-    marginTop: spacing.sm,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.primary,
-    borderStyle: 'dashed',
-  },
-  addText: { fontSize: fontSize.sm, fontWeight: '600', color: colors.primary },
-});
