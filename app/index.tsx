@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import DatePickerField from '../components/DatePickerField';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -35,7 +36,7 @@ import {
 export default function InputScreen() {
   const router = useRouter();
   const toast = useToast();
-  const { id: editId } = useLocalSearchParams<{ id?: string }>();
+  const { id: editId, returnTo } = useLocalSearchParams<{ id?: string; returnTo?: string }>();
   const isEditing = !!editId;
 
   const [type, setType] = useState<TransactionType>('expense');
@@ -44,7 +45,7 @@ export default function InputScreen() {
   const [note, setNote] = useState('');
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [accountId, setAccountId] = useState<string | null>(null);
-  const [originalDate, setOriginalDate] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [pickerOpen, setPickerOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -62,7 +63,7 @@ export default function InputScreen() {
             setCategoryId(tx.categoryId);
             setNote(tx.note);
             setAccountId(tx.accountId);
-            setOriginalDate(tx.date);
+            setSelectedDate(new Date(tx.date));
             return;
           }
         }
@@ -85,7 +86,7 @@ export default function InputScreen() {
   function resetForm() {
     setAmount('');
     setNote('');
-    setOriginalDate(null);
+    setSelectedDate(new Date());
   }
 
   async function handleSave() {
@@ -102,11 +103,12 @@ export default function InputScreen() {
         categoryId,
         accountId,
         note: note.trim(),
-        date: originalDate ?? new Date().toISOString(),
+        date: selectedDate.toISOString(),
       });
       setSaving(false);
       toast.show('success', 'Transaction updated');
-      setTimeout(() => router.replace('/'), 200);
+      const target = returnTo === 'calendar' ? '/calendar' : returnTo === 'history' ? '/history' : '/dashboard';
+      setTimeout(() => router.replace(target), 200);
     } else {
       await addTransaction({
         id: Date.now().toString(),
@@ -115,7 +117,7 @@ export default function InputScreen() {
         categoryId,
         accountId,
         note: note.trim(),
-        date: new Date().toISOString(),
+        date: selectedDate.toISOString(),
       });
       await setLastAccount(accountId);
       resetForm();
@@ -125,7 +127,8 @@ export default function InputScreen() {
   }
 
   function handleCancelEdit() {
-    router.replace('/');
+    const target = returnTo === 'calendar' ? '/calendar' : returnTo === 'history' ? '/history' : '/dashboard';
+    router.replace(target);
   }
 
   return (
@@ -170,6 +173,9 @@ export default function InputScreen() {
             </Text>
             <ChevronDown size={16} color={colors.textSecondary} />
           </Pressable>
+
+          <Text style={styles.label}>Date</Text>
+          <DatePickerField value={selectedDate} onChange={setSelectedDate} />
 
           <Text style={styles.label}>Note (optional)</Text>
           <TextInput
