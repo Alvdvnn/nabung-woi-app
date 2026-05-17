@@ -29,12 +29,7 @@ export default function CalendarGrid({ month, selected, txDates, onChangeMonth, 
       borderWidth: 1,
       borderColor: colors.border,
     },
-    header: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: spacing.md,
-    },
+    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md },
     navBtn: {
       width: 32, height: 32, borderRadius: 8,
       alignItems: 'center', justifyContent: 'center',
@@ -49,13 +44,27 @@ export default function CalendarGrid({ month, selected, txDates, onChangeMonth, 
       aspectRatio: 1,
       alignItems: 'center',
       justifyContent: 'center',
-      borderRadius: radius.sm,
     },
-    cellToday: { borderWidth: 1.5, borderColor: colors.primaryLight },
-    cellSelected: { backgroundColor: colors.primary },
+    inner: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      alignItems: 'center',
+      justifyContent: 'center',
+      position: 'relative',
+    },
+    innerToday: { borderWidth: 1.5, borderColor: colors.primaryLight },
+    innerSelected: { backgroundColor: colors.primary },
     dayNum: { fontSize: fontSize.sm, color: colors.textPrimary, fontWeight: '500' },
     dayNumSelected: { color: colors.white, fontWeight: '700' },
-    dot: { width: 4, height: 4, borderRadius: 2, backgroundColor: colors.primary, marginTop: 2 },
+    dot: {
+      position: 'absolute',
+      bottom: 3,
+      width: 4,
+      height: 4,
+      borderRadius: 2,
+      backgroundColor: colors.primary,
+    },
     dotOnSelected: { backgroundColor: colors.white },
   }), [colors]);
 
@@ -107,11 +116,18 @@ export default function CalendarGrid({ month, selected, txDates, onChangeMonth, 
           return (
             <Pressable
               key={iso}
-              style={[styles.cell, isSelected && styles.cellSelected, isToday && !isSelected && styles.cellToday]}
+              style={styles.cell}
               onPress={() => onSelectDate(d)}
+              hitSlop={2}
             >
-              <Text style={[styles.dayNum, isSelected && styles.dayNumSelected]}>{d.getDate()}</Text>
-              {hasTx && <View style={[styles.dot, isSelected && styles.dotOnSelected]} />}
+              <View style={[
+                styles.inner,
+                isSelected && styles.innerSelected,
+                isToday && !isSelected && styles.innerToday,
+              ]}>
+                <Text style={[styles.dayNum, isSelected && styles.dayNumSelected]}>{d.getDate()}</Text>
+                {hasTx && <View style={[styles.dot, isSelected && styles.dotOnSelected]} />}
+              </View>
             </Pressable>
           );
         })}
