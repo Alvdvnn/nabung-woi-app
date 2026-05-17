@@ -1,6 +1,6 @@
 import { forwardRef, useMemo, useState, useImperativeHandle, useRef } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { BottomSheetModal, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import { BottomSheetModal, BottomSheetBackdrop, BottomSheetView } from '@gorhom/bottom-sheet';
 import { useTheme } from '../hooks/useTheme';
 import { spacing, radius, fontSize } from '../constants/theme';
 
@@ -98,16 +98,20 @@ export default forwardRef<CalculatorRef>(function Calculator(_, ref) {
     <BottomSheetBackdrop {...props} appearsOnIndex={0} disappearsOnIndex={-1} />
   );
 
+  const snapPoints = useMemo(() => ['65%'], []);
+
   return (
     <BottomSheetModal
       ref={sheetRef}
-      snapPoints={['65%']}
+      snapPoints={snapPoints}
+      enableDynamicSizing={false}
+      index={0}
       handleStyle={{ backgroundColor: colors.card }}
       handleIndicatorStyle={styles.handle}
       backgroundStyle={styles.bg}
       backdropComponent={renderBackdrop}
     >
-      <View style={styles.container}>
+      <BottomSheetView style={styles.container}>
         <View style={styles.display}>
           <Text style={styles.expr} numberOfLines={1}>{expr || ' '}</Text>
           <Text style={styles.result} numberOfLines={1}>{result || '0'}</Text>
@@ -127,7 +131,7 @@ export default forwardRef<CalculatorRef>(function Calculator(_, ref) {
             </Pressable>
           ))}
         </View>
-      </View>
+      </BottomSheetView>
     </BottomSheetModal>
   );
 });
