@@ -1,18 +1,54 @@
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Animated, Easing, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { fabBottomForTabScreen } from '../../constants/layout';
 import { Dices, Check, X, Plus } from 'lucide-react-native';
 import TopBar from '../../components/TopBar';
 import Fab from '../../components/Fab';
-import { colors, radius, spacing, fontSize, shadow } from '../../constants/theme';
+import { radius, spacing, fontSize, shadow } from '../../constants/theme';
+import { useTheme } from '../../hooks/useTheme';
 
 type Result = 'buy' | 'skip' | null;
 
 export default function GachaScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [result, setResult] = useState<Result>(null);
   const [spinning, setSpinning] = useState(false);
   const rotate = useRef(new Animated.Value(0)).current;
+  const { colors } = useTheme();
+  const styles = useMemo(() => StyleSheet.create({
+    safe: { flex: 1, backgroundColor: colors.bg },
+    content: { flex: 1, padding: spacing.lg, alignItems: 'center', justifyContent: 'center', gap: spacing.lg },
+    heading: { fontSize: fontSize.xxl, fontWeight: '800', color: colors.textPrimary },
+    sub: { fontSize: fontSize.sm, color: colors.textMuted, textAlign: 'center', maxWidth: 260 },
+    stage: { height: 200, alignItems: 'center', justifyContent: 'center', marginVertical: spacing.lg },
+    coin: {
+      width: 160, height: 160, borderRadius: 80,
+      backgroundColor: colors.primary,
+      alignItems: 'center', justifyContent: 'center',
+      ...shadow.card,
+      shadowOpacity: 0.2,
+    },
+    coinBuy: { backgroundColor: colors.income },
+    coinSkip: { backgroundColor: colors.expense },
+    resultText: { fontSize: fontSize.display, fontWeight: '900', letterSpacing: 1 },
+    buyText: { color: colors.income },
+    skipText: { color: colors.expense },
+    resultSub: { fontSize: fontSize.sm, color: colors.textSecondary, textAlign: 'center', maxWidth: 240 },
+    spinBtn: {
+      marginTop: spacing.md,
+      backgroundColor: colors.primary,
+      paddingHorizontal: spacing.xxl,
+      paddingVertical: spacing.md + 2,
+      borderRadius: radius.full,
+      minWidth: 200,
+      alignItems: 'center',
+    },
+    spinBtnDisabled: { opacity: 0.6 },
+    spinText: { fontSize: fontSize.md, fontWeight: '700', color: colors.white },
+  }), [colors]);
 
   function spin() {
     setResult(null);
@@ -75,39 +111,7 @@ export default function GachaScreen() {
           </Text>
         </Pressable>
       </View>
-      <Fab Icon={Plus} bottom={80} onPress={() => router.push('/')} />
+      <Fab Icon={Plus} bottom={fabBottomForTabScreen(insets.bottom)} onPress={() => router.push('/')} />
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.bg },
-  content: { flex: 1, padding: spacing.lg, alignItems: 'center', justifyContent: 'center', gap: spacing.lg },
-  heading: { fontSize: fontSize.xxl, fontWeight: '800', color: colors.textPrimary },
-  sub: { fontSize: fontSize.sm, color: colors.textMuted, textAlign: 'center', maxWidth: 260 },
-  stage: { height: 200, alignItems: 'center', justifyContent: 'center', marginVertical: spacing.lg },
-  coin: {
-    width: 160, height: 160, borderRadius: 80,
-    backgroundColor: colors.primary,
-    alignItems: 'center', justifyContent: 'center',
-    ...shadow.card,
-    shadowOpacity: 0.2,
-  },
-  coinBuy: { backgroundColor: colors.income },
-  coinSkip: { backgroundColor: colors.expense },
-  resultText: { fontSize: fontSize.display, fontWeight: '900', letterSpacing: 1 },
-  buyText: { color: colors.income },
-  skipText: { color: colors.expense },
-  resultSub: { fontSize: fontSize.sm, color: colors.textSecondary, textAlign: 'center', maxWidth: 240 },
-  spinBtn: {
-    marginTop: spacing.md,
-    backgroundColor: colors.primary,
-    paddingHorizontal: spacing.xxl,
-    paddingVertical: spacing.md + 2,
-    borderRadius: radius.full,
-    minWidth: 200,
-    alignItems: 'center',
-  },
-  spinBtnDisabled: { opacity: 0.6 },
-  spinText: { fontSize: fontSize.md, fontWeight: '700', color: colors.white },
-});

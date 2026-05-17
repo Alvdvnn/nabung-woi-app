@@ -1,12 +1,15 @@
 import { useCallback, useMemo, useState } from 'react';
 import { Alert, FlatList, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { fabBottomForTabScreen } from '../../constants/layout';
 import { Inbox, Plus } from 'lucide-react-native';
 import TopBar from '../../components/TopBar';
 import Fab from '../../components/Fab';
 import TransactionItem from '../../components/TransactionItem';
 import EmptyState from '../../components/EmptyState';
-import { colors, radius, spacing, fontSize } from '../../constants/theme';
+import { radius, spacing, fontSize } from '../../constants/theme';
+import { useTheme } from '../../hooks/useTheme';
 import { deleteTransaction, getAccounts, getTransactions, Account, Transaction, TransactionType } from '../../utils/storage';
 
 type Filter = 'all' | TransactionType;
@@ -19,9 +22,32 @@ const FILTERS: { id: Filter; label: string }[] = [
 
 export default function HistoryScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [txs, setTxs] = useState<Transaction[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [filter, setFilter] = useState<Filter>('all');
+  const { colors } = useTheme();
+  const styles = useMemo(() => StyleSheet.create({
+    safe: { flex: 1, backgroundColor: colors.bg },
+    filters: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+    },
+    filterBtn: {
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      borderRadius: radius.full,
+      backgroundColor: colors.card,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    filterBtnActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+    filterLabel: { fontSize: fontSize.sm, fontWeight: '600', color: colors.textSecondary },
+    filterLabelActive: { color: colors.white },
+    list: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl },
+  }), [colors]);
 
   useFocusEffect(
     useCallback(() => {
@@ -81,35 +107,13 @@ export default function HistoryScreen() {
               item={item}
               accountName={accName(item.accountId)}
               onDelete={handleDelete}
-              onPress={(id) => router.push({ pathname: '/', params: { id } })}
+              onPress={(id) => router.push({ pathname: '/', params: { id, returnTo: 'history' } })}
             />
           )}
           contentContainerStyle={styles.list}
         />
       )}
-      <Fab Icon={Plus} bottom={80} onPress={() => router.push('/')} />
+      <Fab Icon={Plus} bottom={fabBottomForTabScreen(insets.bottom)} onPress={() => router.push('/')} />
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.bg },
-  filters: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  filterBtn: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.full,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  filterBtnActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  filterLabel: { fontSize: fontSize.sm, fontWeight: '600', color: colors.textSecondary },
-  filterLabelActive: { color: colors.white },
-  list: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl },
-});

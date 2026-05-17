@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   Alert,
   Pressable,
@@ -10,12 +10,15 @@ import {
   View,
 } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { Database, Download, Trash, Wallet, Tag, Plus } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { fabBottomForTabScreen } from '../../constants/layout';
+import { Database, Download, Trash, Wallet, Tag, Plus, Sun, Moon, Smartphone } from 'lucide-react-native';
 import TopBar from '../../components/TopBar';
 import Fab from '../../components/Fab';
 import AccountManager from '../../components/AccountManager';
 import CategoryManager from '../../components/CategoryManager';
-import { colors, radius, spacing, fontSize } from '../../constants/theme';
+import { radius, spacing, fontSize } from '../../constants/theme';
+import { useTheme, ThemeMode } from '../../hooks/useTheme';
 import {
   Account,
   CustomCategory,
@@ -27,8 +30,22 @@ import {
 
 export default function SettingsScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [customCats, setCustomCats] = useState<CustomCategory[]>([]);
+  const { colors } = useTheme();
+  const styles = useMemo(() => StyleSheet.create({
+    safe: { flex: 1, backgroundColor: colors.bg },
+    content: { padding: spacing.lg, gap: spacing.lg, paddingBottom: spacing.xl },
+    actionRow: {
+      flexDirection: 'row', alignItems: 'center', gap: spacing.md,
+      backgroundColor: colors.card,
+      padding: spacing.md, borderRadius: radius.md,
+      borderWidth: 1, borderColor: colors.border,
+    },
+    danger: { borderColor: colors.expenseLight },
+    actionText: { fontSize: fontSize.md, fontWeight: '600', color: colors.textPrimary },
+  }), [colors]);
 
   useFocusEffect(
     useCallback(() => {
@@ -84,13 +101,24 @@ export default function SettingsScreen() {
             <Text style={[styles.actionText, { color: colors.expense }]}>Clear all data</Text>
           </Pressable>
         </Section>
+
+        <Section Icon={Sun} title="Appearance">
+          <AppearanceRow />
+        </Section>
       </ScrollView>
-      <Fab Icon={Plus} bottom={80} onPress={() => router.push('/')} />
+      <Fab Icon={Plus} bottom={fabBottomForTabScreen(insets.bottom)} onPress={() => router.push('/')} />
     </SafeAreaView>
   );
 }
 
 function Section({ Icon, title, children }: { Icon: any; title: string; children: React.ReactNode }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => StyleSheet.create({
+    section: { gap: spacing.md },
+    sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xs },
+    sectionTitle: { fontSize: fontSize.lg, fontWeight: '700', color: colors.textPrimary },
+  }), [colors]);
+
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
@@ -102,18 +130,42 @@ function Section({ Icon, title, children }: { Icon: any; title: string; children
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: spacing.lg, gap: spacing.lg, paddingBottom: spacing.xl },
-  section: { gap: spacing.md },
-  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xs },
-  sectionTitle: { fontSize: fontSize.lg, fontWeight: '700', color: colors.textPrimary },
-  actionRow: {
-    flexDirection: 'row', alignItems: 'center', gap: spacing.md,
-    backgroundColor: colors.card,
-    padding: spacing.md, borderRadius: radius.md,
-    borderWidth: 1, borderColor: colors.border,
-  },
-  danger: { borderColor: colors.expenseLight },
-  actionText: { fontSize: fontSize.md, fontWeight: '600', color: colors.textPrimary },
-});
+function AppearanceRow() {
+  const { colors, mode, setMode } = useTheme();
+  const styles = useMemo(() => StyleSheet.create({
+    row: { flexDirection: 'row', gap: spacing.sm },
+    option: {
+      flex: 1,
+      paddingVertical: spacing.md,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.card,
+      alignItems: 'center',
+      gap: 6,
+    },
+    optionActive: { borderColor: colors.primary, backgroundColor: colors.primarySoft },
+    label: { fontSize: fontSize.sm, fontWeight: '600', color: colors.textSecondary },
+    labelActive: { color: colors.primary },
+  }), [colors]);
+
+  const opts: { id: ThemeMode; label: string; Icon: typeof Sun }[] = [
+    { id: 'system', label: 'System', Icon: Smartphone },
+    { id: 'light', label: 'Light', Icon: Sun },
+    { id: 'dark', label: 'Dark', Icon: Moon },
+  ];
+
+  return (
+    <View style={styles.row}>
+      {opts.map((o) => {
+        const active = mode === o.id;
+        return (
+          <Pressable key={o.id} style={[styles.option, active && styles.optionActive]} onPress={() => setMode(o.id)}>
+            <o.Icon size={20} color={active ? colors.primary : colors.textSecondary} />
+            <Text style={[styles.label, active && styles.labelActive]}>{o.label}</Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}

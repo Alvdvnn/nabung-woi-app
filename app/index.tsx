@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import DatePickerField from '../components/DatePickerField';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { fabBottomForFullScreen } from '../constants/layout';
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -12,6 +14,7 @@ import {
   View,
 } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useToast } from '../hooks/useToast';
 import { ChevronDown } from 'lucide-react-native';
 import TopBar from '../components/TopBar';
 import Fab from '../components/Fab';
@@ -19,7 +22,8 @@ import TypeToggle from '../components/TypeToggle';
 import AmountInput from '../components/AmountInput';
 import CategoryChip from '../components/CategoryChip';
 import AccountPickerSheet from '../components/AccountPickerSheet';
-import { colors, radius, spacing, fontSize } from '../constants/theme';
+import { radius, spacing, fontSize } from '../constants/theme';
+import { useTheme } from '../hooks/useTheme';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from '../constants/categories';
 import {
   addTransaction,
@@ -34,7 +38,11 @@ import {
 
 export default function InputScreen() {
   const router = useRouter();
-  const { id: editId } = useLocalSearchParams<{ id?: string }>();
+  const toast = useToast();
+  const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
+  const scrollRef = useRef<ScrollView>(null);
+  const { id: editId, returnTo } = useLocalSearchParams<{ id?: string; returnTo?: string }>();
   const isEditing = !!editId;
 
   const [type, setType] = useState<TransactionType>('expense');
@@ -43,7 +51,7 @@ export default function InputScreen() {
   const [note, setNote] = useState('');
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [accountId, setAccountId] = useState<string | null>(null);
-  const [originalDate, setOriginalDate] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [pickerOpen, setPickerOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -61,7 +69,7 @@ export default function InputScreen() {
             setCategoryId(tx.categoryId);
             setNote(tx.note);
             setAccountId(tx.accountId);
-            setOriginalDate(tx.date);
+            setSelectedDate(new Date(tx.date));
             return;
           }
         }
@@ -84,13 +92,13 @@ export default function InputScreen() {
   function resetForm() {
     setAmount('');
     setNote('');
-    setOriginalDate(null);
+    setSelectedDate(new Date());
   }
 
   async function handleSave() {
     const num = parseFloat(amount);
-    if (!num || num <= 0) return Alert.alert('Enter a valid amount');
-    if (!accountId) return Alert.alert('Please add and select an account first');
+    if (!num || num <= 0) { toast.show('error', 'Enter a valid amount'); return; }
+    if (!accountId) { toast.show('error', 'Add an account first'); return; }
 
     setSaving(true);
     if (isEditing && editId) {
@@ -101,12 +109,12 @@ export default function InputScreen() {
         categoryId,
         accountId,
         note: note.trim(),
-        date: originalDate ?? new Date().toISOString(),
+        date: selectedDate.toISOString(),
       });
       setSaving(false);
-      Alert.alert('Updated', 'Transaction updated.', [
-        { text: 'OK', onPress: () => router.replace('/') },
-      ]);
+      toast.show('success', 'Transaction updated');
+      const target = returnTo === 'calendar' ? '/calendar' : returnTo === 'history' ? '/history' : '/dashboard';
+      setTimeout(() => router.replace(target), 200);
     } else {
       await addTransaction({
         id: Date.now().toString(),
@@ -115,27 +123,93 @@ export default function InputScreen() {
         categoryId,
         accountId,
         note: note.trim(),
-        date: new Date().toISOString(),
+        date: selectedDate.toISOString(),
       });
       await setLastAccount(accountId);
       resetForm();
       setSaving(false);
-      Alert.alert('Saved', `${type === 'income' ? 'Income' : 'Expense'} recorded.`);
+      toast.show('success', `${type === 'income' ? 'Income' : 'Expense'} recorded`);
     }
   }
 
   function handleCancelEdit() {
-    router.replace('/');
+    const target = returnTo === 'calendar' ? '/calendar' : returnTo === 'history' ? '/history' : '/dashboard';
+    router.replace(target);
   }
+
+  const styles = useMemo(() => StyleSheet.create({
+    safe: { flex: 1, backgroundColor: colors.bg },
+    flex: { flex: 1 },
+    flex1: { flex: 1 },
+    content: { padding: spacing.lg, paddingBottom: 160 },
+    heading: { fontSize: fontSize.xxl, fontWeight: '800', color: colors.textPrimary },
+    subheading: { fontSize: fontSize.sm, color: colors.textMuted, marginTop: 4 },
+    label: {
+      fontSize: fontSize.xs,
+      fontWeight: '700',
+      color: colors.textSecondary,
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+      marginBottom: spacing.sm,
+      marginTop: spacing.md,
+    },
+    cats: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.md },
+    accountPill: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      backgroundColor: colors.card,
+      borderRadius: radius.md,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    accountText: { fontSize: fontSize.md, color: colors.textPrimary, fontWeight: '500' },
+    noteInput: {
+      backgroundColor: colors.card,
+      borderRadius: radius.md,
+      padding: spacing.md,
+      fontSize: fontSize.md,
+      color: colors.textPrimary,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    actions: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xl },
+    saveBtn: {
+      flex: 1,
+      backgroundColor: colors.primary,
+      borderRadius: radius.full,
+      paddingVertical: spacing.md + 2,
+      alignItems: 'center',
+    },
+    saveBtnDisabled: { opacity: 0.6 },
+    saveBtnText: { fontSize: fontSize.md, fontWeight: '700', color: colors.white },
+    cancelBtn: {
+      paddingVertical: spacing.md + 2,
+      paddingHorizontal: spacing.xl,
+      borderRadius: radius.full,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.card,
+      alignItems: 'center',
+    },
+    cancelBtnText: { fontSize: fontSize.md, fontWeight: '600', color: colors.textSecondary },
+  }), [colors]);
 
   return (
     <SafeAreaView style={styles.safe}>
       <TopBar />
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={0}
       >
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <ScrollView
+          ref={scrollRef}
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+        >
           <Text style={styles.heading}>{isEditing ? 'Edit Transaction' : 'Add Transaction'}</Text>
           <Text style={styles.subheading}>
             {isEditing ? 'Update any field, then save.' : 'Quick log — no extra clicks.'}
@@ -171,6 +245,9 @@ export default function InputScreen() {
             <ChevronDown size={16} color={colors.textSecondary} />
           </Pressable>
 
+          <Text style={styles.label}>Date</Text>
+          <DatePickerField value={selectedDate} onChange={setSelectedDate} />
+
           <Text style={styles.label}>Note (optional)</Text>
           <TextInput
             style={styles.noteInput}
@@ -179,6 +256,7 @@ export default function InputScreen() {
             value={note}
             onChangeText={setNote}
             maxLength={80}
+            onFocus={() => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100)}
           />
 
           <View style={styles.actions}>
@@ -200,7 +278,7 @@ export default function InputScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {!isEditing && <Fab onPress={() => router.push('/dashboard')} />}
+      {!isEditing && <Fab bottom={fabBottomForFullScreen(insets.bottom)} onPress={() => router.push('/dashboard')} />}
 
       <AccountPickerSheet
         visible={pickerOpen}
@@ -212,63 +290,3 @@ export default function InputScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.bg },
-  flex: { flex: 1 },
-  flex1: { flex: 1 },
-  content: { padding: spacing.lg, paddingBottom: 100 },
-  heading: { fontSize: fontSize.xxl, fontWeight: '800', color: colors.textPrimary },
-  subheading: { fontSize: fontSize.sm, color: colors.textMuted, marginTop: 4 },
-  label: {
-    fontSize: fontSize.xs,
-    fontWeight: '700',
-    color: colors.textSecondary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: spacing.sm,
-    marginTop: spacing.md,
-  },
-  cats: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.md },
-  accountPill: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: colors.card,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  accountText: { fontSize: fontSize.md, color: colors.textPrimary, fontWeight: '500' },
-  noteInput: {
-    backgroundColor: colors.card,
-    borderRadius: radius.md,
-    padding: spacing.md,
-    fontSize: fontSize.md,
-    color: colors.textPrimary,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  actions: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xl },
-  saveBtn: {
-    flex: 1,
-    backgroundColor: colors.primary,
-    borderRadius: radius.full,
-    paddingVertical: spacing.md + 2,
-    alignItems: 'center',
-  },
-  saveBtnDisabled: { opacity: 0.6 },
-  saveBtnText: { fontSize: fontSize.md, fontWeight: '700', color: colors.white },
-  cancelBtn: {
-    paddingVertical: spacing.md + 2,
-    paddingHorizontal: spacing.xl,
-    borderRadius: radius.full,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.card,
-    alignItems: 'center',
-  },
-  cancelBtnText: { fontSize: fontSize.md, fontWeight: '600', color: colors.textSecondary },
-});
