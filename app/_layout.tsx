@@ -5,6 +5,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { ThemeProvider } from '../context/ThemeContext';
 import { ToastProvider } from '../context/ToastContext';
+import { CalculatorProvider } from '../components/CalculatorProvider';
 import { useTheme } from '../hooks/useTheme';
 
 function ThemedStack() {
@@ -24,7 +25,9 @@ export default function RootLayout() {
         <ThemeProvider>
           <BottomSheetModalProvider>
             <ToastProvider>
-              <ThemedStack />
+              <CalculatorProvider>
+                <ThemedStack />
+              </CalculatorProvider>
             </ToastProvider>
           </BottomSheetModalProvider>
         </ThemeProvider>
