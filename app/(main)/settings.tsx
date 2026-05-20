@@ -1,6 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
 import {
-  Alert,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -12,13 +11,15 @@ import {
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { fabBottomForTabScreen } from '../../constants/layout';
-import { Database, Download, Trash, Wallet, Tag, Plus, Sun, Moon, Smartphone, Lock } from 'lucide-react-native';
+import { Database, Download, Trash, Wallet, Tag, Plus, Sun, Moon, Lock } from 'lucide-react-native';
 import TopBar from '../../components/TopBar';
 import Fab from '../../components/Fab';
 import AccountManager from '../../components/AccountManager';
 import CategoryManager from '../../components/CategoryManager';
 import PinManager from '../../components/PinManager';
+import ConfirmModal from '../../components/ConfirmModal';
 import { usePin } from '../../context/PinContext';
+import { useToast } from '../../hooks/useToast';
 import { radius, spacing, fontSize } from '../../constants/theme';
 import { useTheme, ThemeMode } from '../../hooks/useTheme';
 import {
@@ -33,8 +34,11 @@ import {
 export default function SettingsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const toast = useToast();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [customCats, setCustomCats] = useState<CustomCategory[]>([]);
+  const [confirmClear, setConfirmClear] = useState(false);
+  const [clearing, setClearing] = useState(false);
   const { colors } = useTheme();
   const pin = usePin();
   const styles = useMemo(() => StyleSheet.create({
@@ -58,28 +62,22 @@ export default function SettingsScreen() {
   );
 
   async function handleExport() {
-    const json = await exportAll();
     try {
+      const json = await exportAll();
       await Share.share({ message: json, title: 'Nabung Woi Export' });
-    } catch (e) {
-      Alert.alert('Export failed');
+    } catch {
+      toast.show('error', 'Export failed');
     }
   }
 
-  function handleClear() {
-    Alert.alert('Clear all data?', 'This deletes all transactions, accounts, and categories. Cannot be undone.', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Clear all',
-        style: 'destructive',
-        onPress: async () => {
-          await clearAll();
-          setAccounts([]);
-          setCustomCats([]);
-          Alert.alert('Data cleared');
-        },
-      },
-    ]);
+  async function doClearAll() {
+    setClearing(true);
+    await clearAll();
+    setAccounts([]);
+    setCustomCats([]);
+    setClearing(false);
+    setConfirmClear(false);
+    toast.show('success', 'All data cleared');
   }
 
   return (
@@ -99,7 +97,7 @@ export default function SettingsScreen() {
             <Download size={18} color={colors.primary} />
             <Text style={styles.actionText}>Export data (JSON)</Text>
           </Pressable>
-          <Pressable style={[styles.actionRow, styles.danger]} onPress={handleClear}>
+          <Pressable style={[styles.actionRow, styles.danger]} onPress={() => setConfirmClear(true)}>
             <Trash size={18} color={colors.expense} />
             <Text style={[styles.actionText, { color: colors.expense }]}>Clear all data</Text>
           </Pressable>
@@ -114,6 +112,17 @@ export default function SettingsScreen() {
         </Section>
       </ScrollView>
       <Fab Icon={Plus} bottom={fabBottomForTabScreen(insets.bottom)} onPress={() => router.push('/')} />
+
+      <ConfirmModal
+        visible={confirmClear}
+        title="Clear all data?"
+        message="This deletes all transactions, accounts, and categories. This cannot be undone."
+        confirmLabel="Clear all"
+        tone="danger"
+        busy={clearing}
+        onConfirm={doClearAll}
+        onCancel={() => setConfirmClear(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -157,7 +166,6 @@ function AppearanceRow() {
   }), [colors]);
 
   const opts: { id: ThemeMode; label: string; Icon: typeof Sun }[] = [
-    { id: 'system', label: 'System', Icon: Smartphone },
     { id: 'light', label: 'Light', Icon: Sun },
     { id: 'dark', label: 'Dark', Icon: Moon },
   ];

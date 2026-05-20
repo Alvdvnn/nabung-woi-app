@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  Alert,
   Pressable,
   StyleSheet,
   Text,
@@ -20,6 +19,7 @@ import {
   verifyPin,
 } from '../utils/pin';
 import { useToast } from '../hooks/useToast';
+import ConfirmModal from './ConfirmModal';
 
 interface Props {
   onChange: () => void;
@@ -39,6 +39,7 @@ export default function PinManager({ onChange }: Props) {
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState('');
   const [busy, setBusy] = useState(false);
+  const [confirmRemove, setConfirmRemove] = useState(false);
 
   const styles = useMemo(
     () =>
@@ -162,33 +163,22 @@ export default function PinManager({ onChange }: Props) {
     if (!currentPin) { toast.show('error', 'Enter current PIN'); return; }
     setBusy(true);
     const ok = await verifyPin(currentPin);
+    setBusy(false);
     if (!ok) {
-      setBusy(false);
       toast.show('error', 'Current PIN incorrect');
       return;
     }
-    Alert.alert(
-      'Remove PIN?',
-      'The app will no longer require a PIN on launch.',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-          onPress: () => setBusy(false),
-        },
-        {
-          text: 'Remove',
-          style: 'destructive',
-          onPress: async () => {
-            await clearPin();
-            setBusy(false);
-            toast.show('success', 'PIN removed');
-            resetForm();
-            refreshState();
-          },
-        },
-      ],
-    );
+    setConfirmRemove(true);
+  }
+
+  async function doRemove() {
+    setBusy(true);
+    await clearPin();
+    setBusy(false);
+    setConfirmRemove(false);
+    toast.show('success', 'PIN removed');
+    resetForm();
+    refreshState();
   }
 
   return (
@@ -352,6 +342,17 @@ export default function PinManager({ onChange }: Props) {
           </View>
         </View>
       )}
+
+      <ConfirmModal
+        visible={confirmRemove}
+        title="Remove PIN?"
+        message="The app will no longer require a PIN on launch."
+        confirmLabel="Remove"
+        tone="danger"
+        busy={busy}
+        onConfirm={doRemove}
+        onCancel={() => setConfirmRemove(false)}
+      />
 
       {view === 'remove' && (
         <View style={styles.form}>

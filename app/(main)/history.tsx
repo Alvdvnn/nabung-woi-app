@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { Alert, FlatList, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { fabBottomForTabScreen } from '../../constants/layout';
@@ -8,6 +8,8 @@ import TopBar from '../../components/TopBar';
 import Fab from '../../components/Fab';
 import TransactionItem from '../../components/TransactionItem';
 import EmptyState from '../../components/EmptyState';
+import ConfirmModal from '../../components/ConfirmModal';
+import { useToast } from '../../hooks/useToast';
 import { radius, spacing, fontSize } from '../../constants/theme';
 import { useTheme } from '../../hooks/useTheme';
 import { deleteTransaction, getAccounts, getTransactions, Account, Transaction, TransactionType } from '../../utils/storage';
@@ -26,7 +28,9 @@ export default function HistoryScreen() {
   const [txs, setTxs] = useState<Transaction[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [filter, setFilter] = useState<Filter>('all');
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const { colors } = useTheme();
+  const toast = useToast();
   const styles = useMemo(() => StyleSheet.create({
     safe: { flex: 1, backgroundColor: colors.bg },
     filters: {
@@ -68,17 +72,15 @@ export default function HistoryScreen() {
   }, [accounts]);
 
   function handleDelete(id: string) {
-    Alert.alert('Delete?', 'Remove this transaction?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          await deleteTransaction(id);
-          setTxs((prev) => prev.filter((t) => t.id !== id));
-        },
-      },
-    ]);
+    setPendingDeleteId(id);
+  }
+
+  async function confirmDelete() {
+    if (!pendingDeleteId) return;
+    await deleteTransaction(pendingDeleteId);
+    setTxs((prev) => prev.filter((t) => t.id !== pendingDeleteId));
+    setPendingDeleteId(null);
+    toast.show('success', 'Transaction deleted');
   }
 
   return (
@@ -116,6 +118,16 @@ export default function HistoryScreen() {
         />
       )}
       <Fab Icon={Plus} bottom={fabBottomForTabScreen(insets.bottom)} onPress={() => router.push('/')} />
+
+      <ConfirmModal
+        visible={!!pendingDeleteId}
+        title="Delete transaction?"
+        message="This entry will be removed from your history."
+        confirmLabel="Delete"
+        tone="danger"
+        onConfirm={confirmDelete}
+        onCancel={() => setPendingDeleteId(null)}
+      />
     </SafeAreaView>
   );
 }

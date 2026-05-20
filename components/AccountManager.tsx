@@ -1,12 +1,14 @@
 import { useMemo, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Plus, Trash2 } from 'lucide-react-native';
 import { radius, spacing, fontSize } from '../constants/theme';
 import { useTheme } from '../hooks/useTheme';
+import { useToast } from '../hooks/useToast';
 import { Account, saveAccounts } from '../utils/storage';
 import { ACCOUNT_TYPES, findAccountType } from '../constants/accountTypes';
 import { formatIDR } from '../utils/format';
 import { genId } from '../utils/id';
+import ConfirmModal from './ConfirmModal';
 
 interface Props {
   accounts: Account[];
@@ -18,7 +20,9 @@ export default function AccountManager({ accounts, onChange }: Props) {
   const [name, setName] = useState('');
   const [typeId, setTypeId] = useState(ACCOUNT_TYPES[0].id);
   const [balance, setBalance] = useState('');
+  const [pendingDelete, setPendingDelete] = useState<Account | null>(null);
   const { colors } = useTheme();
+  const toast = useToast();
   const styles = useMemo(() => StyleSheet.create({
     row: {
       flexDirection: 'row',
@@ -69,7 +73,7 @@ export default function AccountManager({ accounts, onChange }: Props) {
   }), [colors]);
 
   async function create() {
-    if (!name.trim()) return Alert.alert('Enter an account name');
+    if (!name.trim()) { toast.show('error', 'Enter an account name'); return; }
     const next: Account[] = [
       ...accounts,
       {
@@ -82,20 +86,16 @@ export default function AccountManager({ accounts, onChange }: Props) {
     await saveAccounts(next);
     onChange(next);
     setName(''); setBalance(''); setTypeId(ACCOUNT_TYPES[0].id); setShowForm(false);
+    toast.show('success', 'Account added');
   }
 
-  function remove(id: string) {
-    Alert.alert('Delete account?', 'Transactions referencing it will keep their data.', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete', style: 'destructive',
-        onPress: async () => {
-          const next = accounts.filter((a) => a.id !== id);
-          await saveAccounts(next);
-          onChange(next);
-        },
-      },
-    ]);
+  async function confirmDelete() {
+    if (!pendingDelete) return;
+    const next = accounts.filter((a) => a.id !== pendingDelete.id);
+    await saveAccounts(next);
+    onChange(next);
+    setPendingDelete(null);
+    toast.show('success', 'Account removed');
   }
 
   return (
@@ -110,7 +110,7 @@ export default function AccountManager({ accounts, onChange }: Props) {
               <Text style={styles.name}>{a.name}</Text>
               <Text style={styles.meta}>{type.name} • {formatIDR(a.startingBalance)}</Text>
             </View>
-            <Pressable onPress={() => remove(a.id)} hitSlop={8} style={styles.delBtn}>
+            <Pressable onPress={() => setPendingDelete(a)} hitSlop={8} style={styles.delBtn}>
               <Trash2 size={16} color={colors.textMuted} />
             </Pressable>
           </View>
@@ -165,6 +165,16 @@ export default function AccountManager({ accounts, onChange }: Props) {
           </View>
         </View>
       )}
+
+      <ConfirmModal
+        visible={!!pendingDelete}
+        title="Delete account?"
+        message={pendingDelete ? `"${pendingDelete.name}" will be removed. Transactions referencing it keep their data.` : ''}
+        confirmLabel="Delete"
+        tone="danger"
+        onConfirm={confirmDelete}
+        onCancel={() => setPendingDelete(null)}
+      />
     </View>
   );
 }
