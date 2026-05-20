@@ -1,18 +1,20 @@
 import { useMemo } from 'react';
-import { StyleSheet, Text, View, ScrollView } from 'react-native';
+import { Pressable, StyleSheet, Text, View, ScrollView } from 'react-native';
 import { useTheme } from '../hooks/useTheme';
 import { spacing, radius, fontSize, shadow } from '../constants/theme';
 import { CategorySum } from '../utils/aggregate';
-import { findCategory } from '../constants/categories';
+import { useCategories } from '../context/CategoriesContext';
 import { formatIDRCompact } from '../utils/format';
 
 interface Props {
   data: CategorySum[];
   total: number;
+  onPress?: (categoryId: string) => void;
 }
 
-export default function TopCategoriesRow({ data, total }: Props) {
+export default function TopCategoriesRow({ data, total, onPress }: Props) {
   const { colors } = useTheme();
+  const { find } = useCategories();
 
   const styles = useMemo(() => StyleSheet.create({
     scrollContent: { 
@@ -56,11 +58,15 @@ export default function TopCategoriesRow({ data, total }: Props) {
         contentContainerStyle={styles.scrollContent}
       >
         {data.map((c) => {
-          const cat = findCategory(c.categoryId);
+          const cat = find(c.categoryId);
           const Icon = cat?.icon;
           const pct = total > 0 ? Math.min(100, Math.round((c.total / total) * 100)) : 0;
           return (
-            <View key={c.categoryId} style={styles.card}>
+            <Pressable
+              key={c.categoryId}
+              style={({ pressed }) => [styles.card, pressed && { opacity: 0.7 }]}
+              onPress={onPress ? () => onPress(c.categoryId) : undefined}
+            >
               <View style={styles.iconWrap}>
                 {Icon && <Icon size={16} color={colors.primary} />}
               </View>
@@ -69,7 +75,7 @@ export default function TopCategoriesRow({ data, total }: Props) {
               <View style={styles.bar}>
                 <View style={[styles.fill, { width: `${pct}%` }]} />
               </View>
-            </View>
+            </Pressable>
           );
         })}
       </ScrollView>
