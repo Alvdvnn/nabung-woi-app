@@ -12,8 +12,10 @@ import {
   TrendingUp,
   Gift,
   CircleDollarSign,
+  Tag,
   LucideIcon,
 } from 'lucide-react-native';
+import type { CustomCategory } from '../utils/storage';
 
 export interface CategoryDef {
   id: string;
@@ -43,6 +45,25 @@ export const INCOME_CATEGORIES: CategoryDef[] = [
 
 export const ALL_CATEGORIES: CategoryDef[] = [...EXPENSE_CATEGORIES, ...INCOME_CATEGORIES];
 
-export function findCategory(id: string): CategoryDef | undefined {
-  return ALL_CATEGORIES.find((c) => c.id === id);
+// Single fallback icon used for all user-added custom categories.
+export const CUSTOM_ICON: LucideIcon = Tag;
+
+const ICON_BY_ID: Record<string, LucideIcon> = {
+  other: Tag,
+  tag: Tag,
+};
+
+export function iconForCustom(iconId: string | undefined): LucideIcon {
+  return (iconId && ICON_BY_ID[iconId]) || CUSTOM_ICON;
+}
+
+export function customToDef(c: CustomCategory): CategoryDef {
+  return { id: c.id, name: c.name, icon: iconForCustom(c.iconId), type: c.type };
+}
+
+export function findCategory(id: string, customCats: CustomCategory[] = []): CategoryDef | undefined {
+  const builtin = ALL_CATEGORIES.find((c) => c.id === id);
+  if (builtin) return builtin;
+  const custom = customCats.find((c) => c.id === id);
+  return custom ? customToDef(custom) : undefined;
 }

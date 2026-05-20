@@ -4,7 +4,7 @@ import { PieChart } from 'react-native-gifted-charts';
 import { radius, spacing, fontSize, shadow } from '../constants/theme';
 import { useTheme } from '../hooks/useTheme';
 import { CategorySum } from '../utils/aggregate';
-import { findCategory } from '../constants/categories';
+import { useCategories } from '../context/CategoriesContext';
 import { formatIDR } from '../utils/format';
 
 interface Props {
@@ -12,10 +12,11 @@ interface Props {
   total: number;
 }
 
-const SLICE_COLORS = ['#1e3a8a', '#3b82f6', '#60a5fa', '#93c5fd', '#1e40af', '#2563eb', '#0ea5e9', '#0284c7'];
+const SLICE_COLORS = ['#0d9488', '#f59e0b', '#ef4444', '#8b5cf6', '#0ea5e9', '#ec4899', '#84cc16', '#f97316'];
 
 export default function PieChartCard({ data, total }: Props) {
   const { colors } = useTheme();
+  const { find } = useCategories();
   const styles = useMemo(() => StyleSheet.create({
     card: {
       backgroundColor: colors.card,
@@ -68,7 +69,7 @@ export default function PieChartCard({ data, total }: Props) {
         />
         <View style={styles.legend}>
           {data.slice(0, 6).map((d, i) => {
-            const cat = findCategory(d.categoryId);
+            const cat = find(d.categoryId);
             const pct = total > 0 ? Math.round((d.total / total) * 100) : 0;
             return (
               <View key={d.categoryId} style={styles.legendRow}>

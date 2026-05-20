@@ -22,9 +22,10 @@ import TypeToggle from '../components/TypeToggle';
 import AmountInput from '../components/AmountInput';
 import CategoryChip from '../components/CategoryChip';
 import AccountPickerSheet from '../components/AccountPickerSheet';
+import ConfirmModal from '../components/ConfirmModal';
 import { radius, spacing, fontSize } from '../constants/theme';
 import { useTheme } from '../hooks/useTheme';
-import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from '../constants/categories';
+import { useCategories } from '../context/CategoriesContext';
 import {
   addTransaction,
   getAccounts,
@@ -45,20 +46,23 @@ export default function InputScreen() {
   const scrollRef = useRef<ScrollView>(null);
   const { id: editId, returnTo } = useLocalSearchParams<{ id?: string; returnTo?: string }>();
   const isEditing = !!editId;
+  const { byType, refresh: refreshCategories } = useCategories();
 
   const [type, setType] = useState<TransactionType>('expense');
   const [amount, setAmount] = useState('');
-  const [categoryId, setCategoryId] = useState(EXPENSE_CATEGORIES[0].id);
+  const [categoryId, setCategoryId] = useState(byType('expense')[0].id);
   const [note, setNote] = useState('');
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [accountId, setAccountId] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [pickerOpen, setPickerOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [confirmCancel, setConfirmCancel] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
       (async () => {
+        refreshCategories();
         const accs = await getAccounts();
         setAccounts(accs);
 
@@ -78,16 +82,16 @@ export default function InputScreen() {
         const id = last && accs.find((a) => a.id === last) ? last : accs[0]?.id ?? null;
         setAccountId(id);
       })();
-    }, [editId])
+    }, [editId, refreshCategories])
   );
+
+  const categories = useMemo(() => byType(type), [byType, type]);
 
   useEffect(() => {
     if (isEditing) return;
-    const list = type === 'expense' ? EXPENSE_CATEGORIES : INCOME_CATEGORIES;
-    if (!list.find((c) => c.id === categoryId)) setCategoryId(list[0].id);
-  }, [type, categoryId, isEditing]);
+    if (!categories.find((c) => c.id === categoryId)) setCategoryId(categories[0].id);
+  }, [categoryId, isEditing, categories]);
 
-  const categories = type === 'expense' ? EXPENSE_CATEGORIES : INCOME_CATEGORIES;
   const selectedAccount = accounts.find((a) => a.id === accountId);
 
   function resetForm() {
@@ -134,6 +138,11 @@ export default function InputScreen() {
   }
 
   function handleCancelEdit() {
+    setConfirmCancel(true);
+  }
+
+  function doCancelEdit() {
+    setConfirmCancel(false);
     const target = returnTo === 'calendar' ? '/calendar' : returnTo === 'history' ? '/history' : '/dashboard';
     router.replace(target);
   }
@@ -287,6 +296,17 @@ export default function InputScreen() {
         selectedId={accountId}
         onSelect={setAccountId}
         onClose={() => setPickerOpen(false)}
+      />
+
+      <ConfirmModal
+        visible={confirmCancel}
+        title="Discard changes?"
+        message="Your edits to this transaction will not be saved."
+        confirmLabel="Discard"
+        cancelLabel="Keep editing"
+        tone="danger"
+        onConfirm={doCancelEdit}
+        onCancel={() => setConfirmCancel(false)}
       />
     </SafeAreaView>
   );

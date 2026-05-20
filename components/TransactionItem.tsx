@@ -4,7 +4,7 @@ import { Trash2, CircleDollarSign } from 'lucide-react-native';
 import { radius, spacing, fontSize, shadow } from '../constants/theme';
 import { useTheme } from '../hooks/useTheme';
 import { Transaction } from '../utils/storage';
-import { findCategory } from '../constants/categories';
+import { useCategories } from '../context/CategoriesContext';
 import { formatIDR, formatDate } from '../utils/format';
 
 interface Props {
@@ -16,6 +16,7 @@ interface Props {
 
 export default function TransactionItem({ item, accountName, onDelete, onPress }: Props) {
   const { colors } = useTheme();
+  const { find } = useCategories();
   const styles = useMemo(() => StyleSheet.create({
     row: {
       flexDirection: 'row',
@@ -49,7 +50,7 @@ export default function TransactionItem({ item, accountName, onDelete, onPress }
     delBtn: { padding: 4 },
   }), [colors]);
 
-  const cat = findCategory(item.categoryId);
+  const cat = find(item.categoryId);
   const Icon = cat?.icon ?? CircleDollarSign;
   const isIncome = item.type === 'income';
   const Wrapper: any = onPress ? Pressable : View;

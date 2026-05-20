@@ -1,10 +1,13 @@
 import { useMemo, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Plus, Trash2 } from 'lucide-react-native';
 import { radius, spacing, fontSize } from '../constants/theme';
 import { useTheme } from '../hooks/useTheme';
+import { useToast } from '../hooks/useToast';
+import { useCategories } from '../context/CategoriesContext';
 import { CustomCategory, saveCustomCategories, TransactionType } from '../utils/storage';
-import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from '../constants/categories';
+import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, CUSTOM_ICON } from '../constants/categories';
+import ConfirmModal from './ConfirmModal';
 import { genId } from '../utils/id';
 
 interface Props {
@@ -15,7 +18,11 @@ interface Props {
 export default function CategoryManager({ categories, onChange }: Props) {
   const [type, setType] = useState<TransactionType>('expense');
   const [name, setName] = useState('');
+  const [pendingDelete, setPendingDelete] = useState<CustomCategory | null>(null);
   const { colors } = useTheme();
+  const toast = useToast();
+  const { refresh } = useCategories();
+
   const styles = useMemo(() => StyleSheet.create({
     toggle: {
       flexDirection: 'row',
@@ -45,6 +52,12 @@ export default function CategoryManager({ categories, onChange }: Props) {
       padding: spacing.md, marginBottom: spacing.xs,
       borderWidth: 1, borderColor: colors.border,
     },
+    rowLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flex: 1 },
+    iconBadge: {
+      width: 28, height: 28, borderRadius: 14,
+      backgroundColor: colors.primarySoft,
+      alignItems: 'center', justifyContent: 'center',
+    },
     rowName: { fontSize: fontSize.sm, color: colors.textPrimary, fontWeight: '500' },
     addRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
     input: {
@@ -60,27 +73,26 @@ export default function CategoryManager({ categories, onChange }: Props) {
 
   const defaults = type === 'expense' ? EXPENSE_CATEGORIES : INCOME_CATEGORIES;
   const customForType = categories.filter((c) => c.type === type);
+  const Icon = CUSTOM_ICON;
 
   async function add() {
-    if (!name.trim()) return;
+    if (!name.trim()) { toast.show('error', 'Enter a category name'); return; }
     const next = [...categories, { id: genId('c'), name: name.trim(), type, iconId: 'other' }];
     await saveCustomCategories(next);
     onChange(next);
+    await refresh();
     setName('');
+    toast.show('success', 'Category added');
   }
 
-  function remove(id: string) {
-    Alert.alert('Delete category?', '', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete', style: 'destructive',
-        onPress: async () => {
-          const next = categories.filter((c) => c.id !== id);
-          await saveCustomCategories(next);
-          onChange(next);
-        },
-      },
-    ]);
+  async function confirmDelete() {
+    if (!pendingDelete) return;
+    const next = categories.filter((c) => c.id !== pendingDelete.id);
+    await saveCustomCategories(next);
+    onChange(next);
+    await refresh();
+    setPendingDelete(null);
+    toast.show('success', 'Category removed');
   }
 
   return (
@@ -114,8 +126,13 @@ export default function CategoryManager({ categories, onChange }: Props) {
       ) : (
         customForType.map((c) => (
           <View key={c.id} style={styles.row}>
-            <Text style={styles.rowName}>{c.name}</Text>
-            <Pressable onPress={() => remove(c.id)} hitSlop={8}>
+            <View style={styles.rowLeft}>
+              <View style={styles.iconBadge}>
+                <Icon size={14} color={colors.primary} />
+              </View>
+              <Text style={styles.rowName}>{c.name}</Text>
+            </View>
+            <Pressable onPress={() => setPendingDelete(c)} hitSlop={8}>
               <Trash2 size={16} color={colors.textMuted} />
             </Pressable>
           </View>
@@ -134,6 +151,16 @@ export default function CategoryManager({ categories, onChange }: Props) {
           <Plus size={16} color={colors.white} />
         </Pressable>
       </View>
+
+      <ConfirmModal
+        visible={!!pendingDelete}
+        title="Delete category?"
+        message={pendingDelete ? `"${pendingDelete.name}" will be removed. Existing transactions keep their data.` : ''}
+        confirmLabel="Delete"
+        tone="danger"
+        onConfirm={confirmDelete}
+        onCancel={() => setPendingDelete(null)}
+      />
     </View>
   );
 }
