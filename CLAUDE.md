@@ -1,64 +1,75 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Guidance for Claude Code when working in this repository.
 
 ## Project Overview
 
-**Nabung Woi** is a React Native financial dashboard application built with Expo. It displays personal finance information including current balance, income/expense summary, savings goals, and recent transactions. The interface is in Indonesian and features a green-themed design.
+**Nabung Woi** is a personal finance tracker built with Expo (React Native). It records income/expense transactions across multiple accounts, displays cashflow per day/month/year, charts spending by category, tracks daily logging streaks, and persists everything locally with AsyncStorage. UI strings are mostly English with some Indonesian holdovers.
 
 ## Architecture
 
-The project follows a simple Expo-based React Native structure:
+Expo Router file-based navigation rooted at `app/`.
 
-- **Entry point**: `index.ts` — registers the root component with Expo
-- **Root component**: `App.tsx` — contains the entire dashboard UI with hardcoded financial data and inline StyleSheet styling
-- **Styling**: Uses React Native `StyleSheet` API with a color scheme featuring green (#10b981) as the primary accent
+- `app/_layout.tsx` — root stack. Wraps the app in `GestureHandlerRootView`, `SafeAreaProvider`, `ThemeProvider`, `BottomSheetModalProvider`, `ToastProvider`, `CalculatorProvider`, `PinProvider`. Renders `PinLockScreen` ahead of the stack when the PIN gate is locked.
+- `app/index.tsx` — transaction add/edit form (default route).
+- `app/(main)/_layout.tsx` — bottom tab layout.
+- `app/(main)/dashboard.tsx` — total balance, per-account cards, period totals, streak, top categories, pie chart.
+- `app/(main)/history.tsx` — chronological transaction list with type filter.
+- `app/(main)/calendar.tsx` — monthly calendar grid with per-day drilldown.
+- `app/(main)/gacha.tsx` — 50/50 "buy or skip" decision wheel.
+- `app/(main)/settings.tsx` — accounts, categories, data export/clear, security (PIN), appearance.
 
-The app currently displays static UI with mock data. Future development will likely involve:
-1. State management (for dynamic financial data)
-2. Navigation (to add screen transitions)
-3. Data persistence (SQLite, AsyncStorage, or cloud backend)
-4. Real transaction tracking and goal management
+State and side effects live in three context providers:
+
+- `context/ThemeContext.tsx` — `system | light | dark`, persisted, with Appearance listener.
+- `context/ToastContext.tsx` — global toast queue rendered via `components/Toast`.
+- `context/PinContext.tsx` — PIN lock state, hydrates from AsyncStorage, re-locks after 60s in background.
+
+Data layer:
+
+- `utils/storage.ts` — typed AsyncStorage wrappers for transactions, accounts, custom categories, theme mode, last-used account.
+- `utils/aggregate.ts` — `filterByPeriod`, `totalsOf`, `sumByCategory`, `accountBalance`.
+- `utils/streak.ts` — current and longest day streak from transactions.
+- `utils/format.ts` — IDR formatting, ISO day helpers.
+- `utils/id.ts` — collision-resistant id generator (use instead of `Date.now().toString()`).
+- `utils/pin.ts` — salted SHA-256 hashing for the PIN and recovery answer.
+
+Styling: per-component `StyleSheet.create` with color tokens from `constants/theme.ts` (light and dark palettes). Spacing, radius, font sizes, and a shared card shadow live in the same file. Wrap StyleSheet in `useMemo([colors])` when colors are interpolated.
 
 ## Development Commands
 
 ```bash
-# Start the dev server (interactive menu to choose platform)
-npm start
-
-# Run on specific platforms
-npm run android      # Android emulator
-npm run ios          # iOS simulator
-npm run web          # Web browser
+npm start          # Expo dev menu
+npm run android    # Android emulator
+npm run ios        # iOS simulator
+npm run web        # web browser
+npx tsc --noEmit   # type-check the whole project
 ```
 
-Expo Go can be used for faster iteration without building native binaries. For production builds, use `eas build` (requires Expo account setup).
+Expo Go works for iteration. Production builds use `eas build`.
 
 ## Technology Stack
 
-- **React Native 0.81.5** — UI framework
-- **Expo 54** — React Native abstraction layer handling platform setup
-- **TypeScript 5.9** — strict mode enabled for type safety
-- **React 19.1** — component library
+- React Native 0.81 with the New Architecture enabled (`newArchEnabled: true`).
+- Expo 54, Expo Router 6 for navigation.
+- TypeScript 5.9 in strict mode.
+- `@gorhom/bottom-sheet` for sheets, `lucide-react-native` for icons, `react-native-gifted-charts` for the dashboard pie, `@react-native-community/datetimepicker` for the date field.
+- AsyncStorage as the only persistence layer (no remote backend).
 
-## Code Style Notes
+## Code Conventions
 
-- All styling is done inline with `StyleSheet.create()` in the component file
-- Color values are hardcoded (not extracted to constants yet)
-- Component is a functional default export
-- No external UI libraries in use; all components are from `react-native`
+- Reach for the context hooks (`useTheme`, `useToast`, `usePin`, `useCalculator`) rather than passing props through.
+- IDs come from `genId()` in `utils/id.ts`.
+- Localize money via `formatIDR` / `formatIDRCompact`; never call `toLocaleString` directly.
+- Compute derived view state inside `useMemo` with the right dependency array — dashboard relies on this to stay responsive when the period toggles.
+- Prefer `ScrollView` over a horizontal `FlatList` nested inside another scroll view.
 
 ## Testing & Linting
 
-No test or linting infrastructure is set up. Consider adding:
-- `expo lint` or `eslint` for code quality
-- Jest for unit tests (Expo includes Jest configuration)
-- React Native testing libraries for component tests
+There is no test runner or linter wired up. The TypeScript check above is the only static gate.
 
-## Next Steps for Development
+## Known Limitations
 
-1. Extract hardcoded financial data into state (useState or a state management solution)
-2. Create separate screen components using React Navigation
-3. Add forms for transaction entry and goal management
-4. Connect to a backend API or local database
-5. Consider extracting styles and colors to constants/theme files as the codebase grows
+- AsyncStorage data is unencrypted. The PIN gate guards UI access but does not encrypt the data at rest.
+- No concurrent-write protection on storage helpers; rapid double-writes can lose a transaction. Single-user phone usage makes this unlikely in practice.
+- Biometric unlock is not implemented; PIN-only.
