@@ -5,6 +5,7 @@ import { radius, spacing, fontSize } from '../constants/theme';
 import { useTheme } from '../hooks/useTheme';
 import { CustomCategory, saveCustomCategories, TransactionType } from '../utils/storage';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from '../constants/categories';
+import { genId } from '../utils/id';
 
 interface Props {
   categories: CustomCategory[];
@@ -62,7 +63,7 @@ export default function CategoryManager({ categories, onChange }: Props) {
 
   async function add() {
     if (!name.trim()) return;
-    const next = [...categories, { id: `c${Date.now()}`, name: name.trim(), type, iconId: 'other' }];
+    const next = [...categories, { id: genId('c'), name: name.trim(), type, iconId: 'other' }];
     await saveCustomCategories(next);
     onChange(next);
     setName('');

@@ -1,4 +1,4 @@
-import { createContext, useContext, useRef, ReactNode } from 'react';
+import { createContext, useContext, useMemo, useRef, ReactNode } from 'react';
 import Calculator, { CalculatorRef } from './Calculator';
 
 interface CalculatorContextValue {
@@ -9,8 +9,9 @@ const CalculatorContext = createContext<CalculatorContextValue | null>(null);
 
 export function CalculatorProvider({ children }: { children: ReactNode }) {
   const ref = useRef<CalculatorRef>(null);
+  const value = useMemo<CalculatorContextValue>(() => ({ open: () => ref.current?.open() }), []);
   return (
-    <CalculatorContext.Provider value={{ open: () => ref.current?.open() }}>
+    <CalculatorContext.Provider value={value}>
       {children}
       <Calculator ref={ref} />
     </CalculatorContext.Provider>

@@ -6,6 +6,11 @@ export interface StreakResult {
   longest: number;
 }
 
+function parseIsoDayLocal(iso: string): Date {
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
 export function computeStreak(txs: Transaction[], today: Date = new Date()): StreakResult {
   if (txs.length === 0) return { current: 0, longest: 0 };
   const dates = new Set(txs.map((t) => isoDay(new Date(t.date))));
@@ -24,7 +29,7 @@ export function computeStreak(txs: Transaction[], today: Date = new Date()): Str
   for (const d of sorted) {
     if (prev === null) { run = 1; }
     else {
-      const prevDate = new Date(prev);
+      const prevDate = parseIsoDayLocal(prev);
       prevDate.setDate(prevDate.getDate() + 1);
       run = isoDay(prevDate) === d ? run + 1 : 1;
     }

@@ -39,15 +39,115 @@ const ROWS: Key[][] = [
   ],
 ];
 
-function safeEval(expr: string): number | null {
-  if (!/^[0-9+\-*/.%() ]+$/.test(expr)) return null;
-  try {
-    // eslint-disable-next-line no-new-func
-    const r = Function(`"use strict"; return (${expr.replace(/%/g, '/100')})`)();
-    return Number.isFinite(r) ? r : null;
-  } catch {
+type Token = { kind: 'num'; value: number } | { kind: 'op'; value: string };
+
+const PREC: Record<string, number> = { '+': 1, '-': 1, '*': 2, '/': 2 };
+
+function tokenize(expr: string): Token[] | null {
+  const tokens: Token[] = [];
+  let i = 0;
+  while (i < expr.length) {
+    const c = expr[i];
+    if (c === ' ') { i++; continue; }
+    if (c >= '0' && c <= '9' || c === '.') {
+      let j = i;
+      while (j < expr.length && ((expr[j] >= '0' && expr[j] <= '9') || expr[j] === '.')) j++;
+      const numStr = expr.slice(i, j);
+      // Handle trailing % (percent of preceding number)
+      if (expr[j] === '%') {
+        const n = Number(numStr);
+        if (!Number.isFinite(n)) return null;
+        tokens.push({ kind: 'num', value: n / 100 });
+        i = j + 1;
+      } else {
+        const n = Number(numStr);
+        if (!Number.isFinite(n)) return null;
+        tokens.push({ kind: 'num', value: n });
+        i = j;
+      }
+      continue;
+    }
+    if (c === '+' || c === '*' || c === '/') {
+      tokens.push({ kind: 'op', value: c });
+      i++;
+      continue;
+    }
+    if (c === '-') {
+      // Unary if first token or follows an operator
+      const prev = tokens[tokens.length - 1];
+      if (!prev || prev.kind === 'op') {
+        // Read following number as negative
+        let j = i + 1;
+        while (j < expr.length && ((expr[j] >= '0' && expr[j] <= '9') || expr[j] === '.')) j++;
+        if (j === i + 1) return null;
+        const numStr = expr.slice(i + 1, j);
+        const n = Number(numStr);
+        if (!Number.isFinite(n)) return null;
+        if (expr[j] === '%') {
+          tokens.push({ kind: 'num', value: -n / 100 });
+          i = j + 1;
+        } else {
+          tokens.push({ kind: 'num', value: -n });
+          i = j;
+        }
+        continue;
+      }
+      tokens.push({ kind: 'op', value: '-' });
+      i++;
+      continue;
+    }
     return null;
   }
+  return tokens;
+}
+
+function safeEval(expr: string): number | null {
+  if (!expr) return null;
+  const tokens = tokenize(expr);
+  if (!tokens || tokens.length === 0) return null;
+
+  // Shunting-yard to RPN
+  const output: Token[] = [];
+  const ops: Token[] = [];
+  for (const t of tokens) {
+    if (t.kind === 'num') {
+      output.push(t);
+    } else {
+      while (
+        ops.length > 0 &&
+        ops[ops.length - 1].kind === 'op' &&
+        PREC[(ops[ops.length - 1] as { value: string }).value] >= PREC[t.value]
+      ) {
+        output.push(ops.pop()!);
+      }
+      ops.push(t);
+    }
+  }
+  while (ops.length > 0) output.push(ops.pop()!);
+
+  // Evaluate RPN
+  const stack: number[] = [];
+  for (const t of output) {
+    if (t.kind === 'num') {
+      stack.push(t.value);
+    } else {
+      const b = stack.pop();
+      const a = stack.pop();
+      if (a === undefined || b === undefined) return null;
+      let r: number;
+      switch (t.value) {
+        case '+': r = a + b; break;
+        case '-': r = a - b; break;
+        case '*': r = a * b; break;
+        case '/': r = b === 0 ? NaN : a / b; break;
+        default: return null;
+      }
+      stack.push(r);
+    }
+  }
+  if (stack.length !== 1) return null;
+  const result = stack[0];
+  return Number.isFinite(result) ? result : null;
 }
 
 function formatNum(n: number): string {

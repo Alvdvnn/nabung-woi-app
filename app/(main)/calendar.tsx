@@ -50,11 +50,13 @@ export default function CalendarScreen() {
     () => txs.filter((t) => isoDay(new Date(t.date)) === isoDay(selected)),
     [txs, selected]
   );
-  const dayTotals = totalsOf(dayTxs);
+  const dayTotals = useMemo(() => totalsOf(dayTxs), [dayTxs]);
 
-  function accName(id: string) {
-    return accounts.find((a) => a.id === id)?.name;
-  }
+  const accountNameMap = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const a of accounts) m.set(a.id, a.name);
+    return m;
+  }, [accounts]);
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -82,7 +84,7 @@ export default function CalendarScreen() {
             <TransactionItem
               key={t.id}
               item={t}
-              accountName={accName(t.accountId)}
+              accountName={accountNameMap.get(t.accountId)}
               onPress={(id) => router.push({ pathname: '/', params: { id, returnTo: 'calendar' } })}
             />
           ))

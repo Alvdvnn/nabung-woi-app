@@ -6,6 +6,7 @@ import { useTheme } from '../hooks/useTheme';
 import { Account, saveAccounts } from '../utils/storage';
 import { ACCOUNT_TYPES, findAccountType } from '../constants/accountTypes';
 import { formatIDR } from '../utils/format';
+import { genId } from '../utils/id';
 
 interface Props {
   accounts: Account[];
@@ -72,7 +73,7 @@ export default function AccountManager({ accounts, onChange }: Props) {
     const next: Account[] = [
       ...accounts,
       {
-        id: Date.now().toString(),
+        id: genId('a'),
         name: name.trim(),
         typeId,
         startingBalance: parseFloat(balance) || 0,

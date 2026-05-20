@@ -61,9 +61,11 @@ export default function HistoryScreen() {
     [txs, filter]
   );
 
-  function accName(id: string) {
-    return accounts.find((a) => a.id === id)?.name;
-  }
+  const accountNameMap = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const a of accounts) m.set(a.id, a.name);
+    return m;
+  }, [accounts]);
 
   function handleDelete(id: string) {
     Alert.alert('Delete?', 'Remove this transaction?', [
@@ -105,7 +107,7 @@ export default function HistoryScreen() {
           renderItem={({ item }) => (
             <TransactionItem
               item={item}
-              accountName={accName(item.accountId)}
+              accountName={accountNameMap.get(item.accountId)}
               onDelete={handleDelete}
               onPress={(id) => router.push({ pathname: '/', params: { id, returnTo: 'history' } })}
             />

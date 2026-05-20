@@ -35,6 +35,7 @@ import {
   Account,
   TransactionType,
 } from '../utils/storage';
+import { genId } from '../utils/id';
 
 export default function InputScreen() {
   const router = useRouter();
@@ -114,10 +115,10 @@ export default function InputScreen() {
       setSaving(false);
       toast.show('success', 'Transaction updated');
       const target = returnTo === 'calendar' ? '/calendar' : returnTo === 'history' ? '/history' : '/dashboard';
-      setTimeout(() => router.replace(target), 200);
+      router.replace(target);
     } else {
       await addTransaction({
-        id: Date.now().toString(),
+        id: genId('t'),
         type,
         amount: num,
         categoryId,

@@ -33,10 +33,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (mode !== 'system') return;
     const sub = Appearance.addChangeListener(({ colorScheme }) => setSystemScheme(colorScheme));
     return () => sub.remove();
-  }, [mode]);
+  }, []);
 
   const setMode = useCallback(async (next: ThemeMode) => {
     setModeState(next);

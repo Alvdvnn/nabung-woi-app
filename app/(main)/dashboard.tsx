@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { SafeAreaView, ScrollView, StyleSheet, Text, View, FlatList } from 'react-native';
+import { SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { fabBottomForTabScreen } from '../../constants/layout';
@@ -16,8 +16,6 @@ import { useTheme } from '../../hooks/useTheme';
 import { getTransactions, getAccounts, Transaction, Account } from '../../utils/storage';
 import { filterByPeriod, Period, sumByCategory, totalsOf } from '../../utils/aggregate';
 import { formatIDR } from '../../utils/format';
-// Jika kamu mau iconnya dinamis sesuai tipe akun, uncomment baris di bawah ini:
-// import { findAccountType } from '../../constants/accountTypes';
 
 export default function DashboardScreen() {
   const router = useRouter();
@@ -35,21 +33,21 @@ export default function DashboardScreen() {
     }, [])
   );
 
-  const filtered = filterByPeriod(txs, period);
-  const totals = totalsOf(filtered);
-  const byCategory = sumByCategory(filtered, 'expense');
+  const filtered = useMemo(() => filterByPeriod(txs, period), [txs, period]);
+  const totals = useMemo(() => totalsOf(filtered), [filtered]);
+  const byCategory = useMemo(() => sumByCategory(filtered, 'expense'), [filtered]);
   const streak = useStreak(txs);
 
   const accountBalances = useMemo(() => {
-    return accounts.map(acc => {
-      const accTxs = txs.filter(t => t.accountId === acc.id);
-      const income = accTxs.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
-      const expense = accTxs.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
-      return {
-        ...acc,
-        currentBalance: acc.startingBalance + income - expense
-      };
-    });
+    const deltas = new Map<string, number>();
+    for (const t of txs) {
+      const d = t.type === 'income' ? t.amount : -t.amount;
+      deltas.set(t.accountId, (deltas.get(t.accountId) ?? 0) + d);
+    }
+    return accounts.map((acc) => ({
+      ...acc,
+      currentBalance: acc.startingBalance + (deltas.get(acc.id) ?? 0),
+    }));
   }, [accounts, txs]);
 
   const totalAccountBalance = useMemo(() => {
@@ -80,8 +78,7 @@ export default function DashboardScreen() {
       ...shadow.card,
     },
     accountHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
-    // PERBAIKAN WARNA DI SINI:
-    accountName: { fontSize: fontSize.xs, color: colors.textSecondary }, 
+    accountName: { fontSize: fontSize.xs, color: colors.textSecondary },
     accountBalance: { fontSize: fontSize.md, fontWeight: '700', color: colors.textPrimary },
 
     statsRow: { flexDirection: 'row', gap: spacing.md },
@@ -93,7 +90,6 @@ export default function DashboardScreen() {
       width: 32, height: 32, borderRadius: radius.full,
       alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm,
     },
-    // PERBAIKAN WARNA DI SINI:
     statLabel: { fontSize: fontSize.xs, color: colors.textSecondary },
     statValue: { fontSize: fontSize.md, fontWeight: '700', marginTop: 2 },
     
@@ -103,11 +99,9 @@ export default function DashboardScreen() {
       ...shadow.card,
     },
     periodNetLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-    // PERBAIKAN WARNA DI SINI:
     periodNetLabel: { fontSize: fontSize.sm, color: colors.textPrimary, fontWeight: '600' },
     periodNetValue: { fontSize: fontSize.md, fontWeight: '800' },
-    
-    // PERBAIKAN WARNA DI SINI (Judul "Cashflow"):
+
     sectionTitle: { fontSize: fontSize.md, fontWeight: '700', color: colors.textPrimary, marginTop: spacing.sm },
   }), [colors]);
 
@@ -124,28 +118,22 @@ export default function DashboardScreen() {
           <Text style={styles.netValue}>{formatIDR(totalAccountBalance)}</Text>
         </View>
 
-        <FlatList
-          data={accountBalances}
+        <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           style={styles.accountsList}
-          keyExtractor={item => item.id}
-          renderItem={({ item }) => {
-            // Jika mau icon dinamis sesuai type (opsional):
-            // const TypeIcon = findAccountType(item.typeId)?.icon || Wallet;
-            return (
-              <View style={styles.accountCard}>
-                <View style={styles.accountHeader}>
-                  <CreditCard size={14} color={colors.primary} />
-                  <Text style={styles.accountName}>{item.name}</Text>
-                </View>
-                <Text style={styles.accountBalance}>{formatIDR(item.currentBalance)}</Text>
+        >
+          {accountBalances.map((item) => (
+            <View key={item.id} style={styles.accountCard}>
+              <View style={styles.accountHeader}>
+                <CreditCard size={14} color={colors.primary} />
+                <Text style={styles.accountName}>{item.name}</Text>
               </View>
-            )
-          }}
-        />
+              <Text style={styles.accountBalance}>{formatIDR(item.currentBalance)}</Text>
+            </View>
+          ))}
+        </ScrollView>
 
-        {/* Teks "Cashflow" juga akan jadi putih di Dark Mode */}
         <Text style={styles.sectionTitle}>Cashflow</Text>
         <PeriodSelector value={period} onChange={setPeriod} />
 
@@ -172,10 +160,10 @@ export default function DashboardScreen() {
             <Text style={styles.periodNetLabel}>Net Flow ({period})</Text>
           </View>
           <Text style={[
-            styles.periodNetValue, 
+            styles.periodNetValue,
             { color: totals.net >= 0 ? colors.income : colors.expense }
           ]}>
-            {totals.net > 0 ? '+' : ''}{formatIDR(totals.net)}
+            {totals.net >= 0 ? '+' : ''}{formatIDR(totals.net)}
           </Text>
         </View>
 
