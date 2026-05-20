@@ -12,11 +12,13 @@ import {
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { fabBottomForTabScreen } from '../../constants/layout';
-import { Database, Download, Trash, Wallet, Tag, Plus, Sun, Moon, Smartphone } from 'lucide-react-native';
+import { Database, Download, Trash, Wallet, Tag, Plus, Sun, Moon, Smartphone, Lock } from 'lucide-react-native';
 import TopBar from '../../components/TopBar';
 import Fab from '../../components/Fab';
 import AccountManager from '../../components/AccountManager';
 import CategoryManager from '../../components/CategoryManager';
+import PinManager from '../../components/PinManager';
+import { usePin } from '../../context/PinContext';
 import { radius, spacing, fontSize } from '../../constants/theme';
 import { useTheme, ThemeMode } from '../../hooks/useTheme';
 import {
@@ -34,6 +36,7 @@ export default function SettingsScreen() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [customCats, setCustomCats] = useState<CustomCategory[]>([]);
   const { colors } = useTheme();
+  const pin = usePin();
   const styles = useMemo(() => StyleSheet.create({
     safe: { flex: 1, backgroundColor: colors.bg },
     content: { padding: spacing.lg, gap: spacing.lg, paddingBottom: spacing.xl },
@@ -100,6 +103,10 @@ export default function SettingsScreen() {
             <Trash size={18} color={colors.expense} />
             <Text style={[styles.actionText, { color: colors.expense }]}>Clear all data</Text>
           </Pressable>
+        </Section>
+
+        <Section Icon={Lock} title="Security">
+          <PinManager onChange={pin.refresh} />
         </Section>
 
         <Section Icon={Sun} title="Appearance">
