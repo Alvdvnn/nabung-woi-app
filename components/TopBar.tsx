@@ -42,7 +42,13 @@ export default function TopBar({ title, showBack, showLogo = true, showActions =
       justifyContent: 'center',
     },
     brand: { fontSize: fontSize.md, fontWeight: '700', color: colors.textPrimary },
-    title: { fontSize: fontSize.lg, fontWeight: '600', color: colors.textPrimary },
+    title: {
+      fontSize: fontSize.lg,
+      fontWeight: '700',
+      color: colors.textPrimary,
+      textTransform: 'uppercase',
+      letterSpacing: 1,
+    },
     iconBtn: {
       width: 36,
       height: 36,

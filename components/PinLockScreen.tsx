@@ -45,7 +45,13 @@ export default function PinLockScreen({ onUnlock, onRecovered }: Props) {
     () =>
       StyleSheet.create({
         safe: { flex: 1, backgroundColor: colors.bg },
-        content: { padding: spacing.lg, gap: spacing.lg, paddingTop: spacing.xxl },
+        content: {
+          flexGrow: 1,
+          padding: spacing.lg,
+          gap: spacing.lg,
+          justifyContent: 'center',
+          paddingBottom: spacing.xxl * 3,
+        },
         iconWrap: {
           alignSelf: 'center',
           width: 72,
@@ -54,7 +60,7 @@ export default function PinLockScreen({ onUnlock, onRecovered }: Props) {
           backgroundColor: colors.primarySoft,
           alignItems: 'center',
           justifyContent: 'center',
-          marginTop: spacing.xxl,
+          marginBottom: spacing.sm,
         },
         title: {
           fontSize: fontSize.xxl,
