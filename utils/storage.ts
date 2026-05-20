@@ -87,12 +87,12 @@ export async function setLastAccount(id: string): Promise<void> {
   await AsyncStorage.setItem(KEYS.lastAccount, id);
 }
 
-export type StoredThemeMode = 'system' | 'light' | 'dark';
+export type StoredThemeMode = 'light' | 'dark';
 
 export async function getThemeMode(): Promise<StoredThemeMode> {
   const raw = await AsyncStorage.getItem(KEYS.themeMode);
-  if (raw === 'light' || raw === 'dark' || raw === 'system') return raw;
-  return 'system';
+  if (raw === 'light' || raw === 'dark') return raw;
+  return 'light';
 }
 
 export async function setThemeMode(mode: StoredThemeMode): Promise<void> {
