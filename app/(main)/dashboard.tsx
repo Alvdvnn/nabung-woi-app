@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { fabBottomForTabScreen } from '../../constants/layout';
@@ -69,6 +69,10 @@ export default function DashboardScreen() {
 
   function openCategoryDetail(categoryId: string) {
     router.push({ pathname: '/category-detail', params: { categoryId, period } });
+  }
+
+  function openAccountDetail(accountId: string) {
+    router.push({ pathname: '/account-detail', params: { accountId } });
   }
 
   const styles = useMemo(() => StyleSheet.create({
@@ -254,7 +258,12 @@ export default function DashboardScreen() {
                 const type = findAccountType(item.typeId);
                 const TypeIcon = type.icon;
                 return (
-                  <View key={item.id} style={styles.accountCard}>
+                  <Pressable
+                    key={item.id}
+                    style={styles.accountCard}
+                    android_ripple={null}
+                    onPress={() => openAccountDetail(item.id)}
+                  >
                     <View style={styles.accountIconWrap}>
                       <TypeIcon size={15} color={colors.primary} />
                     </View>
@@ -269,7 +278,7 @@ export default function DashboardScreen() {
                         {formatIDR(item.currentBalance)}
                       </Text>
                     </View>
-                  </View>
+                  </Pressable>
                 );
               })}
             </ScrollView>

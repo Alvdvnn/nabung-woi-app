@@ -60,6 +60,7 @@ export default function InputScreen() {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
+  const [hydrated, setHydrated] = useState(!editId);
 
   useFocusEffect(
     useCallback(() => {
@@ -77,12 +78,14 @@ export default function InputScreen() {
             setNote(tx.note);
             setAccountId(tx.accountId);
             setSelectedDate(new Date(tx.date));
+            setHydrated(true);
             return;
           }
         }
         const last = await getLastAccount();
         const id = last && accs.find((a) => a.id === last) ? last : accs[0]?.id ?? null;
         setAccountId(id);
+        setHydrated(true);
       })();
     }, [editId, refreshCategories])
   );
@@ -208,6 +211,14 @@ export default function InputScreen() {
     },
     cancelBtnText: { fontSize: fontSize.md, fontWeight: '600', color: colors.textSecondary },
   }), [colors]);
+
+  if (!hydrated) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <TopBar />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safe}>

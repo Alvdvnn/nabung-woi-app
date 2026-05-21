@@ -9,10 +9,12 @@ import Fab from '../../components/Fab';
 import TransactionItem from '../../components/TransactionItem';
 import EmptyState from '../../components/EmptyState';
 import CalendarGrid from '../../components/CalendarGrid';
+import ConfirmModal from '../../components/ConfirmModal';
+import { useToast } from '../../hooks/useToast';
 import { spacing, fontSize } from '../../constants/theme';
 import { useTheme } from '../../hooks/useTheme';
 import { useT } from '../../i18n';
-import { getAccounts, getTransactions, Account, Transaction } from '../../utils/storage';
+import { deleteTransaction, getAccounts, getTransactions, Account, Transaction } from '../../utils/storage';
 import { isoDay, formatDate } from '../../utils/format';
 import { totalsOf } from '../../utils/aggregate';
 import { formatIDR } from '../../utils/format';
@@ -24,11 +26,13 @@ export default function CalendarScreen() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [month, setMonth] = useState(new Date());
   const [selected, setSelected] = useState(new Date());
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const { colors } = useTheme();
+  const toast = useToast();
   const t = useT();
   const styles = useMemo(() => StyleSheet.create({
     safe: { flex: 1, backgroundColor: colors.bg },
-    content: { padding: spacing.lg, paddingBottom: spacing.xl },
+    content: { padding: spacing.lg, paddingBottom: spacing.xxl + 64 },
     dayHeader: {
       flexDirection: 'row',
       justifyContent: 'space-between',
@@ -60,6 +64,18 @@ export default function CalendarScreen() {
     return m;
   }, [accounts]);
 
+  function handleDelete(id: string) {
+    setPendingDeleteId(id);
+  }
+
+  async function confirmDelete() {
+    if (!pendingDeleteId) return;
+    await deleteTransaction(pendingDeleteId);
+    setTxs((prev) => prev.filter((tx) => tx.id !== pendingDeleteId));
+    setPendingDeleteId(null);
+    toast.show('success', t('history.deleted'));
+  }
+
   return (
     <SafeAreaView style={styles.safe}>
       <TopBar title={t('calendar.title')} showLogo={false} />
@@ -82,17 +98,29 @@ export default function CalendarScreen() {
         {dayTxs.length === 0 ? (
           <EmptyState Icon={CalendarX} title={t('calendar.empty')} subtitle={t('calendar.emptySub')} />
         ) : (
-          dayTxs.map((t) => (
+          dayTxs.map((tx) => (
             <TransactionItem
-              key={t.id}
-              item={t}
-              accountName={accountNameMap.get(t.accountId)}
+              key={tx.id}
+              item={tx}
+              accountName={accountNameMap.get(tx.accountId)}
               onPress={(id) => router.push({ pathname: '/', params: { id, returnTo: 'calendar' } })}
+              onDelete={handleDelete}
             />
           ))
         )}
       </ScrollView>
       <Fab Icon={Plus} bottom={fabBottomForTabScreen(insets.bottom)} onPress={() => router.push('/')} />
+
+      <ConfirmModal
+        visible={!!pendingDeleteId}
+        title={t('history.deleteTitle')}
+        message={t('history.deleteMsg')}
+        confirmLabel={t('common.delete')}
+        cancelLabel={t('common.cancel')}
+        tone="danger"
+        onConfirm={confirmDelete}
+        onCancel={() => setPendingDeleteId(null)}
+      />
     </SafeAreaView>
   );
 }

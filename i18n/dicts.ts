@@ -146,6 +146,17 @@ export const en = {
     thisCategory: 'this category',
   },
 
+  accountDetail: {
+    fallbackTitle: 'Account',
+    currentBalance: 'Current balance',
+    entry: 'entry',
+    entries: 'entries',
+    entriesLabel: 'Entries',
+    noEntries: 'No entries',
+    noEntriesSub: 'No transactions for "{name}" in this period.',
+    thisAccount: 'this account',
+  },
+
   account: {
     add: 'Add Account',
     create: 'Create',
@@ -415,6 +426,17 @@ export const id: typeof en = {
     noEntries: 'Tidak ada entri',
     noEntriesSub: 'Tidak ada transaksi untuk "{name}" pada periode ini.',
     thisCategory: 'kategori ini',
+  },
+
+  accountDetail: {
+    fallbackTitle: 'Akun',
+    currentBalance: 'Saldo saat ini',
+    entry: 'entri',
+    entries: 'entri',
+    entriesLabel: 'Entri',
+    noEntries: 'Tidak ada entri',
+    noEntriesSub: 'Tidak ada transaksi untuk "{name}" pada periode ini.',
+    thisAccount: 'akun ini',
   },
 
   account: {

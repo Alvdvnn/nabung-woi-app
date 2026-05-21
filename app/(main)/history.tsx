@@ -51,7 +51,7 @@ export default function HistoryScreen() {
     filterBtnActive: { backgroundColor: colors.primary, borderColor: colors.primary },
     filterLabel: { fontSize: fontSize.sm, fontWeight: '600', color: colors.textSecondary },
     filterLabelActive: { color: colors.white },
-    list: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl },
+    list: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl + 64 },
   }), [colors]);
 
   useFocusEffect(
