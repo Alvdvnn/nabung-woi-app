@@ -32,6 +32,7 @@ const KEYS = {
   customCategories: 'nw.customCategories',
   lastAccount: 'nw.lastAccount',
   themeMode: 'nw.themeMode',
+  locale: 'nw.locale',
 };
 
 export async function getTransactions(): Promise<Transaction[]> {
@@ -97,6 +98,17 @@ export async function getThemeMode(): Promise<StoredThemeMode> {
 
 export async function setThemeMode(mode: StoredThemeMode): Promise<void> {
   await AsyncStorage.setItem(KEYS.themeMode, mode);
+}
+
+export type StoredLocale = 'en' | 'id';
+
+export async function getLocale(): Promise<StoredLocale> {
+  const raw = await AsyncStorage.getItem(KEYS.locale);
+  return raw === 'id' ? 'id' : 'en';
+}
+
+export async function setLocale(loc: StoredLocale): Promise<void> {
+  await AsyncStorage.setItem(KEYS.locale, loc);
 }
 
 export async function clearAll(): Promise<void> {

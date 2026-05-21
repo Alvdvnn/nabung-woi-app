@@ -1,9 +1,11 @@
 import { Tabs } from 'expo-router';
 import { LayoutDashboard, CalendarDays, Settings, History, Dices } from 'lucide-react-native';
 import { useTheme } from '../../hooks/useTheme';
+import { useT } from '../../i18n';
 
 export default function MainLayout() {
   const { colors } = useTheme();
+  const t = useT();
   return (
     <Tabs
       screenOptions={{
@@ -21,11 +23,11 @@ export default function MainLayout() {
         tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
       }}
     >
-      <Tabs.Screen name="dashboard" options={{ title: 'Dashboard', tabBarIcon: ({ color, size }) => <LayoutDashboard size={size - 2} color={color} /> }} />
-      <Tabs.Screen name="calendar" options={{ title: 'Calendar', tabBarIcon: ({ color, size }) => <CalendarDays size={size - 2} color={color} /> }} />
-      <Tabs.Screen name="history" options={{ title: 'History', tabBarIcon: ({ color, size }) => <History size={size - 2} color={color} /> }} />
-      <Tabs.Screen name="settings" options={{ title: 'Settings', tabBarIcon: ({ color, size }) => <Settings size={size - 2} color={color} /> }} />
-      <Tabs.Screen name="gacha" options={{ title: 'Gacha', tabBarIcon: ({ color, size }) => <Dices size={size - 2} color={color} /> }} />
+      <Tabs.Screen name="dashboard" options={{ title: t('tabs.dashboard'), tabBarIcon: ({ color, size }) => <LayoutDashboard size={size - 2} color={color} /> }} />
+      <Tabs.Screen name="calendar" options={{ title: t('tabs.calendar'), tabBarIcon: ({ color, size }) => <CalendarDays size={size - 2} color={color} /> }} />
+      <Tabs.Screen name="history" options={{ title: t('tabs.history'), tabBarIcon: ({ color, size }) => <History size={size - 2} color={color} /> }} />
+      <Tabs.Screen name="settings" options={{ title: t('tabs.settings'), tabBarIcon: ({ color, size }) => <Settings size={size - 2} color={color} /> }} />
+      <Tabs.Screen name="gacha" options={{ title: t('tabs.gacha'), tabBarIcon: ({ color, size }) => <Dices size={size - 2} color={color} /> }} />
     </Tabs>
   );
 }

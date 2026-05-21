@@ -17,6 +17,7 @@ import TopBar from '../../components/TopBar';
 import Fab from '../../components/Fab';
 import { radius, spacing, fontSize, shadow } from '../../constants/theme';
 import { useTheme } from '../../hooks/useTheme';
+import { useT } from '../../i18n';
 
 type Result = 'buy' | 'skip' | null;
 
@@ -52,6 +53,7 @@ export default function GachaScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { colors, resolved } = useTheme();
+  const t = useT();
   const [result, setResult] = useState<Result>(null);
   const [spinning, setSpinning] = useState(false);
   const [strips, setStrips] = useState<Symbol[][]>(() => [
@@ -358,19 +360,19 @@ export default function GachaScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <TopBar title="Gacha" showLogo={false} showActions={false} />
+      <TopBar title={t('gacha.title')} showLogo={false} showActions={false} />
       <View style={styles.content}>
         <Text style={styles.title}>
-          <Text style={{ color: colors.income }}>Buy</Text>
-          {' or '}
-          <Text style={{ color: colors.expense }}>Skip</Text>
+          <Text style={{ color: colors.income }}>{t('gacha.buy')}</Text>
+          {` ${t('gacha.or')} `}
+          <Text style={{ color: colors.expense }}>{t('gacha.skip')}</Text>
         </Text>
-        <Text style={styles.sub}>Pull the lever. Three of a kind says BUY. A red ✕ means walk away.</Text>
+        <Text style={styles.sub}>{t('gacha.sub')}</Text>
 
         <View style={styles.cabinet}>
           <View style={styles.cabinetTopRow}>
-            <Text style={styles.cabinetLabel}>★ NABUNG ★</Text>
-            <Text style={styles.cabinetLabel}>JACKPOT</Text>
+            <Text style={styles.cabinetLabel}>{t('gacha.cabinet')}</Text>
+            <Text style={styles.cabinetLabel}>{t('gacha.jackpot')}</Text>
           </View>
 
           <View style={styles.bulbRow}>
@@ -422,9 +424,9 @@ export default function GachaScreen() {
 
           <View style={styles.cabinetBottomRow}>
             <View style={styles.creditBox}>
-              <Text style={styles.creditLabel}>RESULT</Text>
+              <Text style={styles.creditLabel}>{t('gacha.result')}</Text>
               <Text style={styles.creditValue}>
-                {result === 'buy' ? 'BUY' : result === 'skip' ? 'SKIP' : '— — —'}
+                {result === 'buy' ? t('gacha.buyUp') : result === 'skip' ? t('gacha.skipUp') : '— — —'}
               </Text>
             </View>
             <View style={styles.leverWrap}>
@@ -437,10 +439,10 @@ export default function GachaScreen() {
         {result && (
           <View style={[styles.resultBanner, result === 'buy' ? styles.resultBuy : styles.resultSkip]}>
             <Text style={[styles.resultText, { color: result === 'buy' ? colors.income : colors.expense }]}>
-              {result === 'buy' ? 'JACKPOT — BUY IT' : 'NO MATCH — SKIP IT'}
+              {result === 'buy' ? t('gacha.bannerBuy') : t('gacha.bannerSkip')}
             </Text>
             <Text style={[styles.resultSub, { color: result === 'buy' ? colors.income : colors.expense }]}>
-              {result === 'buy' ? 'The dice favor you' : 'Save your money'}
+              {result === 'buy' ? t('gacha.subBuy') : t('gacha.subSkip')}
             </Text>
           </View>
         )}
@@ -451,7 +453,7 @@ export default function GachaScreen() {
           disabled={spinning}
         >
           <Text style={styles.spinText}>
-            {spinning ? 'Rolling…' : result ? 'Pull Again' : 'Pull Lever'}
+            {spinning ? t('gacha.rolling') : result ? t('gacha.pullAgain') : t('gacha.pullLever')}
           </Text>
         </Pressable>
       </View>

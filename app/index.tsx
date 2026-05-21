@@ -26,6 +26,7 @@ import ConfirmModal from '../components/ConfirmModal';
 import { radius, spacing, fontSize } from '../constants/theme';
 import { useTheme } from '../hooks/useTheme';
 import { useCategories } from '../context/CategoriesContext';
+import { useT } from '../i18n';
 import {
   addTransaction,
   getAccounts,
@@ -43,6 +44,7 @@ export default function InputScreen() {
   const toast = useToast();
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
+  const t = useT();
   const scrollRef = useRef<ScrollView>(null);
   const { id: editId, returnTo } = useLocalSearchParams<{ id?: string; returnTo?: string }>();
   const isEditing = !!editId;
@@ -102,8 +104,8 @@ export default function InputScreen() {
 
   async function handleSave() {
     const num = parseFloat(amount);
-    if (!num || num <= 0) { toast.show('error', 'Enter a valid amount'); return; }
-    if (!accountId) { toast.show('error', 'Add an account first'); return; }
+    if (!num || num <= 0) { toast.show('error', t('input.errInvalidAmount')); return; }
+    if (!accountId) { toast.show('error', t('input.errNoAccount')); return; }
 
     setSaving(true);
     if (isEditing && editId) {
@@ -117,7 +119,7 @@ export default function InputScreen() {
         date: selectedDate.toISOString(),
       });
       setSaving(false);
-      toast.show('success', 'Transaction updated');
+      toast.show('success', t('input.txUpdated'));
       const target = returnTo === 'calendar' ? '/calendar' : returnTo === 'history' ? '/history' : '/dashboard';
       router.replace(target);
     } else {
@@ -133,7 +135,7 @@ export default function InputScreen() {
       await setLastAccount(accountId);
       resetForm();
       setSaving(false);
-      toast.show('success', `${type === 'income' ? 'Income' : 'Expense'} recorded`);
+      toast.show('success', type === 'income' ? t('input.incomeRecorded') : t('input.expenseRecorded'));
     }
   }
 
@@ -220,9 +222,9 @@ export default function InputScreen() {
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
         >
-          <Text style={styles.heading}>{isEditing ? 'Edit Transaction' : 'Add Transaction'}</Text>
+          <Text style={styles.heading}>{isEditing ? t('input.headingEdit') : t('input.headingAdd')}</Text>
           <Text style={styles.subheading}>
-            {isEditing ? 'Update any field, then save.' : 'Quick log — no extra clicks.'}
+            {isEditing ? t('input.subEdit') : t('input.subAdd')}
           </Text>
 
           <View style={{ marginTop: spacing.lg }}>
@@ -230,11 +232,11 @@ export default function InputScreen() {
           </View>
 
           <View style={{ marginTop: spacing.xl }}>
-            <Text style={styles.label}>Amount</Text>
+            <Text style={styles.label}>{t('input.amount')}</Text>
             <AmountInput value={amount} onChange={setAmount} autoFocus={!isEditing} />
           </View>
 
-          <Text style={styles.label}>Category</Text>
+          <Text style={styles.label}>{t('input.category')}</Text>
           <View style={styles.cats}>
             {categories.map((c) => (
               <CategoryChip
@@ -247,21 +249,21 @@ export default function InputScreen() {
             ))}
           </View>
 
-          <Text style={styles.label}>Account</Text>
+          <Text style={styles.label}>{t('input.account')}</Text>
           <Pressable style={styles.accountPill} onPress={() => setPickerOpen(true)}>
             <Text style={styles.accountText}>
-              {selectedAccount ? selectedAccount.name : 'Select account'}
+              {selectedAccount ? selectedAccount.name : t('input.selectAccount')}
             </Text>
             <ChevronDown size={16} color={colors.textSecondary} />
           </Pressable>
 
-          <Text style={styles.label}>Date</Text>
+          <Text style={styles.label}>{t('input.date')}</Text>
           <DatePickerField value={selectedDate} onChange={setSelectedDate} />
 
-          <Text style={styles.label}>Note (optional)</Text>
+          <Text style={styles.label}>{t('input.note')}</Text>
           <TextInput
             style={styles.noteInput}
-            placeholder="What was this for?"
+            placeholder={t('input.notePlaceholder')}
             placeholderTextColor={colors.textMuted}
             value={note}
             onChangeText={setNote}
@@ -272,7 +274,7 @@ export default function InputScreen() {
           <View style={styles.actions}>
             {isEditing && (
               <Pressable style={styles.cancelBtn} onPress={handleCancelEdit}>
-                <Text style={styles.cancelBtnText}>Cancel</Text>
+                <Text style={styles.cancelBtnText}>{t('common.cancel')}</Text>
               </Pressable>
             )}
             <Pressable
@@ -281,7 +283,7 @@ export default function InputScreen() {
               disabled={saving}
             >
               <Text style={styles.saveBtnText}>
-                {saving ? 'Saving…' : isEditing ? 'Update' : 'Save Transaction'}
+                {saving ? t('input.saving') : isEditing ? t('input.update') : t('input.saveTransaction')}
               </Text>
             </Pressable>
           </View>
@@ -300,10 +302,10 @@ export default function InputScreen() {
 
       <ConfirmModal
         visible={confirmCancel}
-        title="Discard changes?"
-        message="Your edits to this transaction will not be saved."
-        confirmLabel="Discard"
-        cancelLabel="Keep editing"
+        title={t('input.discardTitle')}
+        message={t('input.discardMsg')}
+        confirmLabel={t('input.discard')}
+        cancelLabel={t('input.keepEditing')}
         tone="danger"
         onConfirm={doCancelEdit}
         onCancel={() => setConfirmCancel(false)}

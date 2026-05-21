@@ -4,6 +4,7 @@ import { ArrowDownCircle, ArrowUpCircle } from 'lucide-react-native';
 import { radius, spacing, fontSize } from '../constants/theme';
 import { useTheme } from '../hooks/useTheme';
 import { TransactionType } from '../utils/storage';
+import { useT } from '../i18n';
 
 interface Props {
   value: TransactionType;
@@ -12,6 +13,7 @@ interface Props {
 
 export default function TypeToggle({ value, onChange }: Props) {
   const { colors } = useTheme();
+  const t = useT();
   const styles = useMemo(() => StyleSheet.create({
     wrap: {
       flexDirection: 'row',
@@ -44,14 +46,14 @@ export default function TypeToggle({ value, onChange }: Props) {
         onPress={() => onChange('expense')}
       >
         <ArrowDownCircle size={16} color={isExp ? colors.white : colors.textSecondary} />
-        <Text style={[styles.label, isExp && styles.labelActive]}>Expense</Text>
+        <Text style={[styles.label, isExp && styles.labelActive]}>{t('type.expense')}</Text>
       </Pressable>
       <Pressable
         style={[styles.btn, !isExp && styles.btnActiveInc]}
         onPress={() => onChange('income')}
       >
         <ArrowUpCircle size={16} color={!isExp ? colors.white : colors.textSecondary} />
-        <Text style={[styles.label, !isExp && styles.labelActive]}>Income</Text>
+        <Text style={[styles.label, !isExp && styles.labelActive]}>{t('type.income')}</Text>
       </Pressable>
     </View>
   );

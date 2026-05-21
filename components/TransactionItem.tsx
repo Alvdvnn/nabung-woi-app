@@ -6,6 +6,7 @@ import { useTheme } from '../hooks/useTheme';
 import { Transaction } from '../utils/storage';
 import { useCategories } from '../context/CategoriesContext';
 import { formatIDR, formatDate } from '../utils/format';
+import { useT } from '../i18n';
 
 interface Props {
   item: Transaction;
@@ -17,6 +18,7 @@ interface Props {
 export default function TransactionItem({ item, accountName, onDelete, onPress }: Props) {
   const { colors } = useTheme();
   const { find } = useCategories();
+  const t = useT();
   const styles = useMemo(() => StyleSheet.create({
     row: {
       flexDirection: 'row',
@@ -60,7 +62,7 @@ export default function TransactionItem({ item, accountName, onDelete, onPress }
         <Icon size={18} color={isIncome ? colors.income : colors.expense} />
       </View>
       <View style={styles.info}>
-        <Text style={styles.category}>{cat?.name ?? 'Other'}</Text>
+        <Text style={styles.category}>{cat?.name ?? t('common.other')}</Text>
         <View style={styles.metaRow}>
           {accountName ? <Text style={styles.meta}>{accountName}</Text> : null}
           {item.note ? <Text style={styles.metaDot}>•</Text> : null}

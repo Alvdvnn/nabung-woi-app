@@ -23,6 +23,8 @@ import { getTransactions, getAccounts, Transaction, Account } from '../../utils/
 import { filterByPeriod, Period, sumByCategory, totalsOf } from '../../utils/aggregate';
 import { formatIDR } from '../../utils/format';
 import { findAccountType } from '../../constants/accountTypes';
+import { useT } from '../../i18n';
+import { tBuiltin } from '../../i18n/labels';
 
 const CARD_HEIGHT = 68;
 
@@ -30,6 +32,7 @@ export default function DashboardScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { colors, resolved } = useTheme();
+  const t = useT();
 
   const [txs, setTxs] = useState<Transaction[]>([]);
   const [period, setPeriod] = useState<Period>('month');
@@ -218,7 +221,7 @@ export default function DashboardScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <TopBar title="Dashboard" showLogo={false} />
+      <TopBar title={t('tabs.dashboard')} showLogo={false} />
       <ScrollView
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
@@ -226,7 +229,7 @@ export default function DashboardScreen() {
         <View style={styles.hero}>
           <View style={styles.balanceLabelRow}>
             <Wallet size={14} color={colors.primarySoft} />
-            <Text style={styles.balanceLabel}>Total Balance</Text>
+            <Text style={styles.balanceLabel}>{t('dashboard.totalBalance')}</Text>
           </View>
           <Text style={styles.balanceValue} numberOfLines={1} adjustsFontSizeToFit>
             {formatIDR(totalAccountBalance)}
@@ -238,7 +241,7 @@ export default function DashboardScreen() {
           {accountBalances.length === 0 ? (
             <View style={styles.accountEmpty}>
               <Text style={styles.accountEmptyText}>
-                No accounts yet. Add one in Settings.
+                {t('dashboard.noAccounts')}
               </Text>
             </View>
           ) : (
@@ -259,7 +262,7 @@ export default function DashboardScreen() {
                       <View style={styles.accountTitleRow}>
                         <Text style={styles.accountName} numberOfLines={1}>{item.name}</Text>
                         <View style={styles.accountTypePill}>
-                          <Text style={styles.accountTypeText}>{type.name}</Text>
+                          <Text style={styles.accountTypeText}>{tBuiltin(t, 'accountTypes', type.id)}</Text>
                         </View>
                       </View>
                       <Text style={styles.accountBalance} numberOfLines={1} adjustsFontSizeToFit>
@@ -274,7 +277,7 @@ export default function DashboardScreen() {
         </View>
 
         <View style={styles.body}>
-          <Text style={styles.sectionTitle}>Cashflow</Text>
+          <Text style={styles.sectionTitle}>{t('dashboard.cashflow')}</Text>
           <PeriodSelector value={period} onChange={setPeriod} />
 
           <View style={styles.statsRow}>
@@ -282,7 +285,7 @@ export default function DashboardScreen() {
               <View style={[styles.statIcon, { backgroundColor: colors.incomeLight }]}>
                 <TrendingUp size={16} color={colors.income} />
               </View>
-              <Text style={styles.statLabel}>Income</Text>
+              <Text style={styles.statLabel}>{t('type.income')}</Text>
               <Text style={[styles.statValue, { color: colors.income }]}>
                 {formatIDR(totals.income)}
               </Text>
@@ -291,7 +294,7 @@ export default function DashboardScreen() {
               <View style={[styles.statIcon, { backgroundColor: colors.expenseLight }]}>
                 <TrendingDown size={16} color={colors.expense} />
               </View>
-              <Text style={styles.statLabel}>Expense</Text>
+              <Text style={styles.statLabel}>{t('type.expense')}</Text>
               <Text style={[styles.statValue, { color: colors.expense }]}>
                 {formatIDR(totals.expense)}
               </Text>
@@ -301,7 +304,7 @@ export default function DashboardScreen() {
           <View style={styles.netCard}>
             <View style={styles.netLeft}>
               <ArrowRightLeft size={16} color={colors.textSecondary} />
-              <Text style={styles.netLabel}>Net Flow ({period})</Text>
+              <Text style={styles.netLabel}>{t('dashboard.netFlow', { period: t(`period.${period}` as 'period.day') })}</Text>
             </View>
             <Text style={[
               styles.netValue,
@@ -315,7 +318,7 @@ export default function DashboardScreen() {
 
           {byCategory.length > 0 && (
             <>
-              <Text style={styles.sectionTitle}>Top Categories</Text>
+              <Text style={styles.sectionTitle}>{t('dashboard.topCategories')}</Text>
               <TopCategoriesRow
                 data={byCategory}
                 total={totals.expense}

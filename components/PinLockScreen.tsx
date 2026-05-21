@@ -22,6 +22,7 @@ import {
   verifyPin,
 } from '../utils/pin';
 import { clearAll } from '../utils/storage';
+import { useT } from '../i18n';
 
 interface Props {
   onUnlock: () => void;
@@ -32,6 +33,7 @@ type Mode = 'pin' | 'recover';
 
 export default function PinLockScreen({ onUnlock, onRecovered }: Props) {
   const { colors } = useTheme();
+  const t = useT();
   const [mode, setMode] = useState<Mode>('pin');
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
@@ -128,14 +130,14 @@ export default function PinLockScreen({ onUnlock, onRecovered }: Props) {
 
   async function submitPin() {
     if (pin.length < PIN_MIN) {
-      setError(`Enter at least ${PIN_MIN} digits`);
+      setError(t('pinLock.errMin', { min: PIN_MIN }));
       return;
     }
     setBusy(true);
     const ok = await verifyPin(pin);
     setBusy(false);
     if (!ok) {
-      setError('Incorrect PIN');
+      setError(t('pinLock.errWrong'));
       setPin('');
       return;
     }
@@ -151,14 +153,14 @@ export default function PinLockScreen({ onUnlock, onRecovered }: Props) {
 
   async function submitAnswer() {
     if (!answer.trim()) {
-      setError('Enter your answer');
+      setError(t('pinLock.errEnterAns'));
       return;
     }
     setBusy(true);
     const ok = await verifyAnswer(answer);
     setBusy(false);
     if (!ok) {
-      setError('Answer did not match');
+      setError(t('pinLock.errAnsWrong'));
       return;
     }
     setConfirmWipe(true);
@@ -192,8 +194,8 @@ export default function PinLockScreen({ onUnlock, onRecovered }: Props) {
 
           {mode === 'pin' ? (
             <>
-              <Text style={styles.title}>Enter PIN</Text>
-              <Text style={styles.sub}>Unlock Nabung Woi to view your finances.</Text>
+              <Text style={styles.title}>{t('pinLock.enter')}</Text>
+              <Text style={styles.sub}>{t('pinLock.sub')}</Text>
               <TextInput
                 style={styles.input}
                 value={pin}
@@ -214,17 +216,17 @@ export default function PinLockScreen({ onUnlock, onRecovered }: Props) {
                 onPress={submitPin}
                 disabled={busy}
               >
-                <Text style={styles.primaryText}>Unlock</Text>
+                <Text style={styles.primaryText}>{t('pinLock.unlock')}</Text>
               </Pressable>
               <Pressable style={styles.linkBtn} onPress={startRecover}>
-                <Text style={styles.linkText}>Forgot PIN?</Text>
+                <Text style={styles.linkText}>{t('pinLock.forgot')}</Text>
               </Pressable>
             </>
           ) : !confirmWipe ? (
             <>
-              <Text style={styles.title}>Security Question</Text>
-              <Text style={styles.questionLabel}>Question</Text>
-              <Text style={styles.questionText}>{question ?? 'No recovery question set.'}</Text>
+              <Text style={styles.title}>{t('pinLock.secQ')}</Text>
+              <Text style={styles.questionLabel}>{t('pinLock.question')}</Text>
+              <Text style={styles.questionText}>{question ?? t('pinLock.noQ')}</Text>
               <TextInput
                 style={styles.textInput}
                 value={answer}
@@ -232,7 +234,7 @@ export default function PinLockScreen({ onUnlock, onRecovered }: Props) {
                   setAnswer(v);
                   setError('');
                 }}
-                placeholder="Your answer"
+                placeholder={t('pinLock.yourAnswer')}
                 placeholderTextColor={colors.textMuted}
                 autoCapitalize="none"
               />
@@ -242,7 +244,7 @@ export default function PinLockScreen({ onUnlock, onRecovered }: Props) {
                 onPress={submitAnswer}
                 disabled={busy || !question}
               >
-                <Text style={styles.primaryText}>Verify</Text>
+                <Text style={styles.primaryText}>{t('pinLock.verify')}</Text>
               </Pressable>
               <Pressable
                 style={styles.linkBtn}
@@ -252,17 +254,16 @@ export default function PinLockScreen({ onUnlock, onRecovered }: Props) {
                   setAnswer('');
                 }}
               >
-                <Text style={styles.linkText}>Back to PIN</Text>
+                <Text style={styles.linkText}>{t('pinLock.back')}</Text>
               </Pressable>
             </>
           ) : (
             <>
-              <Text style={styles.title}>Reset Required</Text>
+              <Text style={styles.title}>{t('pinLock.resetTitle')}</Text>
               <View style={styles.warn}>
-                <Text style={styles.warnTitle}>This will erase all data</Text>
+                <Text style={styles.warnTitle}>{t('pinLock.eraseWarn')}</Text>
                 <Text style={styles.warnBody}>
-                  Answer verified. To remove the PIN, all transactions, accounts, and categories
-                  must be cleared. This cannot be undone.
+                  {t('pinLock.eraseBody')}
                 </Text>
               </View>
               <Pressable
@@ -270,7 +271,7 @@ export default function PinLockScreen({ onUnlock, onRecovered }: Props) {
                 onPress={doWipe}
                 disabled={busy}
               >
-                <Text style={styles.primaryText}>Erase all and reset</Text>
+                <Text style={styles.primaryText}>{t('pinLock.erase')}</Text>
               </Pressable>
               <Pressable
                 style={styles.linkBtn}
@@ -281,7 +282,7 @@ export default function PinLockScreen({ onUnlock, onRecovered }: Props) {
                   setError('');
                 }}
               >
-                <Text style={styles.linkText}>Cancel</Text>
+                <Text style={styles.linkText}>{t('common.cancel')}</Text>
               </Pressable>
             </>
           )}

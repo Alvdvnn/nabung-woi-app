@@ -20,6 +20,7 @@ import {
 } from '../utils/pin';
 import { useToast } from '../hooks/useToast';
 import ConfirmModal from './ConfirmModal';
+import { useT } from '../i18n';
 
 interface Props {
   onChange: () => void;
@@ -30,6 +31,9 @@ type View_ = 'idle' | 'create' | 'change' | 'remove';
 export default function PinManager({ onChange }: Props) {
   const { colors } = useTheme();
   const toast = useToast();
+  const t = useT();
+  const fmtErr = (e: 'digitsOnly' | 'length') =>
+    e === 'digitsOnly' ? t('pin.errDigitsOnly') : t('pin.errLen', { min: PIN_MIN, max: PIN_MAX });
   const [enabled, setEnabled] = useState(false);
   const [view, setView] = useState<View_>('idle');
 
@@ -126,46 +130,46 @@ export default function PinManager({ onChange }: Props) {
 
   async function submitCreate() {
     const fmt = validatePinFormat(newPin);
-    if (fmt) { toast.show('error', fmt); return; }
-    if (newPin !== confirmPin) { toast.show('error', 'PINs do not match'); return; }
-    if (!question.trim()) { toast.show('error', 'Enter a recovery question'); return; }
-    if (!answer.trim()) { toast.show('error', 'Enter the answer'); return; }
+    if (fmt) { toast.show('error', fmtErr(fmt)); return; }
+    if (newPin !== confirmPin) { toast.show('error', t('pin.errMismatch')); return; }
+    if (!question.trim()) { toast.show('error', t('pin.errRecoveryQ')); return; }
+    if (!answer.trim()) { toast.show('error', t('pin.errAnswer')); return; }
 
     setBusy(true);
     await setPin({ pin: newPin, question, answer });
     setBusy(false);
-    toast.show('success', 'PIN enabled');
+    toast.show('success', t('pin.enabledMsg'));
     resetForm();
     refreshState();
   }
 
   async function submitChange() {
     const fmt = validatePinFormat(newPin);
-    if (fmt) { toast.show('error', fmt); return; }
-    if (newPin !== confirmPin) { toast.show('error', 'PINs do not match'); return; }
-    if (!question.trim() || !answer.trim()) { toast.show('error', 'Recovery question and answer required'); return; }
+    if (fmt) { toast.show('error', fmtErr(fmt)); return; }
+    if (newPin !== confirmPin) { toast.show('error', t('pin.errMismatch')); return; }
+    if (!question.trim() || !answer.trim()) { toast.show('error', t('pin.errBoth')); return; }
 
     setBusy(true);
     const ok = await verifyPin(currentPin);
     if (!ok) {
       setBusy(false);
-      toast.show('error', 'Current PIN incorrect');
+      toast.show('error', t('pin.errCurrent'));
       return;
     }
     await setPin({ pin: newPin, question, answer });
     setBusy(false);
-    toast.show('success', 'PIN updated');
+    toast.show('success', t('pin.updatedMsg'));
     resetForm();
     refreshState();
   }
 
   async function submitRemove() {
-    if (!currentPin) { toast.show('error', 'Enter current PIN'); return; }
+    if (!currentPin) { toast.show('error', t('pin.errEnterCurrent')); return; }
     setBusy(true);
     const ok = await verifyPin(currentPin);
     setBusy(false);
     if (!ok) {
-      toast.show('error', 'Current PIN incorrect');
+      toast.show('error', t('pin.errCurrent'));
       return;
     }
     setConfirmRemove(true);
@@ -176,7 +180,7 @@ export default function PinManager({ onChange }: Props) {
     await clearPin();
     setBusy(false);
     setConfirmRemove(false);
-    toast.show('success', 'PIN removed');
+    toast.show('success', t('pin.removedMsg'));
     resetForm();
     refreshState();
   }
@@ -190,11 +194,11 @@ export default function PinManager({ onChange }: Props) {
           <ShieldOff size={20} color={colors.textMuted} />
         )}
         <View style={{ flex: 1 }}>
-          <Text style={styles.statusText}>{enabled ? 'PIN is enabled' : 'PIN is disabled'}</Text>
+          <Text style={styles.statusText}>{enabled ? t('pin.enabled') : t('pin.disabled')}</Text>
           <Text style={styles.statusMeta}>
             {enabled
-              ? 'App locks on launch and after 1 minute in background.'
-              : `Set a ${PIN_MIN}-${PIN_MAX} digit PIN to require unlock.`}
+              ? t('pin.enabledMeta')
+              : t('pin.disabledMeta', { min: PIN_MIN, max: PIN_MAX })}
           </Text>
         </View>
       </View>
@@ -203,18 +207,18 @@ export default function PinManager({ onChange }: Props) {
         <View style={styles.actions}>
           {!enabled ? (
             <Pressable style={styles.actionBtn} onPress={() => setView('create')}>
-              <Text style={styles.actionText}>Set up PIN</Text>
+              <Text style={styles.actionText}>{t('pin.setup')}</Text>
             </Pressable>
           ) : (
             <>
               <Pressable style={styles.actionBtn} onPress={() => setView('change')}>
-                <Text style={styles.actionText}>Change PIN</Text>
+                <Text style={styles.actionText}>{t('pin.change')}</Text>
               </Pressable>
               <Pressable
                 style={[styles.actionBtn, styles.dangerBtn]}
                 onPress={() => setView('remove')}
               >
-                <Text style={[styles.actionText, styles.dangerText]}>Remove PIN</Text>
+                <Text style={[styles.actionText, styles.dangerText]}>{t('pin.removeBtn')}</Text>
               </Pressable>
             </>
           )}
@@ -223,58 +227,58 @@ export default function PinManager({ onChange }: Props) {
 
       {view === 'create' && (
         <View style={styles.form}>
-          <Text style={styles.label}>New PIN</Text>
+          <Text style={styles.label}>{t('pin.newPin')}</Text>
           <TextInput
             style={[styles.input, styles.pinInput]}
             keyboardType="number-pad"
             secureTextEntry
             value={newPin}
             onChangeText={(v) => setNewPin(v.replace(/[^0-9]/g, '').slice(0, PIN_MAX))}
-            placeholder={`${PIN_MIN}-${PIN_MAX} digits`}
+            placeholder={t('pin.digitsHint', { min: PIN_MIN, max: PIN_MAX })}
             placeholderTextColor={colors.textMuted}
             maxLength={PIN_MAX}
           />
-          <Text style={styles.label}>Confirm PIN</Text>
+          <Text style={styles.label}>{t('pin.confirmPin')}</Text>
           <TextInput
             style={[styles.input, styles.pinInput]}
             keyboardType="number-pad"
             secureTextEntry
             value={confirmPin}
             onChangeText={(v) => setConfirmPin(v.replace(/[^0-9]/g, '').slice(0, PIN_MAX))}
-            placeholder="Confirm"
+            placeholder={t('pin.confirmShort')}
             placeholderTextColor={colors.textMuted}
             maxLength={PIN_MAX}
           />
-          <Text style={styles.label}>Recovery question</Text>
+          <Text style={styles.label}>{t('pin.recoveryQ')}</Text>
           <TextInput
             style={styles.input}
             value={question}
             onChangeText={setQuestion}
-            placeholder="e.g. Your first pet's name"
+            placeholder={t('pin.recoveryQPh')}
             placeholderTextColor={colors.textMuted}
           />
-          <Text style={styles.label}>Answer</Text>
+          <Text style={styles.label}>{t('pin.answer')}</Text>
           <TextInput
             style={styles.input}
             value={answer}
             onChangeText={setAnswer}
-            placeholder="Used to reset PIN"
+            placeholder={t('pin.answerPh')}
             placeholderTextColor={colors.textMuted}
             autoCapitalize="none"
           />
           <Text style={styles.helper}>
-            If you forget your PIN, you must answer this question. Reset will erase all data.
+            {t('pin.recoveryHelper')}
           </Text>
           <View style={styles.formActions}>
             <Pressable style={[styles.formBtn, styles.cancelBtn]} onPress={resetForm}>
-              <Text style={styles.cancelText}>Cancel</Text>
+              <Text style={styles.cancelText}>{t('common.cancel')}</Text>
             </Pressable>
             <Pressable
               style={[styles.formBtn, styles.submitBtn, busy && { opacity: 0.6 }]}
               onPress={submitCreate}
               disabled={busy}
             >
-              <Text style={styles.submitText}>Enable PIN</Text>
+              <Text style={styles.submitText}>{t('pin.enable')}</Text>
             </Pressable>
           </View>
         </View>
@@ -282,7 +286,7 @@ export default function PinManager({ onChange }: Props) {
 
       {view === 'change' && (
         <View style={styles.form}>
-          <Text style={styles.label}>Current PIN</Text>
+          <Text style={styles.label}>{t('pin.currentPin')}</Text>
           <TextInput
             style={[styles.input, styles.pinInput]}
             keyboardType="number-pad"
@@ -291,18 +295,18 @@ export default function PinManager({ onChange }: Props) {
             onChangeText={(v) => setCurrentPin(v.replace(/[^0-9]/g, '').slice(0, PIN_MAX))}
             maxLength={PIN_MAX}
           />
-          <Text style={styles.label}>New PIN</Text>
+          <Text style={styles.label}>{t('pin.newPin')}</Text>
           <TextInput
             style={[styles.input, styles.pinInput]}
             keyboardType="number-pad"
             secureTextEntry
             value={newPin}
             onChangeText={(v) => setNewPin(v.replace(/[^0-9]/g, '').slice(0, PIN_MAX))}
-            placeholder={`${PIN_MIN}-${PIN_MAX} digits`}
+            placeholder={t('pin.digitsHint', { min: PIN_MIN, max: PIN_MAX })}
             placeholderTextColor={colors.textMuted}
             maxLength={PIN_MAX}
           />
-          <Text style={styles.label}>Confirm new PIN</Text>
+          <Text style={styles.label}>{t('pin.confirmNewPin')}</Text>
           <TextInput
             style={[styles.input, styles.pinInput]}
             keyboardType="number-pad"
@@ -311,33 +315,33 @@ export default function PinManager({ onChange }: Props) {
             onChangeText={(v) => setConfirmPin(v.replace(/[^0-9]/g, '').slice(0, PIN_MAX))}
             maxLength={PIN_MAX}
           />
-          <Text style={styles.label}>Recovery question</Text>
+          <Text style={styles.label}>{t('pin.recoveryQ')}</Text>
           <TextInput
             style={styles.input}
             value={question}
             onChangeText={setQuestion}
-            placeholder="Update recovery prompt"
+            placeholder={t('pin.updateRecoveryPh')}
             placeholderTextColor={colors.textMuted}
           />
-          <Text style={styles.label}>Answer</Text>
+          <Text style={styles.label}>{t('pin.answer')}</Text>
           <TextInput
             style={styles.input}
             value={answer}
             onChangeText={setAnswer}
-            placeholder="Answer to recovery question"
+            placeholder={t('pin.answerRecoveryPh')}
             placeholderTextColor={colors.textMuted}
             autoCapitalize="none"
           />
           <View style={styles.formActions}>
             <Pressable style={[styles.formBtn, styles.cancelBtn]} onPress={resetForm}>
-              <Text style={styles.cancelText}>Cancel</Text>
+              <Text style={styles.cancelText}>{t('common.cancel')}</Text>
             </Pressable>
             <Pressable
               style={[styles.formBtn, styles.submitBtn, busy && { opacity: 0.6 }]}
               onPress={submitChange}
               disabled={busy}
             >
-              <Text style={styles.submitText}>Update PIN</Text>
+              <Text style={styles.submitText}>{t('pin.updatePin')}</Text>
             </Pressable>
           </View>
         </View>
@@ -345,9 +349,10 @@ export default function PinManager({ onChange }: Props) {
 
       <ConfirmModal
         visible={confirmRemove}
-        title="Remove PIN?"
-        message="The app will no longer require a PIN on launch."
-        confirmLabel="Remove"
+        title={t('pin.removeTitle')}
+        message={t('pin.removeMsg')}
+        confirmLabel={t('pin.remove')}
+        cancelLabel={t('common.cancel')}
         tone="danger"
         busy={busy}
         onConfirm={doRemove}
@@ -356,7 +361,7 @@ export default function PinManager({ onChange }: Props) {
 
       {view === 'remove' && (
         <View style={styles.form}>
-          <Text style={styles.label}>Current PIN</Text>
+          <Text style={styles.label}>{t('pin.currentPin')}</Text>
           <TextInput
             style={[styles.input, styles.pinInput]}
             keyboardType="number-pad"
@@ -367,14 +372,14 @@ export default function PinManager({ onChange }: Props) {
           />
           <View style={styles.formActions}>
             <Pressable style={[styles.formBtn, styles.cancelBtn]} onPress={resetForm}>
-              <Text style={styles.cancelText}>Cancel</Text>
+              <Text style={styles.cancelText}>{t('common.cancel')}</Text>
             </Pressable>
             <Pressable
               style={[styles.formBtn, styles.submitBtn, busy && { opacity: 0.6 }]}
               onPress={submitRemove}
               disabled={busy}
             >
-              <Text style={styles.submitText}>Remove</Text>
+              <Text style={styles.submitText}>{t('pin.remove')}</Text>
             </Pressable>
           </View>
         </View>

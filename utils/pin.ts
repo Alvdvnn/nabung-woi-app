@@ -170,8 +170,10 @@ export async function clearPin(): Promise<void> {
   await AsyncStorage.multiRemove(Object.values(KEYS));
 }
 
-export function validatePinFormat(pin: string): string | null {
-  if (!/^\d+$/.test(pin)) return 'PIN must be digits only';
-  if (pin.length < PIN_MIN || pin.length > PIN_MAX) return `PIN must be ${PIN_MIN}-${PIN_MAX} digits`;
+export type PinFormatError = 'digitsOnly' | 'length';
+
+export function validatePinFormat(pin: string): PinFormatError | null {
+  if (!/^\d+$/.test(pin)) return 'digitsOnly';
+  if (pin.length < PIN_MIN || pin.length > PIN_MAX) return 'length';
   return null;
 }

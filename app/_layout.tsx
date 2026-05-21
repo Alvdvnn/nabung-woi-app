@@ -8,6 +8,7 @@ import { ToastProvider } from '../context/ToastContext';
 import { PinProvider, usePin } from '../context/PinContext';
 import { CategoriesProvider } from '../context/CategoriesContext';
 import { CalculatorProvider } from '../components/CalculatorProvider';
+import { LocaleProvider } from '../i18n';
 import PinLockScreen from '../components/PinLockScreen';
 import { useTheme } from '../hooks/useTheme';
 import { View } from 'react-native';
@@ -40,19 +41,21 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <ThemeProvider>
-          <BottomSheetModalProvider>
-            <ToastProvider>
-              <CalculatorProvider>
-                <PinProvider>
-                  <CategoriesProvider>
-                    <ThemedStack />
-                  </CategoriesProvider>
-                </PinProvider>
-              </CalculatorProvider>
-            </ToastProvider>
-          </BottomSheetModalProvider>
-        </ThemeProvider>
+        <LocaleProvider>
+          <ThemeProvider>
+            <BottomSheetModalProvider>
+              <ToastProvider>
+                <CalculatorProvider>
+                  <PinProvider>
+                    <CategoriesProvider>
+                      <ThemedStack />
+                    </CategoriesProvider>
+                  </PinProvider>
+                </CalculatorProvider>
+              </ToastProvider>
+            </BottomSheetModalProvider>
+          </ThemeProvider>
+        </LocaleProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

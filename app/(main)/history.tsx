@@ -13,14 +13,9 @@ import { useToast } from '../../hooks/useToast';
 import { radius, spacing, fontSize } from '../../constants/theme';
 import { useTheme } from '../../hooks/useTheme';
 import { deleteTransaction, getAccounts, getTransactions, Account, Transaction, TransactionType } from '../../utils/storage';
+import { useT } from '../../i18n';
 
 type Filter = 'all' | TransactionType;
-
-const FILTERS: { id: Filter; label: string }[] = [
-  { id: 'all', label: 'All' },
-  { id: 'income', label: 'Income' },
-  { id: 'expense', label: 'Expense' },
-];
 
 export default function HistoryScreen() {
   const router = useRouter();
@@ -31,6 +26,12 @@ export default function HistoryScreen() {
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const { colors } = useTheme();
   const toast = useToast();
+  const t = useT();
+  const FILTERS: { id: Filter; label: string }[] = [
+    { id: 'all', label: t('type.all') },
+    { id: 'income', label: t('type.income') },
+    { id: 'expense', label: t('type.expense') },
+  ];
   const styles = useMemo(() => StyleSheet.create({
     safe: { flex: 1, backgroundColor: colors.bg },
     filters: {
@@ -80,12 +81,12 @@ export default function HistoryScreen() {
     await deleteTransaction(pendingDeleteId);
     setTxs((prev) => prev.filter((t) => t.id !== pendingDeleteId));
     setPendingDeleteId(null);
-    toast.show('success', 'Transaction deleted');
+    toast.show('success', t('history.deleted'));
   }
 
   return (
     <SafeAreaView style={styles.safe}>
-      <TopBar title="History" showLogo={false} />
+      <TopBar title={t('history.title')} showLogo={false} />
       <View style={styles.filters}>
         {FILTERS.map((f) => (
           <Pressable
@@ -101,7 +102,7 @@ export default function HistoryScreen() {
       </View>
 
       {filtered.length === 0 ? (
-        <EmptyState Icon={Inbox} title="No transactions" subtitle="Tap the home tab to add your first one." />
+        <EmptyState Icon={Inbox} title={t('history.empty')} subtitle={t('history.emptySub')} />
       ) : (
         <FlatList
           data={filtered}
@@ -121,9 +122,10 @@ export default function HistoryScreen() {
 
       <ConfirmModal
         visible={!!pendingDeleteId}
-        title="Delete transaction?"
-        message="This entry will be removed from your history."
-        confirmLabel="Delete"
+        title={t('history.deleteTitle')}
+        message={t('history.deleteMsg')}
+        confirmLabel={t('common.delete')}
+        cancelLabel={t('common.cancel')}
         tone="danger"
         onConfirm={confirmDelete}
         onCancel={() => setPendingDeleteId(null)}

@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Flame } from 'lucide-react-native';
 import { useTheme } from '../hooks/useTheme';
 import { spacing, radius, fontSize, shadow } from '../constants/theme';
+import { useT } from '../i18n';
 
 interface Props {
   current: number;
@@ -11,6 +12,7 @@ interface Props {
 
 export default function StreakCard({ current, longest }: Props) {
   const { colors } = useTheme();
+  const t = useT();
   const styles = useMemo(() => StyleSheet.create({
     card: {
       flexDirection: 'row',
@@ -41,8 +43,8 @@ export default function StreakCard({ current, longest }: Props) {
         <Flame size={24} color={colors.warning} />
       </View>
       <View style={styles.main}>
-        <Text style={styles.big}>{current}<Text style={styles.label}> day streak</Text></Text>
-        <Text style={styles.sub}>Longest: {longest} day{longest === 1 ? '' : 's'}</Text>
+        <Text style={styles.big}>{current}<Text style={styles.label}>{t('streak.dayStreak')}</Text></Text>
+        <Text style={styles.sub}>{longest === 1 ? t('streak.longestOne', { n: longest }) : t('streak.longestMany', { n: longest })}</Text>
       </View>
     </View>
   );

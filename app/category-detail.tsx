@@ -12,6 +12,7 @@ import EmptyState from '../components/EmptyState';
 import TopBar from '../components/TopBar';
 import { useTheme } from '../hooks/useTheme';
 import { useCategories } from '../context/CategoriesContext';
+import { useT } from '../i18n';
 import { radius, spacing, fontSize } from '../constants/theme';
 import {
   getAccounts,
@@ -22,15 +23,15 @@ import {
 import { filterByPeriod, Period, totalsOf } from '../utils/aggregate';
 import { formatIDR, formatDate } from '../utils/format';
 
-const PERIOD_LABELS: Record<Period, string> = {
-  day: 'Today',
-  month: 'This month',
-  year: 'This year',
-};
-
 export default function CategoryDetailScreen() {
   const { colors } = useTheme();
   const { find } = useCategories();
+  const t = useT();
+  const PERIOD_LABELS: Record<Period, string> = {
+    day: t('period.today'),
+    month: t('period.thisMonth'),
+    year: t('period.thisYear'),
+  };
 
   const params = useLocalSearchParams<{ categoryId?: string; period?: Period }>();
   const categoryId = params.categoryId ?? '';
@@ -194,7 +195,7 @@ export default function CategoryDetailScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <TopBar
-        title={cat?.name ?? 'Category'}
+        title={cat?.name ?? t('categoryDetail.fallbackTitle')}
         showLogo={false}
         showBack
         showActions={false}
@@ -213,25 +214,25 @@ export default function CategoryDetailScreen() {
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.heroTitle} numberOfLines={1}>
-                    {cat?.name ?? 'Unknown'}
+                    {cat?.name ?? t('common.unknown')}
                   </Text>
                   <Text style={styles.heroPeriod}>{PERIOD_LABELS[period]}</Text>
                 </View>
               </View>
 
               <Text style={styles.heroLabel}>
-                {isIncome ? 'Total received' : 'Total spent'}
+                {isIncome ? t('categoryDetail.totalReceived') : t('categoryDetail.totalSpent')}
               </Text>
               <Text style={styles.heroAmount} numberOfLines={1} adjustsFontSizeToFit>
                 {formatIDR(categoryTotal)}
               </Text>
               <Text style={styles.heroCount}>
-                {filteredForCategory.length} {filteredForCategory.length === 1 ? 'entry' : 'entries'}
+                {filteredForCategory.length} {filteredForCategory.length === 1 ? t('categoryDetail.entry') : t('categoryDetail.entries')}
               </Text>
             </View>
 
             <View style={styles.sheet}>
-              {hasEntries && <Text style={styles.listLabel}>Entries</Text>}
+              {hasEntries && <Text style={styles.listLabel}>{t('categoryDetail.entriesLabel')}</Text>}
             </View>
           </>
         }
@@ -239,8 +240,8 @@ export default function CategoryDetailScreen() {
           <View style={{ backgroundColor: colors.bg, paddingTop: spacing.lg }}>
             <EmptyState
               Icon={Inbox}
-              title="No entries"
-              subtitle={`No transactions for "${cat?.name ?? 'this category'}" in this period.`}
+              title={t('categoryDetail.noEntries')}
+              subtitle={t('categoryDetail.noEntriesSub', { name: cat?.name ?? t('categoryDetail.thisCategory') })}
             />
           </View>
         }
@@ -253,10 +254,10 @@ export default function CategoryDetailScreen() {
               {item.note ? (
                 <Text style={styles.entryNote} numberOfLines={3}>{item.note}</Text>
               ) : (
-                <Text style={styles.entryNoteEmpty}>(no note)</Text>
+                <Text style={styles.entryNoteEmpty}>{t('common.noNote')}</Text>
               )}
               <Text style={styles.entryMeta}>
-                {accountNameMap.get(item.accountId) ?? 'Unknown account'}
+                {accountNameMap.get(item.accountId) ?? t('common.unknownAccount')}
               </Text>
               <Text style={styles.entryDate}>{formatDate(item.date)}</Text>
             </View>

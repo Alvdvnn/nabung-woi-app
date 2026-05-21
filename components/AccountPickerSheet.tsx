@@ -6,6 +6,8 @@ import { radius, spacing, fontSize } from '../constants/theme';
 import { useTheme } from '../hooks/useTheme';
 import { Account } from '../utils/storage';
 import { findAccountType } from '../constants/accountTypes';
+import { useT } from '../i18n';
+import { tBuiltin } from '../i18n/labels';
 
 interface Props {
   visible: boolean;
@@ -18,6 +20,7 @@ interface Props {
 export default function AccountPickerSheet({ visible, accounts, selectedId, onSelect, onClose }: Props) {
   const router = useRouter();
   const { colors } = useTheme();
+  const t = useT();
   const styles = useMemo(() => StyleSheet.create({
     backdrop: { flex: 1, backgroundColor: colors.overlay },
     sheet: {
@@ -85,14 +88,14 @@ export default function AccountPickerSheet({ visible, accounts, selectedId, onSe
       <Pressable style={styles.backdrop} onPress={onClose} />
       <View style={styles.sheet}>
         <View style={styles.header}>
-          <Text style={styles.title}>Choose Account</Text>
+          <Text style={styles.title}>{t('accountPicker.choose')}</Text>
           <Pressable onPress={onClose} hitSlop={8}>
             <X size={20} color={colors.textSecondary} />
           </Pressable>
         </View>
         <ScrollView style={styles.list}>
           {accounts.length === 0 ? (
-            <Text style={styles.empty}>No accounts yet. Add one in Settings.</Text>
+            <Text style={styles.empty}>{t('accountPicker.empty')}</Text>
           ) : (
             accounts.map((a) => {
               const type = findAccountType(a.typeId);
@@ -109,7 +112,7 @@ export default function AccountPickerSheet({ visible, accounts, selectedId, onSe
                   </View>
                   <View style={styles.info}>
                     <Text style={styles.name}>{a.name}</Text>
-                    <Text style={styles.type}>{type.name}</Text>
+                    <Text style={styles.type}>{tBuiltin(t, 'accountTypes', type.id)}</Text>
                   </View>
                   {active && <Check size={18} color={colors.primary} />}
                 </Pressable>
@@ -121,7 +124,7 @@ export default function AccountPickerSheet({ visible, accounts, selectedId, onSe
             onPress={() => { onClose(); router.push('/settings'); }}
           >
             <Plus size={16} color={colors.primary} />
-            <Text style={styles.addText}>Add Account</Text>
+            <Text style={styles.addText}>{t('account.add')}</Text>
           </Pressable>
         </ScrollView>
       </View>

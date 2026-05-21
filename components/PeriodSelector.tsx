@@ -3,20 +3,21 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { radius, spacing, fontSize } from '../constants/theme';
 import { useTheme } from '../hooks/useTheme';
 import { Period } from '../utils/aggregate';
+import { useT } from '../i18n';
 
 interface Props {
   value: Period;
   onChange: (p: Period) => void;
 }
 
-const OPTIONS: { id: Period; label: string }[] = [
-  { id: 'day', label: 'Day' },
-  { id: 'month', label: 'Month' },
-  { id: 'year', label: 'Year' },
-];
-
 export default function PeriodSelector({ value, onChange }: Props) {
   const { colors } = useTheme();
+  const t = useT();
+  const OPTIONS: { id: Period; label: string }[] = [
+    { id: 'day', label: t('period.day') },
+    { id: 'month', label: t('period.month') },
+    { id: 'year', label: t('period.year') },
+  ];
   const styles = useMemo(() => StyleSheet.create({
     container: {
       flexDirection: 'row',

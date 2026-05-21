@@ -11,6 +11,7 @@ import EmptyState from '../../components/EmptyState';
 import CalendarGrid from '../../components/CalendarGrid';
 import { spacing, fontSize } from '../../constants/theme';
 import { useTheme } from '../../hooks/useTheme';
+import { useT } from '../../i18n';
 import { getAccounts, getTransactions, Account, Transaction } from '../../utils/storage';
 import { isoDay, formatDate } from '../../utils/format';
 import { totalsOf } from '../../utils/aggregate';
@@ -24,6 +25,7 @@ export default function CalendarScreen() {
   const [month, setMonth] = useState(new Date());
   const [selected, setSelected] = useState(new Date());
   const { colors } = useTheme();
+  const t = useT();
   const styles = useMemo(() => StyleSheet.create({
     safe: { flex: 1, backgroundColor: colors.bg },
     content: { padding: spacing.lg, paddingBottom: spacing.xl },
@@ -60,7 +62,7 @@ export default function CalendarScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <TopBar title="Calendar" showLogo={false} />
+      <TopBar title={t('calendar.title')} showLogo={false} />
       <ScrollView contentContainerStyle={styles.content}>
         <CalendarGrid
           month={month}
@@ -78,7 +80,7 @@ export default function CalendarScreen() {
         </View>
 
         {dayTxs.length === 0 ? (
-          <EmptyState Icon={CalendarX} title="No transactions" subtitle="Nothing recorded on this day." />
+          <EmptyState Icon={CalendarX} title={t('calendar.empty')} subtitle={t('calendar.emptySub')} />
         ) : (
           dayTxs.map((t) => (
             <TransactionItem

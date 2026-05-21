@@ -5,6 +5,7 @@ import { spacing, radius, fontSize, shadow } from '../constants/theme';
 import { CategorySum } from '../utils/aggregate';
 import { useCategories } from '../context/CategoriesContext';
 import { formatIDRCompact } from '../utils/format';
+import { useT } from '../i18n';
 
 interface Props {
   data: CategorySum[];
@@ -15,6 +16,7 @@ interface Props {
 export default function TopCategoriesRow({ data, total, onPress }: Props) {
   const { colors } = useTheme();
   const { find } = useCategories();
+  const t = useT();
 
   const styles = useMemo(() => StyleSheet.create({
     scrollContent: { 
@@ -70,7 +72,7 @@ export default function TopCategoriesRow({ data, total, onPress }: Props) {
               <View style={styles.iconWrap}>
                 {Icon && <Icon size={16} color={colors.primary} />}
               </View>
-              <Text style={styles.name} numberOfLines={1}>{cat?.name ?? 'Other'}</Text>
+              <Text style={styles.name} numberOfLines={1}>{cat?.name ?? t('common.other')}</Text>
               <Text style={styles.amount}>{formatIDRCompact(c.total)}</Text>
               <View style={styles.bar}>
                 <View style={[styles.fill, { width: `${pct}%` }]} />

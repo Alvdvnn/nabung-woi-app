@@ -4,6 +4,8 @@ import { ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { radius, spacing, fontSize } from '../constants/theme';
 import { useTheme } from '../hooks/useTheme';
 import { isoDay } from '../utils/format';
+import { useLocale } from '../i18n';
+import { DICTS } from '../i18n/dicts';
 
 interface Props {
   month: Date;
@@ -13,14 +15,11 @@ interface Props {
   onSelectDate: (d: Date) => void;
 }
 
-const DOW = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
-const MONTH_NAMES = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
-];
-
 export default function CalendarGrid({ month, selected, txDates, onChangeMonth, onSelectDate }: Props) {
   const { colors } = useTheme();
+  const { locale } = useLocale();
+  const DOW = DICTS[locale].calendar.dow;
+  const MONTH_NAMES = DICTS[locale].calendar.months;
   const styles = useMemo(() => StyleSheet.create({
     container: {
       backgroundColor: colors.card,

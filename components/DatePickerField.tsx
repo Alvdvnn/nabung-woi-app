@@ -5,6 +5,7 @@ import { CalendarDays } from 'lucide-react-native';
 import { useTheme } from '../hooks/useTheme';
 import { spacing, radius, fontSize } from '../constants/theme';
 import { formatDate } from '../utils/format';
+import { useT } from '../i18n';
 
 interface Props {
   value: Date;
@@ -13,6 +14,7 @@ interface Props {
 
 export default function DatePickerField({ value, onChange }: Props) {
   const { colors } = useTheme();
+  const t = useT();
   const [open, setOpen] = useState(false);
 
   const styles = useMemo(() => StyleSheet.create({
@@ -73,7 +75,7 @@ export default function DatePickerField({ value, onChange }: Props) {
           <Pressable style={styles.sheet} onPress={() => setOpen(false)}>
             <Pressable style={styles.sheetCard} onPress={(e) => e.stopPropagation()}>
               <Pressable style={styles.sheetDone} onPress={() => setOpen(false)}>
-                <Text style={styles.sheetDoneText}>Done</Text>
+                <Text style={styles.sheetDoneText}>{t('common.done')}</Text>
               </Pressable>
               <DateTimePicker value={value} mode="date" display="spinner" onChange={handleIosChange} />
             </Pressable>

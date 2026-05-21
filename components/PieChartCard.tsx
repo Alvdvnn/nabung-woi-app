@@ -6,6 +6,7 @@ import { useTheme } from '../hooks/useTheme';
 import { CategorySum } from '../utils/aggregate';
 import { useCategories } from '../context/CategoriesContext';
 import { formatIDR } from '../utils/format';
+import { useT } from '../i18n';
 
 interface Props {
   data: CategorySum[];
@@ -17,6 +18,7 @@ const SLICE_COLORS = ['#0d9488', '#f59e0b', '#ef4444', '#8b5cf6', '#0ea5e9', '#e
 export default function PieChartCard({ data, total }: Props) {
   const { colors } = useTheme();
   const { find } = useCategories();
+  const t = useT();
   const styles = useMemo(() => StyleSheet.create({
     card: {
       backgroundColor: colors.card,
@@ -39,8 +41,8 @@ export default function PieChartCard({ data, total }: Props) {
   if (data.length === 0) {
     return (
       <View style={styles.card}>
-        <Text style={styles.title}>Spending by Category</Text>
-        <Text style={styles.empty}>No expenses in this period yet.</Text>
+        <Text style={styles.title}>{t('pie.title')}</Text>
+        <Text style={styles.empty}>{t('pie.empty')}</Text>
       </View>
     );
   }
@@ -52,7 +54,7 @@ export default function PieChartCard({ data, total }: Props) {
 
   return (
     <View style={styles.card}>
-      <Text style={styles.title}>Spending by Category</Text>
+      <Text style={styles.title}>{t('pie.title')}</Text>
       <View style={styles.chartRow}>
         <PieChart
           data={pieData}
@@ -62,7 +64,7 @@ export default function PieChartCard({ data, total }: Props) {
           innerCircleColor={colors.card}
           centerLabelComponent={() => (
             <View style={{ alignItems: 'center' }}>
-              <Text style={styles.centerLabel}>Total</Text>
+              <Text style={styles.centerLabel}>{t('pie.total')}</Text>
               <Text style={styles.centerValue}>{formatIDR(total)}</Text>
             </View>
           )}
@@ -74,7 +76,7 @@ export default function PieChartCard({ data, total }: Props) {
             return (
               <View key={d.categoryId} style={styles.legendRow}>
                 <View style={[styles.dot, { backgroundColor: SLICE_COLORS[i % SLICE_COLORS.length] }]} />
-                <Text style={styles.legendName} numberOfLines={1}>{cat?.name ?? 'Other'}</Text>
+                <Text style={styles.legendName} numberOfLines={1}>{cat?.name ?? t('common.other')}</Text>
                 <Text style={styles.legendPct}>{pct}%</Text>
               </View>
             );

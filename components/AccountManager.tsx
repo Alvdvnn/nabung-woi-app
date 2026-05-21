@@ -9,6 +9,8 @@ import { ACCOUNT_TYPES, findAccountType } from '../constants/accountTypes';
 import { formatIDR } from '../utils/format';
 import { genId } from '../utils/id';
 import ConfirmModal from './ConfirmModal';
+import { useT } from '../i18n';
+import { tBuiltin } from '../i18n/labels';
 
 interface Props {
   accounts: Account[];
@@ -23,6 +25,7 @@ export default function AccountManager({ accounts, onChange }: Props) {
   const [pendingDelete, setPendingDelete] = useState<Account | null>(null);
   const { colors } = useTheme();
   const toast = useToast();
+  const t = useT();
   const styles = useMemo(() => StyleSheet.create({
     row: {
       flexDirection: 'row',
@@ -73,7 +76,7 @@ export default function AccountManager({ accounts, onChange }: Props) {
   }), [colors]);
 
   async function create() {
-    if (!name.trim()) { toast.show('error', 'Enter an account name'); return; }
+    if (!name.trim()) { toast.show('error', t('account.errName')); return; }
     const next: Account[] = [
       ...accounts,
       {
@@ -86,7 +89,7 @@ export default function AccountManager({ accounts, onChange }: Props) {
     await saveAccounts(next);
     onChange(next);
     setName(''); setBalance(''); setTypeId(ACCOUNT_TYPES[0].id); setShowForm(false);
-    toast.show('success', 'Account added');
+    toast.show('success', t('account.added'));
   }
 
   async function confirmDelete() {
@@ -95,7 +98,7 @@ export default function AccountManager({ accounts, onChange }: Props) {
     await saveAccounts(next);
     onChange(next);
     setPendingDelete(null);
-    toast.show('success', 'Account removed');
+    toast.show('success', t('account.removed'));
   }
 
   return (
@@ -108,7 +111,7 @@ export default function AccountManager({ accounts, onChange }: Props) {
             <View style={styles.iconWrap}><TypeIcon size={18} color={colors.primary} /></View>
             <View style={styles.info}>
               <Text style={styles.name}>{a.name}</Text>
-              <Text style={styles.meta}>{type.name} • {formatIDR(a.startingBalance)}</Text>
+              <Text style={styles.meta}>{tBuiltin(t, 'accountTypes', type.id)} • {formatIDR(a.startingBalance)}</Text>
             </View>
             <Pressable onPress={() => setPendingDelete(a)} hitSlop={8} style={styles.delBtn}>
               <Trash2 size={16} color={colors.textMuted} />
@@ -120,36 +123,36 @@ export default function AccountManager({ accounts, onChange }: Props) {
       {!showForm ? (
         <Pressable style={styles.addBtn} onPress={() => setShowForm(true)}>
           <Plus size={16} color={colors.primary} />
-          <Text style={styles.addText}>Add Account</Text>
+          <Text style={styles.addText}>{t('account.add')}</Text>
         </Pressable>
       ) : (
         <View style={styles.form}>
           <TextInput
             style={styles.input}
-            placeholder="Account name (e.g. BCA)"
+            placeholder={t('account.namePlaceholder')}
             placeholderTextColor={colors.textMuted}
             value={name}
             onChangeText={setName}
           />
           <View style={styles.typeRow}>
-            {ACCOUNT_TYPES.map((t) => {
-              const TIcon = t.icon;
-              const active = t.id === typeId;
+            {ACCOUNT_TYPES.map((ty) => {
+              const TIcon = ty.icon;
+              const active = ty.id === typeId;
               return (
                 <Pressable
-                  key={t.id}
+                  key={ty.id}
                   style={[styles.typeBtn, active && styles.typeBtnActive]}
-                  onPress={() => setTypeId(t.id)}
+                  onPress={() => setTypeId(ty.id)}
                 >
                   <TIcon size={14} color={active ? colors.white : colors.textSecondary} />
-                  <Text style={[styles.typeLabel, active && styles.typeLabelActive]}>{t.name}</Text>
+                  <Text style={[styles.typeLabel, active && styles.typeLabelActive]}>{tBuiltin(t, 'accountTypes', ty.id)}</Text>
                 </Pressable>
               );
             })}
           </View>
           <TextInput
             style={styles.input}
-            placeholder="Starting balance (Rp)"
+            placeholder={t('account.balancePlaceholder')}
             placeholderTextColor={colors.textMuted}
             keyboardType="numeric"
             value={balance ? Number(balance).toLocaleString('id-ID') : ''}
@@ -157,10 +160,10 @@ export default function AccountManager({ accounts, onChange }: Props) {
           />
           <View style={styles.formActions}>
             <Pressable style={[styles.formBtn, styles.cancelBtn]} onPress={() => setShowForm(false)}>
-              <Text style={styles.cancelText}>Cancel</Text>
+              <Text style={styles.cancelText}>{t('common.cancel')}</Text>
             </Pressable>
             <Pressable style={[styles.formBtn, styles.createBtn]} onPress={create}>
-              <Text style={styles.createText}>Create</Text>
+              <Text style={styles.createText}>{t('account.create')}</Text>
             </Pressable>
           </View>
         </View>
@@ -168,9 +171,10 @@ export default function AccountManager({ accounts, onChange }: Props) {
 
       <ConfirmModal
         visible={!!pendingDelete}
-        title="Delete account?"
-        message={pendingDelete ? `"${pendingDelete.name}" will be removed. Transactions referencing it keep their data.` : ''}
-        confirmLabel="Delete"
+        title={t('account.deleteTitle')}
+        message={pendingDelete ? t('account.deleteMsg', { name: pendingDelete.name }) : ''}
+        confirmLabel={t('common.delete')}
+        cancelLabel={t('common.cancel')}
         tone="danger"
         onConfirm={confirmDelete}
         onCancel={() => setPendingDelete(null)}

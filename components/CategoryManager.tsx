@@ -9,6 +9,8 @@ import { CustomCategory, saveCustomCategories, TransactionType } from '../utils/
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, CUSTOM_ICON } from '../constants/categories';
 import ConfirmModal from './ConfirmModal';
 import { genId } from '../utils/id';
+import { useT } from '../i18n';
+import { tBuiltin } from '../i18n/labels';
 
 interface Props {
   categories: CustomCategory[];
@@ -22,6 +24,7 @@ export default function CategoryManager({ categories, onChange }: Props) {
   const { colors } = useTheme();
   const toast = useToast();
   const { refresh } = useCategories();
+  const t = useT();
 
   const styles = useMemo(() => StyleSheet.create({
     toggle: {
@@ -76,13 +79,13 @@ export default function CategoryManager({ categories, onChange }: Props) {
   const Icon = CUSTOM_ICON;
 
   async function add() {
-    if (!name.trim()) { toast.show('error', 'Enter a category name'); return; }
+    if (!name.trim()) { toast.show('error', t('category.errName')); return; }
     const next = [...categories, { id: genId('c'), name: name.trim(), type, iconId: 'other' }];
     await saveCustomCategories(next);
     onChange(next);
     await refresh();
     setName('');
-    toast.show('success', 'Category added');
+    toast.show('success', t('category.added'));
   }
 
   async function confirmDelete() {
@@ -92,37 +95,37 @@ export default function CategoryManager({ categories, onChange }: Props) {
     onChange(next);
     await refresh();
     setPendingDelete(null);
-    toast.show('success', 'Category removed');
+    toast.show('success', t('category.removed'));
   }
 
   return (
     <View>
       <View style={styles.toggle}>
-        {(['expense', 'income'] as TransactionType[]).map((t) => (
+        {(['expense', 'income'] as TransactionType[]).map((kind) => (
           <Pressable
-            key={t}
-            style={[styles.toggleBtn, type === t && styles.toggleActive]}
-            onPress={() => setType(t)}
+            key={kind}
+            style={[styles.toggleBtn, type === kind && styles.toggleActive]}
+            onPress={() => setType(kind)}
           >
-            <Text style={[styles.toggleLabel, type === t && styles.toggleLabelActive]}>
-              {t === 'expense' ? 'Expense' : 'Income'}
+            <Text style={[styles.toggleLabel, type === kind && styles.toggleLabelActive]}>
+              {kind === 'expense' ? t('type.expense') : t('type.income')}
             </Text>
           </Pressable>
         ))}
       </View>
 
-      <Text style={styles.subhead}>Default</Text>
+      <Text style={styles.subhead}>{t('category.defaultHead')}</Text>
       <View style={styles.chips}>
         {defaults.map((c) => (
           <View key={c.id} style={styles.defaultChip}>
-            <Text style={styles.defaultText}>{c.name}</Text>
+            <Text style={styles.defaultText}>{tBuiltin(t, 'categories', c.id)}</Text>
           </View>
         ))}
       </View>
 
-      <Text style={styles.subhead}>Custom</Text>
+      <Text style={styles.subhead}>{t('category.customHead')}</Text>
       {customForType.length === 0 ? (
-        <Text style={styles.empty}>No custom categories yet.</Text>
+        <Text style={styles.empty}>{t('category.noCustom')}</Text>
       ) : (
         customForType.map((c) => (
           <View key={c.id} style={styles.row}>
@@ -142,7 +145,7 @@ export default function CategoryManager({ categories, onChange }: Props) {
       <View style={styles.addRow}>
         <TextInput
           style={styles.input}
-          placeholder="New category name"
+          placeholder={t('category.addPlaceholder')}
           placeholderTextColor={colors.textMuted}
           value={name}
           onChangeText={setName}
@@ -154,9 +157,10 @@ export default function CategoryManager({ categories, onChange }: Props) {
 
       <ConfirmModal
         visible={!!pendingDelete}
-        title="Delete category?"
-        message={pendingDelete ? `"${pendingDelete.name}" will be removed. Existing transactions keep their data.` : ''}
-        confirmLabel="Delete"
+        title={t('category.deleteTitle')}
+        message={pendingDelete ? t('category.deleteMsg', { name: pendingDelete.name }) : ''}
+        confirmLabel={t('common.delete')}
+        cancelLabel={t('common.cancel')}
         tone="danger"
         onConfirm={confirmDelete}
         onCancel={() => setPendingDelete(null)}
