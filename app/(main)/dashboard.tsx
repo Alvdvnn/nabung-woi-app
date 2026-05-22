@@ -260,8 +260,7 @@ export default function DashboardScreen() {
                 return (
                   <Pressable
                     key={item.id}
-                    style={styles.accountCard}
-                    android_ripple={null}
+                    style={({ pressed }) => [styles.accountCard, pressed && { transform: [{ scale: 0.97 }] }]}
                     onPress={() => openAccountDetail(item.id)}
                   >
                     <View style={styles.accountIconWrap}>

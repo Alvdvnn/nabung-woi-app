@@ -49,9 +49,9 @@ export default function TransactionItem({ item, accountName, onDelete, onPress }
     amount: { fontSize: fontSize.lg, fontWeight: '700' },
     incomeText: { color: colors.income },
     expenseText: { color: colors.expense },
-    actionsRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+    actionsRow: { flexDirection: 'row', alignItems: 'center', gap: 2 },
     iconBtn: { padding: 4 },
-    editBtn: { padding: 4, marginLeft: 28 },
+    editBtn: { padding: 4 },
   }), [colors]);
 
   const cat = find(item.categoryId);
@@ -79,12 +79,12 @@ export default function TransactionItem({ item, accountName, onDelete, onPress }
           <View style={styles.actionsRow}>
             {onPress && (
               <Pressable onPress={() => onPress(item.id)} hitSlop={8} style={styles.editBtn}>
-                <Pencil size={18} color={colors.textMuted} />
+                <Pencil size={14} color={colors.textMuted} />
               </Pressable>
             )}
             {onDelete && (
               <Pressable onPress={() => onDelete(item.id)} hitSlop={8} style={styles.iconBtn}>
-                <Trash2 size={18} color={colors.textMuted} />
+                <Trash2 size={14} color={colors.textMuted} />
               </Pressable>
             )}
           </View>

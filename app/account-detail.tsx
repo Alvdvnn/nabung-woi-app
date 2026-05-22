@@ -1,12 +1,12 @@
 import { useCallback, useMemo, useState } from 'react';
 import {
-  ScrollView,
+  FlatList,
   SafeAreaView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
-import { Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Inbox, CircleDollarSign } from 'lucide-react-native';
 import EmptyState from '../components/EmptyState';
 import TopBar from '../components/TopBar';
@@ -71,9 +71,7 @@ export default function AccountDetailScreen() {
   const styles = useMemo(
     () =>
       StyleSheet.create({
-        safe: { flex: 1, backgroundColor: colors.primary },
-        topbarWrap: { backgroundColor: colors.bg },
-        body: { flex: 1, backgroundColor: colors.bg },
+        safe: { flex: 1, backgroundColor: colors.bg },
         scroll: { paddingBottom: spacing.xxl + 40 },
 
         hero: {
@@ -138,7 +136,6 @@ export default function AccountDetailScreen() {
           borderTopRightRadius: 28,
           marginTop: -28,
           paddingTop: spacing.sm,
-          flex: 1,
         },
 
         listLabel: {
@@ -198,124 +195,124 @@ export default function AccountDetailScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <Stack.Screen
-        options={{ contentStyle: { backgroundColor: colors.primary } }}
+      <TopBar
+        title={account?.name ?? t('accountDetail.fallbackTitle')}
+        showLogo={false}
+        showBack
+        showActions={false}
       />
-      <View style={styles.topbarWrap}>
-        <TopBar
-          title={account?.name ?? t('accountDetail.fallbackTitle')}
-          showLogo={false}
-          showBack
-          showActions={false}
-        />
-      </View>
-      <ScrollView
-        style={styles.body}
+      <FlatList
+        data={accountTxs}
+        keyExtractor={(tx) => tx.id}
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.hero}>
-          <View style={styles.heroIconRow}>
-            <View style={styles.heroIconWrap}>
-              <TypeIcon size={22} color={colors.white} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.heroTitle} numberOfLines={1}>
-                {account?.name ?? t('common.unknownAccount')}
-              </Text>
-              <Text style={styles.heroType}>
-                {tBuiltin(t, 'accountTypes', accountType.id)}
-              </Text>
-            </View>
-          </View>
+        ListHeaderComponent={
+          <>
+            <View style={styles.hero}>
+              <View style={styles.heroIconRow}>
+                <View style={styles.heroIconWrap}>
+                  <TypeIcon size={22} color={colors.white} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.heroTitle} numberOfLines={1}>
+                    {account?.name ?? t('common.unknownAccount')}
+                  </Text>
+                  <Text style={styles.heroType}>
+                    {tBuiltin(t, 'accountTypes', accountType.id)}
+                  </Text>
+                </View>
+              </View>
 
-          <Text style={styles.heroLabel}>
-            {t('accountDetail.currentBalance')}
-          </Text>
-          <Text style={styles.heroAmount} numberOfLines={1} adjustsFontSizeToFit>
-            {formatIDR(currentBalance)}
-          </Text>
-          <Text style={styles.heroCount}>
-            {accountTxs.length}{' '}
-            {accountTxs.length === 1
-              ? t('accountDetail.entry')
-              : t('accountDetail.entries')}
-          </Text>
-        </View>
-
-        <View style={styles.sheet}>
-          {hasEntries ? (
-            <>
-              <Text style={styles.listLabel}>
-                {t('accountDetail.entriesLabel')}
+              <Text style={styles.heroLabel}>
+                {t('accountDetail.currentBalance')}
               </Text>
-              {accountTxs.map((item) => {
-                const cat = find(item.categoryId);
-                const Icon = cat?.icon ?? CircleDollarSign;
-                const isIncome = item.type === 'income';
-                return (
-                  <View key={item.id} style={styles.entryRow}>
-                    <View
-                      style={{
-                        width: 36,
-                        height: 36,
-                        borderRadius: radius.full,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        marginRight: spacing.md,
-                        backgroundColor: isIncome
-                          ? colors.incomeLight
-                          : colors.expenseLight,
-                      }}
-                    >
-                      <Icon
-                        size={20}
-                        color={isIncome ? colors.income : colors.expense}
-                      />
-                    </View>
-                    <View style={styles.entryInfo}>
-                      {item.note ? (
-                        <Text style={styles.entryNote} numberOfLines={3}>
-                          {item.note}
-                        </Text>
-                      ) : (
-                        <Text style={styles.entryNoteEmpty}>
-                          {cat?.name ?? t('common.other')}
-                        </Text>
-                      )}
-                      <Text style={styles.entryMeta}>
-                        {cat?.name ?? t('common.other')}
-                      </Text>
-                      <Text style={styles.entryDate}>
-                        {formatDate(item.date)}
-                      </Text>
-                    </View>
-                    <Text
-                      style={[
-                        styles.entryAmount,
-                        { color: isIncome ? colors.income : colors.expense },
-                      ]}
-                    >
-                      {isIncome ? '+' : '-'}
-                      {formatIDR(item.amount)}
-                    </Text>
-                  </View>
-                );
+              <Text
+                style={styles.heroAmount}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+              >
+                {formatIDR(currentBalance)}
+              </Text>
+              <Text style={styles.heroCount}>
+                {accountTxs.length}{' '}
+                {accountTxs.length === 1
+                  ? t('accountDetail.entry')
+                  : t('accountDetail.entries')}
+              </Text>
+            </View>
+
+            <View style={styles.sheet}>
+              {hasEntries && (
+                <Text style={styles.listLabel}>
+                  {t('accountDetail.entriesLabel')}
+                </Text>
+              )}
+            </View>
+          </>
+        }
+        ListEmptyComponent={
+          <View style={{ backgroundColor: colors.bg, paddingTop: spacing.lg }}>
+            <EmptyState
+              Icon={Inbox}
+              title={t('accountDetail.noEntries')}
+              subtitle={t('accountDetail.noEntriesSub', {
+                name: account?.name ?? t('accountDetail.thisAccount'),
               })}
-            </>
-          ) : (
-            <View style={{ paddingTop: spacing.lg }}>
-              <EmptyState
-                Icon={Inbox}
-                title={t('accountDetail.noEntries')}
-                subtitle={t('accountDetail.noEntriesSub', {
-                  name: account?.name ?? t('accountDetail.thisAccount'),
-                })}
-              />
+            />
+          </View>
+        }
+        renderItem={({ item }) => {
+          const cat = find(item.categoryId);
+          const Icon = cat?.icon ?? CircleDollarSign;
+          const isIncome = item.type === 'income';
+          return (
+            <View style={styles.entryRow}>
+              <View
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: radius.full,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginRight: spacing.md,
+                  backgroundColor: isIncome
+                    ? colors.incomeLight
+                    : colors.expenseLight,
+                }}
+              >
+                <Icon
+                  size={20}
+                  color={isIncome ? colors.income : colors.expense}
+                />
+              </View>
+              <View style={styles.entryInfo}>
+                {item.note ? (
+                  <Text style={styles.entryNote} numberOfLines={3}>
+                    {item.note}
+                  </Text>
+                ) : (
+                  <Text style={styles.entryNoteEmpty}>
+                    {cat?.name ?? t('common.other')}
+                  </Text>
+                )}
+                <Text style={styles.entryMeta}>
+                  {cat?.name ?? t('common.other')}
+                </Text>
+                <Text style={styles.entryDate}>{formatDate(item.date)}</Text>
+              </View>
+              <Text
+                style={[
+                  styles.entryAmount,
+                  { color: isIncome ? colors.income : colors.expense },
+                ]}
+              >
+                {isIncome ? '+' : '-'}
+                {formatIDR(item.amount)}
+              </Text>
             </View>
-          )}
-        </View>
-      </ScrollView>
+          );
+        }}
+      />
     </SafeAreaView>
   );
 }
