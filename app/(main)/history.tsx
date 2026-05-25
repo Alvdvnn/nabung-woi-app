@@ -80,7 +80,6 @@ export default function HistoryScreen() {
 
   const styles = useMemo(() => StyleSheet.create({
     safe: { flex: 1, backgroundColor: colors.bg },
-    
     monthPicker: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -97,7 +96,6 @@ export default function HistoryScreen() {
     monthNavBtn: { padding: spacing.sm },
     monthTextWrap: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     monthText: { fontSize: fontSize.md, fontWeight: '700', color: colors.textPrimary },
-    
     filters: {
       flexDirection: 'row',
       gap: spacing.sm,
@@ -116,7 +114,6 @@ export default function HistoryScreen() {
     filterBtnActive: { backgroundColor: colors.primary, borderColor: colors.primary },
     filterLabel: { fontSize: fontSize.sm, fontWeight: '600', color: colors.textSecondary },
     filterLabelActive: { color: colors.white },
-    
     list: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl },
   }), [colors]);
 
@@ -124,7 +121,6 @@ export default function HistoryScreen() {
     <SafeAreaView style={styles.safe}>
       <TopBar title={t('history.title')} showLogo={false} />
       
-      {/* 1. Komponen Filter Bulan */}
       <View style={styles.monthPicker}>
         <Pressable onPress={handlePrevMonth} style={styles.monthNavBtn}>
           <ChevronLeft size={20} color={colors.textSecondary} />
@@ -132,7 +128,6 @@ export default function HistoryScreen() {
         
         <View style={styles.monthTextWrap}>
           <CalendarIcon size={16} color={colors.primary} />
-          {/* Format bulan misal: "May 2026" */}
           <Text style={styles.monthText}>{currentMonth.format('MMMM YYYY')}</Text>
         </View>
 
@@ -141,7 +136,6 @@ export default function HistoryScreen() {
         </Pressable>
       </View>
 
-      {/* 2. Filter Tipe Transaksi */}
       <View style={styles.filters}>
         {FILTERS.map((f) => (
           <Pressable
@@ -156,7 +150,6 @@ export default function HistoryScreen() {
         ))}
       </View>
 
-      {/* 3. Daftar Transaksi */}
       {filtered.length === 0 ? (
         <EmptyState Icon={Inbox} title={t('history.empty')} subtitle={t('history.emptySub')} />
       ) : (
