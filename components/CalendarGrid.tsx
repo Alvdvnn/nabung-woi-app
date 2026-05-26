@@ -47,14 +47,15 @@ export default function CalendarGrid({ month, selected, txDates, onChangeMonth, 
     inner: {
       width: 36,
       height: 36,
-      borderRadius: 18,
+      borderRadius: radius.sm,
       alignItems: 'center',
       justifyContent: 'center',
       position: 'relative',
     },
-    innerToday: { borderWidth: 1.5, borderColor: colors.primaryLight },
+    innerToday: { borderWidth: 1.5, borderColor: colors.primary },
     innerSelected: { backgroundColor: colors.primary },
     dayNum: { fontSize: fontSize.sm, color: colors.textPrimary, fontWeight: '500' },
+    dayNumToday: { color: colors.textPrimary, fontWeight: '700' },
     dayNumSelected: { color: colors.white, fontWeight: '700' },
     dot: {
       position: 'absolute',
@@ -124,7 +125,11 @@ export default function CalendarGrid({ month, selected, txDates, onChangeMonth, 
                 isSelected && styles.innerSelected,
                 isToday && !isSelected && styles.innerToday,
               ]}>
-                <Text style={[styles.dayNum, isSelected && styles.dayNumSelected]}>{d.getDate()}</Text>
+                <Text style={[
+                  styles.dayNum,
+                  isToday && !isSelected && styles.dayNumToday,
+                  isSelected && styles.dayNumSelected,
+                ]}>{d.getDate()}</Text>
                 {hasTx && <View style={[styles.dot, isSelected && styles.dotOnSelected]} />}
               </View>
             </Pressable>

@@ -41,7 +41,7 @@ export default function CalendarScreen() {
       marginBottom: spacing.md,
     },
     dayTitle: { fontSize: fontSize.md, fontWeight: '700', color: colors.textPrimary },
-    dayNet: { fontSize: fontSize.md, fontWeight: '700', color: colors.primary },
+    dayNet: { fontSize: fontSize.md, fontWeight: '700' },
   }), [colors]);
 
   useFocusEffect(
@@ -90,7 +90,7 @@ export default function CalendarScreen() {
 
         <View style={styles.dayHeader}>
           <Text style={styles.dayTitle}>{formatDate(selected.toISOString())}</Text>
-          <Text style={styles.dayNet}>
+          <Text style={[styles.dayNet, { color: dayTotals.net >= 0 ? colors.income : colors.expense }]}>
             {dayTotals.net >= 0 ? '+' : ''}{formatIDR(dayTotals.net)}
           </Text>
         </View>

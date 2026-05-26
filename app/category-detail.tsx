@@ -195,7 +195,7 @@ export default function CategoryDetailScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <TopBar
-        title={cat?.name ?? t('categoryDetail.fallbackTitle')}
+        title={t('categoryDetail.fallbackTitle')}
         showLogo={false}
         showBack
         showActions={false}

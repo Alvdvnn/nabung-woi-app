@@ -2,16 +2,12 @@ import { useMemo } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 import { spacing, fontSize } from '../constants/theme';
 import { useTheme } from '../hooks/useTheme';
+import { groupDigits } from '../utils/format';
 
 interface Props {
   value: string;
   onChange: (v: string) => void;
   autoFocus?: boolean;
-}
-
-function formatWithSeparator(raw: string): string {
-  if (!raw) return '';
-  return Number(raw).toLocaleString('id-ID');
 }
 
 export default function AmountInput({ value, onChange, autoFocus = true }: Props) {
@@ -48,7 +44,7 @@ export default function AmountInput({ value, onChange, autoFocus = true }: Props
         placeholder="0"
         placeholderTextColor={colors.textMuted}
         keyboardType="numeric"
-        value={formatWithSeparator(value)}
+        value={groupDigits(value)}
         onChangeText={(v) => onChange(v.replace(/[^0-9]/g, ''))}
         autoFocus={autoFocus}
       />

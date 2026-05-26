@@ -191,13 +191,13 @@ export default function DashboardScreen() {
       borderWidth: 1,
       borderColor: colors.border,
     },
+    statHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
     statIcon: {
       width: 32, height: 32, borderRadius: radius.full,
       alignItems: 'center', justifyContent: 'center',
-      marginBottom: spacing.sm,
     },
-    statLabel: { fontSize: fontSize.xs, color: colors.textSecondary, fontWeight: '600' },
-    statValue: { fontSize: fontSize.md, fontWeight: '800', marginTop: 2 },
+    statLabel: { fontSize: fontSize.sm, color: colors.textSecondary, fontWeight: '700' },
+    statValue: { fontSize: fontSize.xxl, fontWeight: '900', letterSpacing: -0.5 },
 
     netCard: {
       backgroundColor: colors.card,
@@ -290,20 +290,24 @@ export default function DashboardScreen() {
 
           <View style={styles.statsRow}>
             <View style={styles.statCard}>
-              <View style={[styles.statIcon, { backgroundColor: colors.incomeLight }]}>
-                <TrendingUp size={16} color={colors.income} />
+              <View style={styles.statHeader}>
+                <View style={[styles.statIcon, { backgroundColor: colors.incomeLight }]}>
+                  <TrendingUp size={16} color={colors.income} />
+                </View>
+                <Text style={styles.statLabel}>{t('type.income')}</Text>
               </View>
-              <Text style={styles.statLabel}>{t('type.income')}</Text>
-              <Text style={[styles.statValue, { color: colors.income }]}>
+              <Text style={[styles.statValue, { color: colors.income }]} numberOfLines={1} adjustsFontSizeToFit>
                 {formatIDR(totals.income)}
               </Text>
             </View>
             <View style={styles.statCard}>
-              <View style={[styles.statIcon, { backgroundColor: colors.expenseLight }]}>
-                <TrendingDown size={16} color={colors.expense} />
+              <View style={styles.statHeader}>
+                <View style={[styles.statIcon, { backgroundColor: colors.expenseLight }]}>
+                  <TrendingDown size={16} color={colors.expense} />
+                </View>
+                <Text style={styles.statLabel}>{t('type.expense')}</Text>
               </View>
-              <Text style={styles.statLabel}>{t('type.expense')}</Text>
-              <Text style={[styles.statValue, { color: colors.expense }]}>
+              <Text style={[styles.statValue, { color: colors.expense }]} numberOfLines={1} adjustsFontSizeToFit>
                 {formatIDR(totals.expense)}
               </Text>
             </View>

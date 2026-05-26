@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View, ScrollView } from 'react-native';
 import { useTheme } from '../hooks/useTheme';
-import { spacing, radius, fontSize, shadow } from '../constants/theme';
+import { spacing, radius, fontSize } from '../constants/theme';
 import { CategorySum } from '../utils/aggregate';
 import { useCategories } from '../context/CategoriesContext';
 import { formatIDRCompact } from '../utils/format';
@@ -31,7 +31,8 @@ export default function TopCategoriesRow({ data, total, onPress }: Props) {
       borderRadius: radius.md,
       padding: spacing.md,
       gap: 6,
-      ...shadow.card,
+      borderWidth: 1,
+      borderColor: colors.border,
     },
     iconWrap: {
       width: 32,

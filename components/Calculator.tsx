@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { BottomSheetModal, BottomSheetBackdrop, BottomSheetView } from '@gorhom/bottom-sheet';
 import { useTheme } from '../hooks/useTheme';
 import { spacing, radius, fontSize } from '../constants/theme';
+import { groupDigits } from '../utils/format';
 
 type Kind = 'num' | 'op' | 'action';
 interface Key { label: string; kind: Kind; value: string; flex?: number }
@@ -151,9 +152,9 @@ function safeEval(expr: string): number | null {
 }
 
 function formatNum(n: number): string {
-  if (Number.isInteger(n)) return n.toLocaleString('id-ID');
+  if (Number.isInteger(n)) return groupDigits(n);
   const [intPart, decPart] = n.toString().split('.');
-  return Number(intPart).toLocaleString('id-ID') + ',' + decPart;
+  return groupDigits(intPart) + ',' + decPart;
 }
 
 function formatExpr(expr: string): string {
@@ -162,7 +163,7 @@ function formatExpr(expr: string): string {
   return expr
     .replace(/(\d+(?:\.\d+)?)/g, (m) => {
       const [i, d] = m.split('.');
-      return Number(i).toLocaleString('id-ID') + (d !== undefined ? ',' + d : '');
+      return groupDigits(i) + (d !== undefined ? ',' + d : '');
     })
     .replace(/\*/g, ' × ')
     .replace(/\//g, ' ÷ ')

@@ -196,7 +196,7 @@ export default function AccountDetailScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <TopBar
-        title={account?.name ?? t('accountDetail.fallbackTitle')}
+        title={t('accountDetail.fallbackTitle')}
         showLogo={false}
         showBack
         showActions={false}

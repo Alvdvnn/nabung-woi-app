@@ -6,7 +6,7 @@ import { useTheme } from '../hooks/useTheme';
 import { useToast } from '../hooks/useToast';
 import { Account, saveAccounts } from '../utils/storage';
 import { ACCOUNT_TYPES, findAccountType } from '../constants/accountTypes';
-import { formatIDR } from '../utils/format';
+import { formatIDR, groupDigits } from '../utils/format';
 import { genId } from '../utils/id';
 import ConfirmModal from './ConfirmModal';
 import { useT } from '../i18n';
@@ -155,7 +155,7 @@ export default function AccountManager({ accounts, onChange }: Props) {
             placeholder={t('account.balancePlaceholder')}
             placeholderTextColor={colors.textMuted}
             keyboardType="numeric"
-            value={balance ? Number(balance).toLocaleString('id-ID') : ''}
+            value={groupDigits(balance)}
             onChangeText={(v) => setBalance(v.replace(/[^0-9]/g, ''))}
           />
           <View style={styles.formActions}>

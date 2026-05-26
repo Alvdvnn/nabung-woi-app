@@ -38,6 +38,9 @@ export function isoDay(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
-export function sameDay(a: string, b: string): boolean {
-  return isoDay(new Date(a)) === isoDay(new Date(b));
+export function groupDigits(raw: string | number): string {
+  const n = typeof raw === 'number' ? raw : Number(raw);
+  if (!raw && raw !== 0) return '';
+  if (!Number.isFinite(n)) return '';
+  return n.toLocaleString('id-ID');
 }

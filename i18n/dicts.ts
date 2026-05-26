@@ -79,6 +79,10 @@ export const en = {
     deleteTitle: 'Delete transaction?',
     deleteMsg: 'This entry will be removed from your history.',
     deleted: 'Transaction deleted',
+    filterTitle: 'Filter',
+    rangeLabel: 'Range',
+    typeLabel: 'Type',
+    totalsLabel: 'Totals',
   },
 
   calendar: {
@@ -112,6 +116,14 @@ export const en = {
     exportFailed: 'Export failed',
     allCleared: 'All data cleared',
     exportShareTitle: 'Nabung Woi Export',
+    importData: 'Import data (JSON)',
+    importTitle: 'Import data',
+    importMsg: 'Paste exported JSON below. Imported items merge with current data (matching ids are overwritten); nothing is deleted.',
+    importPlaceholder: 'Paste JSON here',
+    importBtn: 'Import',
+    importSuccess: 'Imported {tx} tx, {acc} accounts, {cat} categories',
+    importInvalidJson: 'Invalid JSON',
+    importInvalidShape: 'No valid data found in JSON',
   },
 
   gacha: {
@@ -361,6 +373,10 @@ export const id: typeof en = {
     deleteTitle: 'Hapus transaksi?',
     deleteMsg: 'Entri ini akan dihapus dari riwayat.',
     deleted: 'Transaksi dihapus',
+    filterTitle: 'Filter',
+    rangeLabel: 'Rentang',
+    typeLabel: 'Tipe',
+    totalsLabel: 'Total',
   },
 
   calendar: {
@@ -394,6 +410,14 @@ export const id: typeof en = {
     exportFailed: 'Ekspor gagal',
     allCleared: 'Semua data dihapus',
     exportShareTitle: 'Ekspor Nabung Woi',
+    importData: 'Impor data (JSON)',
+    importTitle: 'Impor data',
+    importMsg: 'Tempel JSON hasil ekspor di bawah. Item yang diimpor digabung dengan data saat ini (id yang sama ditimpa); tidak ada yang dihapus.',
+    importPlaceholder: 'Tempel JSON di sini',
+    importBtn: 'Impor',
+    importSuccess: 'Diimpor {tx} transaksi, {acc} akun, {cat} kategori',
+    importInvalidJson: 'JSON tidak valid',
+    importInvalidShape: 'Tidak ada data valid dalam JSON',
   },
 
   gacha: {

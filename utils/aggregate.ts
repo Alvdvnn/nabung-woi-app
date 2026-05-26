@@ -45,10 +45,3 @@ export function totalsOf(txs: Transaction[]): { income: number; expense: number;
   }
   return { income, expense, net: income - expense };
 }
-
-export function accountBalance(txs: Transaction[], accountId: string, startingBalance: number): number {
-  return txs.reduce((sum, t) => {
-    if (t.accountId !== accountId) return sum;
-    return t.type === 'income' ? sum + t.amount : sum - t.amount;
-  }, startingBalance);
-}

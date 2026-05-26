@@ -48,8 +48,8 @@ export default function Toast({ variant, message, duration, onDismiss }: Props) 
   useEffect(() => {
     translateY.value = withTiming(0, { duration: 250 });
     opacity.value = withTiming(1, { duration: 250 });
-    if (variant === 'success') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    else if (variant === 'error') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    if (variant === 'success') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    else if (variant === 'error') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
     const t = setTimeout(() => {
       translateY.value = withTiming(-120, { duration: 200 });
       opacity.value = withTiming(0, { duration: 200 }, (finished) => {
