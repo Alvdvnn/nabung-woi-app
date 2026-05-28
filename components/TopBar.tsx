@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Wallet, Dices, Calculator, ChevronLeft } from 'lucide-react-native';
+import { Dices, Calculator, ChevronLeft } from 'lucide-react-native';
 import { useCalculator } from '../hooks/useCalculator';
 import { spacing, fontSize } from '../constants/theme';
 import { useTheme } from '../hooks/useTheme';
@@ -37,9 +37,12 @@ export default function TopBar({ title, showBack, showLogo = true, showActions =
       width: 28,
       height: 28,
       borderRadius: 8,
-      backgroundColor: colors.primary,
-      alignItems: 'center',
-      justifyContent: 'center',
+      overflow: 'hidden',
+    },
+    logoImg: {
+      width: 28,
+      height: 28,
+      resizeMode: 'contain',
     },
     brand: { fontSize: fontSize.md, fontWeight: '700', color: colors.textPrimary },
     title: {
@@ -68,7 +71,7 @@ export default function TopBar({ title, showBack, showLogo = true, showActions =
         ) : showLogo ? (
           <View style={styles.logoWrap}>
             <View style={styles.logoBadge}>
-              <Wallet size={16} color={colors.white} />
+              <Image source={require('../assets/icon.png')} style={styles.logoImg} />
             </View>
             <Text style={styles.brand}>Nabung Woi</Text>
           </View>

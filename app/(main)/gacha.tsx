@@ -360,7 +360,7 @@ export default function GachaScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <TopBar title={t('gacha.title')} showLogo={false} showActions={false} />
+      <TopBar title={t('gacha.title')} showLogo={false} />
       <View style={styles.content}>
         <Text style={styles.title}>
           <Text style={{ color: colors.income }}>{t('gacha.buy')}</Text>

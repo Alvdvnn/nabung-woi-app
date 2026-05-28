@@ -31,10 +31,10 @@ export default function StreakCard({ current, longest }: Props) {
       alignItems: 'center',
       justifyContent: 'center',
     },
-    main: { flex: 1 },
-    big: { fontSize: fontSize.xxl, fontWeight: '800', color: colors.textPrimary, lineHeight: 30 },
-    label: { fontSize: fontSize.sm, color: colors.textSecondary, fontWeight: '600' },
-    sub: { fontSize: fontSize.xs, color: colors.textMuted, marginTop: 2 },
+    main: { flex: 1, alignItems: 'flex-start', justifyContent: 'center' },
+    big: { fontSize: 32, fontWeight: '900', color: colors.textPrimary, lineHeight: 38, textAlign: 'left' },
+    label: { fontSize: fontSize.md, color: colors.textSecondary, fontWeight: '700' },
+    longest: { fontSize: fontSize.xs, color: colors.textMuted, fontWeight: '600', textAlign: 'right', alignSelf: 'flex-end' },
   }), [colors]);
 
   return (
@@ -44,8 +44,8 @@ export default function StreakCard({ current, longest }: Props) {
       </View>
       <View style={styles.main}>
         <Text style={styles.big}>{current}<Text style={styles.label}>{t('streak.dayStreak')}</Text></Text>
-        <Text style={styles.sub}>{longest === 1 ? t('streak.longestOne', { n: longest }) : t('streak.longestMany', { n: longest })}</Text>
       </View>
+      <Text style={styles.longest}>{longest === 1 ? t('streak.longestOne', { n: longest }) : t('streak.longestMany', { n: longest })}</Text>
     </View>
   );
 }
