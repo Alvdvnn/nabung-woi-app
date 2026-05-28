@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -10,19 +11,23 @@ import { CategoriesProvider } from '../context/CategoriesContext';
 import { CalculatorProvider } from '../components/CalculatorProvider';
 import { LocaleProvider } from '../i18n';
 import PinLockScreen from '../components/PinLockScreen';
+import SplashIntro from '../components/SplashIntro';
 import { useTheme } from '../hooks/useTheme';
 import { View } from 'react-native';
 
 function ThemedStack() {
   const { colors, resolved } = useTheme();
   const pin = usePin();
+  const [introDone, setIntroDone] = useState(false);
 
   if (!pin.hydrated) return null;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <StatusBar style={resolved === 'dark' ? 'light' : 'dark'} backgroundColor={colors.bg} />
-      {pin.locked && pin.enabled ? (
+      {!introDone ? (
+        <SplashIntro onDone={() => setIntroDone(true)} />
+      ) : pin.locked && pin.enabled ? (
         <PinLockScreen onUnlock={pin.unlock} onRecovered={() => { pin.refresh(); pin.unlock(); }} />
       ) : (
         <Stack

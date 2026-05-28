@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { fabBottomForTabScreen } from '../../constants/layout';
+import { contentBottomForFab, fabBottomForTabScreen } from '../../constants/layout';
 import {
   TrendingUp,
   TrendingDown,
@@ -77,7 +77,7 @@ export default function DashboardScreen() {
 
   const styles = useMemo(() => StyleSheet.create({
     safe: { flex: 1, backgroundColor: colors.bg },
-    scroll: { paddingBottom: spacing.xxl + 40 },
+    scroll: { paddingBottom: contentBottomForFab(insets.bottom) },
 
     hero: {
       backgroundColor: colors.primary,
@@ -221,7 +221,7 @@ export default function DashboardScreen() {
       textTransform: 'uppercase',
       letterSpacing: 0.8,
     },
-  }), [colors, resolved]);
+  }), [colors, resolved, insets.bottom]);
 
   return (
     <SafeAreaView style={styles.safe}>

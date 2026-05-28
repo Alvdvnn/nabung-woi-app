@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { fabBottomForTabScreen } from '../../constants/layout';
+import { contentBottomForFab, fabBottomForTabScreen } from '../../constants/layout';
 import { Database, Download, Upload, Trash, Wallet, Tag, Plus, Sun, Moon, Lock, Languages } from 'lucide-react-native';
 import TopBar from '../../components/TopBar';
 import Fab from '../../components/Fab';
@@ -56,7 +56,7 @@ export default function SettingsScreen() {
   const t = useT();
   const styles = useMemo(() => StyleSheet.create({
     safe: { flex: 1, backgroundColor: colors.bg },
-    content: { padding: spacing.lg, gap: spacing.lg, paddingBottom: spacing.xl },
+    content: { padding: spacing.lg, gap: spacing.lg, paddingBottom: contentBottomForFab(insets.bottom) },
     actionRow: {
       flexDirection: 'row', alignItems: 'center', gap: spacing.md,
       backgroundColor: colors.card,
@@ -70,7 +70,9 @@ export default function SettingsScreen() {
       backgroundColor: colors.bg,
       borderTopLeftRadius: radius.lg,
       borderTopRightRadius: radius.lg,
-      padding: spacing.lg,
+      paddingHorizontal: spacing.lg,
+      paddingTop: spacing.lg,
+      paddingBottom: spacing.xl + insets.bottom,
       gap: spacing.md,
     },
     modalTitle: { fontSize: fontSize.lg, fontWeight: '700', color: colors.textPrimary },
@@ -93,7 +95,7 @@ export default function SettingsScreen() {
     modalConfirm: { backgroundColor: colors.primary },
     modalCancelText: { fontSize: fontSize.md, fontWeight: '600', color: colors.textSecondary },
     modalConfirmText: { fontSize: fontSize.md, fontWeight: '700', color: colors.white },
-  }), [colors]);
+  }), [colors, insets.bottom]);
 
   useFocusEffect(
     useCallback(() => {
@@ -192,6 +194,8 @@ export default function SettingsScreen() {
       <Modal
         visible={importOpen}
         transparent
+        statusBarTranslucent
+        navigationBarTranslucent
         animationType="slide"
         onRequestClose={() => setImportOpen(false)}
       >

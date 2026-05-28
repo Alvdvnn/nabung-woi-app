@@ -3,7 +3,7 @@ import { FlatList, Modal, Platform, Pressable, SafeAreaView, StyleSheet, Text, V
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
-import { fabBottomForTabScreen } from '../../constants/layout';
+import { contentBottomForFab, fabBottomForTabScreen } from '../../constants/layout';
 import { Inbox, Plus, ChevronLeft, ChevronRight, Calendar as CalendarIcon, SlidersHorizontal, X } from 'lucide-react-native';
 import TopBar from '../../components/TopBar';
 import Fab from '../../components/Fab';
@@ -137,6 +137,7 @@ export default function HistoryScreen() {
       alignItems: 'center',
       marginHorizontal: spacing.lg,
       marginTop: spacing.sm,
+      marginBottom: spacing.sm,
       paddingHorizontal: spacing.xs,
     },
     netLineLabel: { fontSize: fontSize.xs, color: colors.textSecondary, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
@@ -172,8 +173,8 @@ export default function HistoryScreen() {
     filterBtnActive: { backgroundColor: colors.primary, borderColor: colors.primary },
     filterLabel: { fontSize: fontSize.sm, fontWeight: '600', color: colors.textSecondary },
     filterLabelActive: { color: colors.white },
-    list: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.xl },
-  }), [colors]);
+    list: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: contentBottomForFab(insets.bottom) },
+  }), [colors, insets.bottom]);
 
   return (
     <SafeAreaView style={styles.safe}>
