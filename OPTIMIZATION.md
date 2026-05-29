@@ -135,12 +135,12 @@ Each finding has: **what / where / why it matters / how to fix**. Severity:
 - **What:** `useState(new Date())` runs once; tab stays mounted across days. If the app stays open past midnight, history still cursors yesterday.
 - **Fix:** On focus, if `period === 'day'` and cursor isn’t today, prompt or auto-reset (or just keep `cursor = new Date()` in a `useFocusEffect`).
 
-### 3.9 `PieChartCard` legend caps at 6, donut shows all
+### 3.9 `PieChartCard` legend caps at 6, donut shows all — ✅
 - **Where:** `components/PieChartCard.tsx:73`.
 - **What:** Categories 7+ get a slice with no legend entry. Looks like a bug at a glance.
 - **Fix:** Either limit pie data to the same top 6 + “Other” aggregate, or scroll/extend the legend.
 
-### 3.10 `useState(byType('expense')[0].id)` initial assumes defaults exist
+### 3.10 `useState(byType('expense')[0].id)` initial assumes defaults exist — ✅
 - **Where:** `app/index.tsx:55`.
 - **What:** Today `EXPENSE_CATEGORIES` is non-empty so safe, but the assumption is implicit. If someone refactors defaults to optional, this crashes on first render.
 - **Fix:** Guard `byType('expense')[0]?.id ?? ''` and gate the form on “you have at least one expense category”.
@@ -191,7 +191,7 @@ Each finding has: **what / where / why it matters / how to fix**. Severity:
 - **Where:** `router.push('/dashboard')`, `'/account-detail'`, etc., scattered everywhere.
 - **What:** Expo Router supports typed routes (`experiments.typedRoutes: true` in `app.json`). Without it, a route rename silently produces 404s in nav.
 
-### 4.10 `KeyboardAvoidingView` with `behavior='height'` on Android
+### 4.10 `KeyboardAvoidingView` with `behavior='height'` on Android — ✅
 - **Where:** `app/index.tsx:228`.
 - **What:** `'height'` is buggy on Android — Compose keyboard insets are handled by the new arch already. Often safer to use `behavior={Platform.OS === 'ios' ? 'padding' : undefined}` and rely on `softwareKeyboardLayoutMode: 'pan'`.
 
@@ -220,10 +220,13 @@ Each finding has: **what / where / why it matters / how to fix**. Severity:
 
 ## 6. CLAUDE.md mismatches (worth fixing while here)
 
-- Claims `system | light | dark` theme support → only `light | dark` exist.
-- Claims “Appearance listener” → no such listener.
-- Claims `accountBalance` helper in `utils/aggregate.ts` → not defined there (lives inline in `dashboard.tsx`).
-- Claims 60s background-relock → that lives in `PinContext` (out of scope here, but verify when you revisit security).
+> Code-side claims are now true after the P0/P1 fixes — only the doc itself still lags. CLAUDE.md edits are pending user approval (auto-mode declined to commit changes to the agent's project instructions file without explicit authorization).
+
+- Claims `system | light | dark` theme support → **now implemented** in `context/ThemeContext.tsx` (CLAUDE.md no longer wrong, just incomplete).
+- Claims "Appearance listener" → **now implemented**.
+- Claims `accountBalance` helper in `utils/aggregate.ts` → **now exists** and is used by both `dashboard.tsx` and `account-detail.tsx`.
+- Claims 60s background-relock → lives in `PinContext` (out of scope here, but verify when you revisit security).
+- Still to add to CLAUDE.md: `DataContext` shared cache as the canonical source for transactions/accounts; `dayKey` field on `Transaction`; per-key write queues; new `useData()` convention.
 
 ---
 

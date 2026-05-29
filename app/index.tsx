@@ -51,7 +51,7 @@ export default function InputScreen() {
 
   const [type, setType] = useState<TransactionType>('expense');
   const [amount, setAmount] = useState('');
-  const [categoryId, setCategoryId] = useState(byType('expense')[0].id);
+  const [categoryId, setCategoryId] = useState(byType('expense')[0]?.id ?? '');
   const [note, setNote] = useState('');
   const [accountId, setAccountId] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -90,6 +90,7 @@ export default function InputScreen() {
 
   useEffect(() => {
     if (isEditing) return;
+    if (categories.length === 0) return;
     if (!categories.find((c) => c.id === categoryId)) setCategoryId(categories[0].id);
   }, [categoryId, isEditing, categories]);
 
@@ -227,7 +228,7 @@ export default function InputScreen() {
       <TopBar />
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={0}
       >
         <ScrollView

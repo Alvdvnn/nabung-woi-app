@@ -267,6 +267,7 @@ export const en = {
     title: 'Spending by Category',
     empty: 'No expenses in this period yet.',
     total: 'Total',
+    other: 'Other',
   },
 
   streak: {
@@ -566,6 +567,7 @@ export const id: typeof en = {
     title: 'Pengeluaran per Kategori',
     empty: 'Belum ada pengeluaran pada periode ini.',
     total: 'Total',
+    other: 'Lainnya',
   },
 
   streak: {

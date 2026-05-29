@@ -13,7 +13,9 @@ interface Props {
   total: number;
 }
 
+const MAX_SLICES = 6;
 const SLICE_COLORS = ['#0d9488', '#f59e0b', '#ef4444', '#8b5cf6', '#0ea5e9', '#ec4899', '#84cc16', '#f97316'];
+const OTHER_COLOR = '#94a3b8';
 
 export default function PieChartCard({ data, total }: Props) {
   const { colors } = useTheme();
@@ -47,9 +49,18 @@ export default function PieChartCard({ data, total }: Props) {
     );
   }
 
-  const pieData = data.map((d, i) => ({
+  // Cap to MAX_SLICES; aggregate the tail into an "Other" slice so the
+  // donut and legend show the same set of slices.
+  const topSlices = data.slice(0, MAX_SLICES);
+  const tail = data.slice(MAX_SLICES);
+  const otherTotal = tail.reduce((sum, d) => sum + d.total, 0);
+  const visible = otherTotal > 0
+    ? [...topSlices, { categoryId: '__other__', total: otherTotal }]
+    : topSlices;
+
+  const pieData = visible.map((d, i) => ({
     value: d.total,
-    color: SLICE_COLORS[i % SLICE_COLORS.length],
+    color: d.categoryId === '__other__' ? OTHER_COLOR : SLICE_COLORS[i % SLICE_COLORS.length],
   }));
 
   return (
@@ -70,13 +81,16 @@ export default function PieChartCard({ data, total }: Props) {
           )}
         />
         <View style={styles.legend}>
-          {data.slice(0, 6).map((d, i) => {
-            const cat = find(d.categoryId);
+          {visible.map((d, i) => {
+            const isOther = d.categoryId === '__other__';
+            const cat = isOther ? undefined : find(d.categoryId);
             const pct = total > 0 ? Math.round((d.total / total) * 100) : 0;
+            const color = isOther ? OTHER_COLOR : SLICE_COLORS[i % SLICE_COLORS.length];
+            const name = isOther ? t('pie.other') : (cat?.name ?? t('common.other'));
             return (
               <View key={d.categoryId} style={styles.legendRow}>
-                <View style={[styles.dot, { backgroundColor: SLICE_COLORS[i % SLICE_COLORS.length] }]} />
-                <Text style={styles.legendName} numberOfLines={1}>{cat?.name ?? t('common.other')}</Text>
+                <View style={[styles.dot, { backgroundColor: color }]} />
+                <Text style={styles.legendName} numberOfLines={1}>{name}</Text>
                 <Text style={styles.legendPct}>{pct}%</Text>
               </View>
             );

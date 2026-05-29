@@ -17,7 +17,7 @@ import { useT } from '../i18n';
 import { tBuiltin } from '../i18n/labels';
 import { radius, spacing, fontSize } from '../constants/theme';
 import { Transaction } from '../utils/storage';
-import { filterByPeriod, Period } from '../utils/aggregate';
+import { accountBalance, filterByPeriod, Period } from '../utils/aggregate';
 import { findAccountType } from '../constants/accountTypes';
 import { formatIDR, formatDate } from '../utils/format';
 
@@ -61,14 +61,10 @@ export default function AccountDetailScreen() {
     [accountTxs, period]
   );
 
-  const currentBalance = useMemo(() => {
-    if (!account) return 0;
-    let delta = 0;
-    for (const tx of accountTxs) {
-      delta += tx.type === 'income' ? tx.amount : -tx.amount;
-    }
-    return account.startingBalance + delta;
-  }, [account, accountTxs]);
+  const currentBalance = useMemo(
+    () => (account ? accountBalance(account, accountTxs) : 0),
+    [account, accountTxs]
+  );
 
   const styles = useMemo(
     () =>

@@ -1,7 +1,16 @@
-import { Transaction } from './storage';
+import { Account, Transaction } from './storage';
 import { isoDay } from './format';
 
 export type Period = 'day' | 'month' | 'year';
+
+export function accountBalance(account: Account, txs: Transaction[]): number {
+  let delta = 0;
+  for (const t of txs) {
+    if (t.accountId !== account.id) continue;
+    delta += t.type === 'income' ? t.amount : -t.amount;
+  }
+  return account.startingBalance + delta;
+}
 
 export function filterByPeriod(txs: Transaction[], period: Period, ref: Date = new Date()): Transaction[] {
   const refKey = isoDay(ref);

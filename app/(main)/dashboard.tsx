@@ -20,7 +20,7 @@ import { useStreak } from '../../hooks/useStreak';
 import { radius, spacing, fontSize, shadow } from '../../constants/theme';
 import { useTheme } from '../../hooks/useTheme';
 import { useTransactions, useAccounts } from '../../context/DataContext';
-import { filterByPeriod, Period, sumByCategory, totalsOf } from '../../utils/aggregate';
+import { accountBalance, filterByPeriod, Period, sumByCategory, totalsOf } from '../../utils/aggregate';
 import { formatIDR } from '../../utils/format';
 import { findAccountType } from '../../constants/accountTypes';
 import { useT } from '../../i18n';
@@ -43,17 +43,10 @@ export default function DashboardScreen() {
   const byCategory = useMemo(() => sumByCategory(filtered, 'expense'), [filtered]);
   const streak = useStreak(txs);
 
-  const accountBalances = useMemo(() => {
-    const deltas = new Map<string, number>();
-    for (const t of txs) {
-      const d = t.type === 'income' ? t.amount : -t.amount;
-      deltas.set(t.accountId, (deltas.get(t.accountId) ?? 0) + d);
-    }
-    return accounts.map((acc) => ({
-      ...acc,
-      currentBalance: acc.startingBalance + (deltas.get(acc.id) ?? 0),
-    }));
-  }, [accounts, txs]);
+  const accountBalances = useMemo(
+    () => accounts.map((acc) => ({ ...acc, currentBalance: accountBalance(acc, txs) })),
+    [accounts, txs]
+  );
 
   const totalAccountBalance = useMemo(
     () => accountBalances.reduce((sum, acc) => sum + acc.currentBalance, 0),
