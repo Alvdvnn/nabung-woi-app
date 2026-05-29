@@ -6,7 +6,7 @@ import { useTheme } from '../hooks/useTheme';
 import { useToast } from '../hooks/useToast';
 import { useCategories } from '../context/CategoriesContext';
 import { CustomCategory, saveCustomCategories, TransactionType } from '../utils/storage';
-import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, CUSTOM_ICON } from '../constants/categories';
+import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, CUSTOM_ICON_CHOICES, iconForCustom } from '../constants/categories';
 import ConfirmModal from './ConfirmModal';
 import { genId } from '../utils/id';
 import { useT } from '../i18n';
@@ -20,6 +20,7 @@ interface Props {
 export default function CategoryManager({ categories, onChange }: Props) {
   const [type, setType] = useState<TransactionType>('expense');
   const [name, setName] = useState('');
+  const [iconId, setIconId] = useState<string>(CUSTOM_ICON_CHOICES[0]);
   const [pendingDelete, setPendingDelete] = useState<CustomCategory | null>(null);
   const { colors } = useTheme();
   const toast = useToast();
@@ -72,19 +73,36 @@ export default function CategoryManager({ categories, onChange }: Props) {
       width: 44, height: 44, borderRadius: radius.sm,
       backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center',
     },
+    iconPickerLabel: {
+      fontSize: fontSize.xs, fontWeight: '700', color: colors.textMuted,
+      textTransform: 'uppercase', letterSpacing: 0.5,
+      marginTop: spacing.md, marginBottom: spacing.sm,
+    },
+    iconGrid: {
+      flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs,
+      marginBottom: spacing.xs,
+    },
+    iconCell: {
+      width: 40, height: 40,
+      borderRadius: radius.sm,
+      alignItems: 'center', justifyContent: 'center',
+      backgroundColor: colors.card,
+      borderWidth: 1, borderColor: colors.border,
+    },
+    iconCellActive: { backgroundColor: colors.primarySoft, borderColor: colors.primary },
   }), [colors]);
 
   const defaults = type === 'expense' ? EXPENSE_CATEGORIES : INCOME_CATEGORIES;
   const customForType = categories.filter((c) => c.type === type);
-  const Icon = CUSTOM_ICON;
 
   async function add() {
     if (!name.trim()) { toast.show('error', t('category.errName')); return; }
-    const next = [...categories, { id: genId('c'), name: name.trim(), type, iconId: 'other' }];
+    const next = [...categories, { id: genId('c'), name: name.trim(), type, iconId }];
     await saveCustomCategories(next);
     onChange(next);
     await refresh();
     setName('');
+    setIconId(CUSTOM_ICON_CHOICES[0]);
     toast.show('success', t('category.added'));
   }
 
@@ -127,20 +145,41 @@ export default function CategoryManager({ categories, onChange }: Props) {
       {customForType.length === 0 ? (
         <Text style={styles.empty}>{t('category.noCustom')}</Text>
       ) : (
-        customForType.map((c) => (
-          <View key={c.id} style={styles.row}>
-            <View style={styles.rowLeft}>
-              <View style={styles.iconBadge}>
-                <Icon size={14} color={colors.primary} />
+        customForType.map((c) => {
+          const RowIcon = iconForCustom(c.iconId);
+          return (
+            <View key={c.id} style={styles.row}>
+              <View style={styles.rowLeft}>
+                <View style={styles.iconBadge}>
+                  <RowIcon size={14} color={colors.primary} />
+                </View>
+                <Text style={styles.rowName}>{c.name}</Text>
               </View>
-              <Text style={styles.rowName}>{c.name}</Text>
+              <Pressable onPress={() => setPendingDelete(c)} hitSlop={8}>
+                <Trash2 size={16} color={colors.textMuted} />
+              </Pressable>
             </View>
-            <Pressable onPress={() => setPendingDelete(c)} hitSlop={8}>
-              <Trash2 size={16} color={colors.textMuted} />
-            </Pressable>
-          </View>
-        ))
+          );
+        })
       )}
+
+      <Text style={styles.iconPickerLabel}>{t('category.iconLabel')}</Text>
+      <View style={styles.iconGrid}>
+        {CUSTOM_ICON_CHOICES.map((id) => {
+          const ChoiceIcon = iconForCustom(id);
+          const active = iconId === id;
+          return (
+            <Pressable
+              key={id}
+              onPress={() => setIconId(id)}
+              style={[styles.iconCell, active && styles.iconCellActive]}
+              accessibilityRole="button"
+            >
+              <ChoiceIcon size={18} color={active ? colors.primary : colors.textSecondary} />
+            </Pressable>
+          );
+        })}
+      </View>
 
       <View style={styles.addRow}>
         <TextInput

@@ -120,7 +120,7 @@ Each finding has: **what / where / why it matters / how to fix**. Severity:
 - **What:** Same `returnTo === 'calendar' ? ... : 'history' ? ... : '/dashboard'` ladder repeated. Bug-prone if a new return target is added.
 - **Fix:** Extract `resolveReturnTarget(returnTo)` helper.
 
-### 3.6 Custom category icon is always `'other'`
+### 3.6 Custom category icon is always `'other'` — ✅
 - **Where:** `components/CategoryManager.tsx:83`, `constants/categories.ts` (`CUSTOM_ICON`).
 - **What:** UI offers no icon picker, so all custom categories look identical. For daily use this defeats the purpose of having custom categories.
 - **Fix:** Either expose a small icon picker grid, or pull the icon name out of the user’s typed name with a simple keyword map (e.g. “grocery” → `ShoppingCart`).

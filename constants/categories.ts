@@ -1,17 +1,33 @@
 import {
   Utensils,
+  Coffee,
   Car,
+  Bus,
+  Fuel,
+  Plane,
   ShoppingBag,
   HeartPulse,
+  Dumbbell,
   Gamepad2,
+  Music,
+  Film,
   Home,
+  Lightbulb,
+  Wifi,
   GraduationCap,
+  BookOpen,
   Receipt,
   Briefcase,
   Laptop,
   TrendingUp,
+  PiggyBank,
   Gift,
   CircleDollarSign,
+  Wallet,
+  Dog,
+  Baby,
+  Shirt,
+  Pizza,
   Tag,
   LucideIcon,
 } from 'lucide-react-native';
@@ -45,13 +61,56 @@ export const INCOME_CATEGORIES: CategoryDef[] = [
 
 export const ALL_CATEGORIES: CategoryDef[] = [...EXPENSE_CATEGORIES, ...INCOME_CATEGORIES];
 
-// Single fallback icon used for all user-added custom categories.
+// Fallback icon used when a custom category has no recognized iconId.
 export const CUSTOM_ICON: LucideIcon = Tag;
 
+// Curated palette the icon picker exposes for custom categories.
+// Keep the keys stable — they're persisted in CustomCategory.iconId.
 const ICON_BY_ID: Record<string, LucideIcon> = {
-  other: Tag,
   tag: Tag,
+  other: Tag,
+  utensils: Utensils,
+  coffee: Coffee,
+  pizza: Pizza,
+  car: Car,
+  bus: Bus,
+  fuel: Fuel,
+  plane: Plane,
+  shopping: ShoppingBag,
+  shirt: Shirt,
+  health: HeartPulse,
+  dumbbell: Dumbbell,
+  gamepad: Gamepad2,
+  music: Music,
+  film: Film,
+  home: Home,
+  lightbulb: Lightbulb,
+  wifi: Wifi,
+  education: GraduationCap,
+  book: BookOpen,
+  bills: Receipt,
+  briefcase: Briefcase,
+  laptop: Laptop,
+  trending: TrendingUp,
+  piggy: PiggyBank,
+  gift: Gift,
+  dollar: CircleDollarSign,
+  wallet: Wallet,
+  dog: Dog,
+  baby: Baby,
 };
+
+// Stable display order for the picker grid.
+export const CUSTOM_ICON_CHOICES: string[] = [
+  'tag', 'utensils', 'coffee', 'pizza',
+  'car', 'bus', 'fuel', 'plane',
+  'shopping', 'shirt', 'health', 'dumbbell',
+  'gamepad', 'music', 'film', 'home',
+  'lightbulb', 'wifi', 'education', 'book',
+  'bills', 'briefcase', 'laptop', 'trending',
+  'piggy', 'gift', 'dollar', 'wallet',
+  'dog', 'baby',
+];
 
 export function iconForCustom(iconId: string | undefined): LucideIcon {
   return (iconId && ICON_BY_ID[iconId]) || CUSTOM_ICON;

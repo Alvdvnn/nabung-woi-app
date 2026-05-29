@@ -194,6 +194,7 @@ export const en = {
 
   category: {
     addPlaceholder: 'New category name',
+    iconLabel: 'Pick an icon',
     defaultHead: 'Default',
     customHead: 'Custom',
     noCustom: 'No custom categories yet.',
@@ -495,6 +496,7 @@ export const id: typeof en = {
 
   category: {
     addPlaceholder: 'Nama kategori baru',
+    iconLabel: 'Pilih ikon',
     defaultHead: 'Bawaan',
     customHead: 'Kustom',
     noCustom: 'Belum ada kategori kustom.',
