@@ -17,6 +17,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { useData } from '../../context/DataContext';
 import { Transaction, TransactionType, getHistoryPrefs, setHistoryPrefs } from '../../utils/storage';
 import { isoDay } from '../../utils/format';
+import { tPeriod } from '../../i18n/labels';
 import { useT, useLocale } from '../../i18n';
 import { DICTS } from '../../i18n/dicts';
 import { filterByPeriod, Period, totalsOf } from '../../utils/aggregate';
@@ -245,7 +246,7 @@ export default function HistoryScreen() {
 
       <View style={styles.netLine}>
         <Text style={styles.netLineLabel}>
-          {t('dashboard.netFlow', { period: t(`period.${period}` as 'period.day') })}
+          {t('dashboard.netFlow', { period: tPeriod(t, period) })}
         </Text>
         <Text style={[styles.netLineValue, { color: periodTotals.net >= 0 ? colors.income : colors.expense }]}>
           {periodTotals.net >= 0 ? '+' : ''}{formatIDR(periodTotals.net)}

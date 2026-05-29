@@ -60,11 +60,11 @@ Each finding has: **what / where / why it matters / how to fix**. Severity:
 - **What:** `new Set(txs.map(isoDay(new Date(t.date))))` — same O(N) every paint. Memoized by `[txs]` but `txs` ref changes every focus.
 - **Fix:** Belongs in `TransactionsProvider` as a memoized derived selector.
 
-### 2.4 Heavy `new Date()` parsing inside filter hot paths
+### 2.4 Heavy `new Date()` parsing inside filter hot paths — ✅ (superseded by §1.1 dayKey)
 - **Where:** `utils/aggregate.ts:6-19`.
 - **What:** `new Date(iso)` is one of the slowest hot ops in JS. Three callsites on dashboard (filtered, byCategory, totals each recompute via filtered chain). Combine with #1’s fix and you can compare ISO substrings (`t.date.startsWith('2026-05')`) — ~10× faster and avoids TZ logic.
 
-### 2.5 `accountBalances` recomputed for total balance even when only periods changed
+### 2.5 `accountBalances` recomputed for total balance even when only periods changed — ✅ (covered by §2.1 cache)
 - **Where:** `app/(main)/dashboard.tsx:53-68`.
 - **What:** OK as-is, but only re-render trigger should be a tx mutation, not a period toggle. Currently fine because deps are `[accounts, txs]`; verify after introducing `TransactionsProvider`.
 
@@ -78,17 +78,17 @@ Each finding has: **what / where / why it matters / how to fix**. Severity:
 - **What:** Hard delay before app is usable. For daily use that is friction.
 - **Fix:** Either trim `HOLD_MS` to ~500, gate on `useEffect`-driven hydration completion (skip if hydration finishes earlier), or skip entirely on subsequent foregrounds within N minutes.
 
-### 2.8 AsyncStorage stores the whole tx list as one JSON blob
+### 2.8 AsyncStorage stores the whole tx list as one JSON blob — ⏭ deferred (per audit recommendation, revisit at ~5k tx)
 - **Where:** `utils/storage.ts` writes.
 - **What:** Every add/update/delete re-serializes the **entire** array. Grows linearly with history; at ~5k txs you’ll feel it.
 - **Fix:** Medium term, move to SQLite (`expo-sqlite`) or MMKV. Short term: chunk by year (`nw.transactions.2026`, etc.) and load lazily.
 
-### 2.9 `useFocusEffect` chain triggers two sequential `await`s
+### 2.9 `useFocusEffect` chain triggers two sequential `await`s — ✅ (covered by §2.1 cache)
 - **Where:** `index.tsx:67-89` (and elsewhere).
 - **What:** Sequential awaits where parallel works. Minor but trivial fix.
 - **Fix:** `Promise.all([getAccounts(), getLastAccount(), editId ? getTransaction(editId) : null])`.
 
-### 2.10 Reanimated + `setTimeout` race in `Toast`
+### 2.10 Reanimated + `setTimeout` race in `Toast` — ✅ (covered by §1.3 queue)
 - **Where:** `components/Toast.tsx:48-60`.
 - **What:** If a new toast preempts the running one (via key change), the timer for the previous toast still fires `runOnJS(onDismiss)` after animation finish — fine in practice because state already moved on. Watch this when introducing the queue from §1.3 (queue must ignore late dismisses).
 
@@ -111,7 +111,7 @@ Each finding has: **what / where / why it matters / how to fix**. Severity:
 - **What:** Rapid double-tap on Create or Delete can race two `saveAccounts` calls (each builds its own next array from a stale prop) and lose one mutation. Same risk for categories.
 - **Fix:** Either disable the button while saving, or extend `enqueueTxWrite` into a generic `enqueueWrite` and use it for all three storage helpers.
 
-### 3.4 `dashboard.tsx:319` and `history.tsx:204` — typed cast hack
+### 3.4 `dashboard.tsx:319` and `history.tsx:204` — typed cast hack — ✅
 - **What:** `` t(`period.${period}` as 'period.day') `` lies to the type checker. Currently safe because all three keys exist, but a future rename would silently break.
 - **Fix:** Make `TFn` accept a `Period`-typed branch, or define `PERIOD_LABELS` once and look up.
 
@@ -168,17 +168,17 @@ Each finding has: **what / where / why it matters / how to fix**. Severity:
 - **Where:** `app/index.tsx:157-158`.
 - **What:** Two style entries with identical value (`{ flex: 1 }`). Dead code.
 
-### 4.5 `style={{ flex: 1 }}` inline objects
+### 4.5 `style={{ flex: 1 }}` inline objects — ⏭ deferred (diminishing returns; per-render cost is negligible vs refactor noise)
 - **Where:** scattered (`Toast.tsx:72` parent, `account-detail.tsx:216,254`, `dashboard.tsx:269`, etc.).
 - **What:** Inline style object => new identity each render, defeats StyleSheet caching. Negligible per use but a habit worth breaking.
 - **Fix:** Promote to a static `StyleSheet` entry.
 
-### 4.6 `genId` is `Date.now()` + 6 chars of `Math.random()` — ✅ (documented)
+### 4.6 `genId` is `Date.now()` + 6 chars of `Math.random()` — ⏭ documented; single-device usage is safe
 - **Where:** `utils/id.ts:1-5`.
 - **What:** Acceptable for single-device, but two rapid-fire imports of the same file would re-merge correctly (id-keyed). Collision risk on import of foreign exports though — a friend’s export with overlapping `t<base36>` could clobber yours.
 - **Fix:** Bump randomness to 10 chars or namespace by device (`a${deviceId}_…`). Or accept it — single-user phone.
 
-### 4.7 `useCallback` on `t` with eslint-disabled deps
+### 4.7 `useCallback` on `t` with eslint-disabled deps — ⏭ deferred (no eslint configured; revisit when wiring it)
 - **Where:** `i18n/index.tsx:62-68`.
 - **What:** No eslint configured so nothing yelled, but `t` is `useCallback`d with `[locale]` and the body references `locale` and `DICTS` only. Fine. Worth noting if you add eslint.
 
@@ -187,7 +187,7 @@ Each finding has: **what / where / why it matters / how to fix**. Severity:
 - **What:** Any runtime throw in a screen drops the whole app to red-screen in dev / blank in prod. For daily use, even a “something went wrong, tap to reload” fallback would save you.
 - **Fix:** Add one `<ErrorBoundary>` wrapping `<ThemedStack/>`.
 
-### 4.9 Inline routing strings — no type-safe routes
+### 4.9 Inline routing strings — no type-safe routes — ⏭ deferred (app.json config + Expo Router opt-in; tackle in its own PR)
 - **Where:** `router.push('/dashboard')`, `'/account-detail'`, etc., scattered everywhere.
 - **What:** Expo Router supports typed routes (`experiments.typedRoutes: true` in `app.json`). Without it, a route rename silently produces 404s in nav.
 

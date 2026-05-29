@@ -24,7 +24,7 @@ import { accountBalance, filterByPeriod, Period, sumByCategory, totalsOf } from 
 import { formatIDR } from '../../utils/format';
 import { findAccountType } from '../../constants/accountTypes';
 import { useT } from '../../i18n';
-import { tBuiltin } from '../../i18n/labels';
+import { tBuiltin, tPeriod } from '../../i18n/labels';
 
 const CARD_HEIGHT = 68;
 
@@ -302,7 +302,7 @@ export default function DashboardScreen() {
           <View style={styles.netCard}>
             <View style={styles.netLeft}>
               <ArrowRightLeft size={16} color={colors.textSecondary} />
-              <Text style={styles.netLabel}>{t('dashboard.netFlow', { period: t(`period.${period}` as 'period.day') })}</Text>
+              <Text style={styles.netLabel}>{t('dashboard.netFlow', { period: tPeriod(t, period) })}</Text>
             </View>
             <Text style={[
               styles.netValue,
