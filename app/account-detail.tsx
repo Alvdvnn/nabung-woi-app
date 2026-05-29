@@ -1,11 +1,11 @@
 import { useCallback, useMemo } from 'react';
 import {
   FlatList,
-  SafeAreaView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
 import { Inbox, CircleDollarSign, CircleAlert } from 'lucide-react-native';
 import EmptyState from '../components/EmptyState';
@@ -235,7 +235,7 @@ export default function AccountDetailScreen() {
 
   if (accountMissing) {
     return (
-      <SafeAreaView style={styles.safe}>
+      <SafeAreaView style={styles.safe} edges={['left', 'right']}>
         <TopBar
           title={t('accountDetail.fallbackTitle')}
           showLogo={false}
@@ -254,7 +254,7 @@ export default function AccountDetailScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={styles.safe} edges={['left', 'right']}>
       <TopBar
         title={t('accountDetail.fallbackTitle')}
         showLogo={false}

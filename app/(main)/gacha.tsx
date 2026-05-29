@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { Animated, Easing, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { fabBottomForTabScreen } from '../../constants/layout';
 import * as Haptics from 'expo-haptics';
 import {
@@ -359,7 +359,7 @@ export default function GachaScreen() {
       : 'transparent';
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={styles.safe} edges={['left', 'right']}>
       <TopBar title={t('gacha.title')} showLogo={false} />
       <View style={styles.content}>
         <Text style={styles.title}>

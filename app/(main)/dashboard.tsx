@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
-import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { contentBottomForFab, fabBottomForTabScreen } from '../../constants/layout';
 import {
   TrendingUp,
@@ -210,7 +210,7 @@ export default function DashboardScreen() {
   }), [colors, resolved, insets.bottom]);
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={styles.safe} edges={['left', 'right']}>
       <TopBar title={t('tabs.dashboard')} showLogo={false} />
       <ScrollView
         contentContainerStyle={styles.scroll}
