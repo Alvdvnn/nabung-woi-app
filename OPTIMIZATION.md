@@ -50,7 +50,7 @@ Each finding has: **what / where / why it matters / how to fix**. Severity:
 - **What:** `getTransactions` does `AsyncStorage.getItem` + `JSON.parse` of the **whole** array every tab switch. With years of daily entries (1000s of rows) this stalls the JS thread for tens of ms per switch and triggers GC.
 - **Fix:** Introduce a `TransactionsProvider` (and an `AccountsProvider`) holding the cache in memory with a manual `refresh()` API. Wrap writes (`addTransaction`/`updateTransaction`/`deleteTransaction`) so they update both AsyncStorage **and** the in-memory cache. Replace each screen’s `useFocusEffect` with `const { txs } = useTransactions()`. Net: O(1) reads after first hydrate.
 
-### 2.2 Streak recomputed over **all** transactions every focus
+### 2.2 Streak recomputed over **all** transactions every focus — ✅
 - **Where:** `hooks/useStreak.ts`, `utils/streak.ts:14-41`.
 - **What:** Builds `new Set(txs.map(isoDay(new Date(t.date))))` then sorts; runs whenever the `txs` array reference changes (i.e. every focus). For 1000+ rows this is needless work — current streak only needs the recent N days.
 - **Fix:** Short-circuit current streak: scan only descending from today until a day without entries (early break). Cache longest separately, or recompute incrementally on write.
