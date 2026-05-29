@@ -103,7 +103,14 @@ export default function ConfirmModal({
   );
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
+    <Modal
+      visible={visible}
+      transparent
+      statusBarTranslucent
+      navigationBarTranslucent
+      animationType="fade"
+      onRequestClose={onCancel}
+    >
       <Pressable style={styles.backdrop} onPress={onCancel}>
         <Pressable onPress={() => {}}>
           <View style={styles.sheet}>

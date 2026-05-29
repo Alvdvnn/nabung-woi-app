@@ -283,7 +283,7 @@ export default function HistoryScreen() {
         <DateTimePicker value={cursor} mode="date" onChange={onPickDate} />
       )}
       {Platform.OS === 'ios' && (
-        <Modal visible={showDatePicker} transparent animationType="slide" onRequestClose={() => setShowDatePicker(false)}>
+        <Modal visible={showDatePicker} transparent statusBarTranslucent navigationBarTranslucent animationType="slide" onRequestClose={() => setShowDatePicker(false)}>
           <Pressable style={styles.modalOverlay} onPress={() => setShowDatePicker(false)}>
             <Pressable style={styles.pickerCard} onPress={(e) => e.stopPropagation()}>
               <Pressable style={styles.pickerDone} onPress={() => setShowDatePicker(false)}>
