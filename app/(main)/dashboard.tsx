@@ -72,7 +72,7 @@ export default function DashboardScreen() {
   }
 
   function openAccountDetail(accountId: string) {
-    router.push({ pathname: '/account-detail', params: { accountId } });
+    router.push({ pathname: '/account-detail', params: { accountId, period } });
   }
 
   const styles = useMemo(() => StyleSheet.create({

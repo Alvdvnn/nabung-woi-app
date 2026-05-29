@@ -21,6 +21,7 @@ import {
   Account,
   Transaction,
 } from '../utils/storage';
+import { filterByPeriod, Period } from '../utils/aggregate';
 import { findAccountType } from '../constants/accountTypes';
 import { formatIDR, formatDate } from '../utils/format';
 
@@ -29,8 +30,15 @@ export default function AccountDetailScreen() {
   const { find } = useCategories();
   const t = useT();
 
-  const params = useLocalSearchParams<{ accountId?: string }>();
+  const PERIOD_LABELS: Record<Period, string> = {
+    day: t('period.today'),
+    month: t('period.thisMonth'),
+    year: t('period.thisYear'),
+  };
+
+  const params = useLocalSearchParams<{ accountId?: string; period?: Period }>();
   const accountId = params.accountId ?? '';
+  const period: Period = (params.period as Period) ?? 'month';
 
   const [txs, setTxs] = useState<Transaction[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -57,6 +65,11 @@ export default function AccountDetailScreen() {
           (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
         ),
     [txs, accountId]
+  );
+
+  const periodTxs = useMemo(
+    () => filterByPeriod(accountTxs, period),
+    [accountTxs, period]
   );
 
   const currentBalance = useMemo(() => {
@@ -191,7 +204,7 @@ export default function AccountDetailScreen() {
     [colors]
   );
 
-  const hasEntries = accountTxs.length > 0;
+  const hasEntries = periodTxs.length > 0;
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -202,7 +215,7 @@ export default function AccountDetailScreen() {
         showActions={false}
       />
       <FlatList
-        data={accountTxs}
+        data={periodTxs}
         keyExtractor={(tx) => tx.id}
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
@@ -218,7 +231,7 @@ export default function AccountDetailScreen() {
                     {account?.name ?? t('common.unknownAccount')}
                   </Text>
                   <Text style={styles.heroType}>
-                    {tBuiltin(t, 'accountTypes', accountType.id)}
+                    {tBuiltin(t, 'accountTypes', accountType.id)} · {PERIOD_LABELS[period]}
                   </Text>
                 </View>
               </View>
@@ -234,8 +247,8 @@ export default function AccountDetailScreen() {
                 {formatIDR(currentBalance)}
               </Text>
               <Text style={styles.heroCount}>
-                {accountTxs.length}{' '}
-                {accountTxs.length === 1
+                {periodTxs.length}{' '}
+                {periodTxs.length === 1
                   ? t('accountDetail.entry')
                   : t('accountDetail.entries')}
               </Text>
