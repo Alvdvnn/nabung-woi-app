@@ -42,6 +42,7 @@ const KEYS = {
   lastAccount: 'nw.lastAccount',
   themeMode: 'nw.themeMode',
   locale: 'nw.locale',
+  historyPrefs: 'nw.historyPrefs',
 };
 
 // Serialize read-modify-write ops so concurrent mutations can't clobber each other.
@@ -49,6 +50,20 @@ let txWriteChain: Promise<unknown> = Promise.resolve();
 function enqueueTxWrite<T>(fn: () => Promise<T>): Promise<T> {
   const run = txWriteChain.then(fn, fn);
   txWriteChain = run.catch(() => {});
+  return run;
+}
+
+let accountWriteChain: Promise<unknown> = Promise.resolve();
+function enqueueAccountWrite<T>(fn: () => Promise<T>): Promise<T> {
+  const run = accountWriteChain.then(fn, fn);
+  accountWriteChain = run.catch(() => {});
+  return run;
+}
+
+let categoryWriteChain: Promise<unknown> = Promise.resolve();
+function enqueueCategoryWrite<T>(fn: () => Promise<T>): Promise<T> {
+  const run = categoryWriteChain.then(fn, fn);
+  categoryWriteChain = run.catch(() => {});
   return run;
 }
 
@@ -95,8 +110,10 @@ export async function getAccounts(): Promise<Account[]> {
   return raw ? JSON.parse(raw) : [];
 }
 
-export async function saveAccounts(accounts: Account[]): Promise<void> {
-  await AsyncStorage.setItem(KEYS.accounts, JSON.stringify(accounts));
+export function saveAccounts(accounts: Account[]): Promise<void> {
+  return enqueueAccountWrite(async () => {
+    await AsyncStorage.setItem(KEYS.accounts, JSON.stringify(accounts));
+  });
 }
 
 export async function getCustomCategories(): Promise<CustomCategory[]> {
@@ -104,8 +121,10 @@ export async function getCustomCategories(): Promise<CustomCategory[]> {
   return raw ? JSON.parse(raw) : [];
 }
 
-export async function saveCustomCategories(cats: CustomCategory[]): Promise<void> {
-  await AsyncStorage.setItem(KEYS.customCategories, JSON.stringify(cats));
+export function saveCustomCategories(cats: CustomCategory[]): Promise<void> {
+  return enqueueCategoryWrite(async () => {
+    await AsyncStorage.setItem(KEYS.customCategories, JSON.stringify(cats));
+  });
 }
 
 export async function getLastAccount(): Promise<string | null> {
@@ -126,6 +145,32 @@ export async function getThemeMode(): Promise<StoredThemeMode> {
 
 export async function setThemeMode(mode: StoredThemeMode): Promise<void> {
   await AsyncStorage.setItem(KEYS.themeMode, mode);
+}
+
+export type HistoryFilter = 'all' | TransactionType;
+export type HistoryPeriod = 'day' | 'month' | 'year';
+export interface HistoryPrefs {
+  filter: HistoryFilter;
+  period: HistoryPeriod;
+}
+
+export async function getHistoryPrefs(): Promise<HistoryPrefs | null> {
+  const raw = await AsyncStorage.getItem(KEYS.historyPrefs);
+  if (!raw) return null;
+  try {
+    const p = JSON.parse(raw);
+    const filter: HistoryFilter =
+      p.filter === 'income' || p.filter === 'expense' ? p.filter : 'all';
+    const period: HistoryPeriod =
+      p.period === 'day' || p.period === 'year' ? p.period : 'month';
+    return { filter, period };
+  } catch {
+    return null;
+  }
+}
+
+export async function setHistoryPrefs(prefs: HistoryPrefs): Promise<void> {
+  await AsyncStorage.setItem(KEYS.historyPrefs, JSON.stringify(prefs));
 }
 
 export type StoredLocale = 'en' | 'id';

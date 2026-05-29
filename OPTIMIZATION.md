@@ -106,7 +106,7 @@ Each finding has: **what / where / why it matters / how to fix**. Severity:
 - **What:** Imported transactions can reference `accountId`/`categoryId` that don’t exist. UI degrades gracefully (`'Unknown account'`) but the data is dirty forever.
 - **Fix:** Either drop orphans during merge, or warn the user with a count in the import summary toast.
 
-### 3.3 `AccountManager`/`CategoryManager` read-modify-write without the tx-write chain
+### 3.3 `AccountManager`/`CategoryManager` read-modify-write without the tx-write chain — ✅
 - **Where:** `components/AccountManager.tsx:78-93,95-102`, `components/CategoryManager.tsx:81-99`.
 - **What:** Rapid double-tap on Create or Delete can race two `saveAccounts` calls (each builds its own next array from a stale prop) and lose one mutation. Same risk for categories.
 - **Fix:** Either disable the button while saving, or extend `enqueueTxWrite` into a generic `enqueueWrite` and use it for all three storage helpers.
@@ -125,12 +125,12 @@ Each finding has: **what / where / why it matters / how to fix**. Severity:
 - **What:** UI offers no icon picker, so all custom categories look identical. For daily use this defeats the purpose of having custom categories.
 - **Fix:** Either expose a small icon picker grid, or pull the icon name out of the user’s typed name with a simple keyword map (e.g. “grocery” → `ShoppingCart`).
 
-### 3.7 `history` filter state resets to `all` on every mount
+### 3.7 `history` filter state resets to `all` on every mount — ✅
 - **Where:** `app/(main)/history.tsx:35-41`.
 - **What:** User who always filters by `expense` re-toggles every session. Mild but cumulative.
 - **Fix:** Persist filter + period + cursor reset rules to AsyncStorage (`nw.historyPrefs`).
 
-### 3.8 Period `cursor` defaults to first-mount time
+### 3.8 Period `cursor` defaults to first-mount time — ✅
 - **Where:** `app/(main)/history.tsx:39`.
 - **What:** `useState(new Date())` runs once; tab stays mounted across days. If the app stays open past midnight, history still cursors yesterday.
 - **Fix:** On focus, if `period === 'day'` and cursor isn’t today, prompt or auto-reset (or just keep `cursor = new Date()` in a `useFocusEffect`).

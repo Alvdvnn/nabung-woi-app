@@ -1,6 +1,6 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, Modal, Platform, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { contentBottomForFab, fabBottomForTabScreen } from '../../constants/layout';
@@ -15,7 +15,8 @@ import { useToast } from '../../hooks/useToast';
 import { radius, spacing, fontSize } from '../../constants/theme';
 import { useTheme } from '../../hooks/useTheme';
 import { useData } from '../../context/DataContext';
-import { Transaction, TransactionType } from '../../utils/storage';
+import { Transaction, TransactionType, getHistoryPrefs, setHistoryPrefs } from '../../utils/storage';
+import { isoDay } from '../../utils/format';
 import { useT, useLocale } from '../../i18n';
 import { DICTS } from '../../i18n/dicts';
 import { filterByPeriod, Period, totalsOf } from '../../utils/aggregate';
@@ -39,6 +40,34 @@ export default function HistoryScreen() {
   const [cursor, setCursor] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const prefsLoaded = useRef(false);
+
+  // Load persisted filter + period on mount.
+  useEffect(() => {
+    getHistoryPrefs().then((p) => {
+      if (p) {
+        setFilter(p.filter);
+        setPeriod(p.period);
+      }
+      prefsLoaded.current = true;
+    });
+  }, []);
+
+  // Persist after each change (skip the initial render before load completes).
+  useEffect(() => {
+    if (!prefsLoaded.current) return;
+    setHistoryPrefs({ filter, period });
+  }, [filter, period]);
+
+  // If the user opened the app yesterday and is still on the day view,
+  // bump cursor to today on focus so the list reflects the new day.
+  useFocusEffect(
+    useCallback(() => {
+      if (period !== 'day') return;
+      const today = new Date();
+      if (isoDay(cursor) !== isoDay(today)) setCursor(today);
+    }, [period, cursor])
+  );
 
   const FILTERS: { id: Filter; label: string }[] = [
     { id: 'all', label: t('type.all') },
