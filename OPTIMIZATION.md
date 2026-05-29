@@ -101,7 +101,7 @@ Each finding has: **what / where / why it matters / how to fix**. Severity:
 - **What:** `await deleteTransaction(...)` then local `setTxs` filter. If the AsyncStorage write throws, UI shows the row gone but disk still has it. Next focus restores it — confusing.
 - **Fix:** Wrap in try/catch, restore prior state + toast on error.
 
-### 3.2 `importAll` accepts orphan references
+### 3.2 `importAll` accepts orphan references — ✅
 - **Where:** `utils/storage.ts:187-231`.
 - **What:** Imported transactions can reference `accountId`/`categoryId` that don’t exist. UI degrades gracefully (`'Unknown account'`) but the data is dirty forever.
 - **Fix:** Either drop orphans during merge, or warn the user with a count in the import summary toast.
@@ -115,7 +115,7 @@ Each finding has: **what / where / why it matters / how to fix**. Severity:
 - **What:** `` t(`period.${period}` as 'period.day') `` lies to the type checker. Currently safe because all three keys exist, but a future rename would silently break.
 - **Fix:** Make `TFn` accept a `Period`-typed branch, or define `PERIOD_LABELS` once and look up.
 
-### 3.5 `index.tsx` — duplicate routing target ladder
+### 3.5 `index.tsx` — duplicate routing target ladder — ✅
 - **Where:** `app/index.tsx:126-127, 151-152`.
 - **What:** Same `returnTo === 'calendar' ? ... : 'history' ? ... : '/dashboard'` ladder repeated. Bug-prone if a new return target is added.
 - **Fix:** Extract `resolveReturnTarget(returnTo)` helper.
@@ -182,7 +182,7 @@ Each finding has: **what / where / why it matters / how to fix**. Severity:
 - **Where:** `i18n/index.tsx:62-68`.
 - **What:** No eslint configured so nothing yelled, but `t` is `useCallback`d with `[locale]` and the body references `locale` and `DICTS` only. Fine. Worth noting if you add eslint.
 
-### 4.8 No error boundary anywhere
+### 4.8 No error boundary anywhere — ✅
 - **Where:** root layout.
 - **What:** Any runtime throw in a screen drops the whole app to red-screen in dev / blank in prod. For daily use, even a “something went wrong, tap to reload” fallback would save you.
 - **Fix:** Add one `<ErrorBoundary>` wrapping `<ThemedStack/>`.
@@ -195,7 +195,7 @@ Each finding has: **what / where / why it matters / how to fix**. Severity:
 - **Where:** `app/index.tsx:228`.
 - **What:** `'height'` is buggy on Android — Compose keyboard insets are handled by the new arch already. Often safer to use `behavior={Platform.OS === 'ios' ? 'padding' : undefined}` and rely on `softwareKeyboardLayoutMode: 'pan'`.
 
-### 4.11 `setTimeout(scrollToEnd, 100)` for keyboard focus
+### 4.11 `setTimeout(scrollToEnd, 100)` for keyboard focus — ✅
 - **Where:** `app/index.tsx:282`.
 - **What:** Fragile — depends on the keyboard animation racing the scroll. Sometimes scrolls before the keyboard opens, sometimes lands wrong.
 - **Fix:** Listen to `Keyboard.addListener('keyboardDidShow', ...)` and scroll then.

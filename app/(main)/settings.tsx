@@ -126,6 +126,9 @@ export default function SettingsScreen() {
         acc: summary.accounts,
         cat: summary.categories,
       }));
+      if (summary.orphanTransactions > 0) {
+        toast.show('info', t('settings.importOrphans', { n: summary.orphanTransactions }));
+      }
       setImportText('');
       setImportOpen(false);
     } catch (e: any) {

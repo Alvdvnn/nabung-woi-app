@@ -13,6 +13,7 @@ import { CalculatorProvider } from '../components/CalculatorProvider';
 import { LocaleProvider } from '../i18n';
 import PinLockScreen from '../components/PinLockScreen';
 import SplashIntro from '../components/SplashIntro';
+import ErrorBoundary from '../components/ErrorBoundary';
 import { useTheme } from '../hooks/useTheme';
 import { View } from 'react-native';
 
@@ -45,26 +46,28 @@ function ThemedStack() {
 
 export default function RootLayout() {
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
-        <LocaleProvider>
-          <ThemeProvider>
-            <BottomSheetModalProvider>
-              <ToastProvider>
-                <CalculatorProvider>
-                  <PinProvider>
-                    <CategoriesProvider>
-                      <DataProvider>
-                        <ThemedStack />
-                      </DataProvider>
-                    </CategoriesProvider>
-                  </PinProvider>
-                </CalculatorProvider>
-              </ToastProvider>
-            </BottomSheetModalProvider>
-          </ThemeProvider>
-        </LocaleProvider>
-      </SafeAreaProvider>
-    </GestureHandlerRootView>
+    <ErrorBoundary>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <SafeAreaProvider>
+          <LocaleProvider>
+            <ThemeProvider>
+              <BottomSheetModalProvider>
+                <ToastProvider>
+                  <CalculatorProvider>
+                    <PinProvider>
+                      <CategoriesProvider>
+                        <DataProvider>
+                          <ThemedStack />
+                        </DataProvider>
+                      </CategoriesProvider>
+                    </PinProvider>
+                  </CalculatorProvider>
+                </ToastProvider>
+              </BottomSheetModalProvider>
+            </ThemeProvider>
+          </LocaleProvider>
+        </SafeAreaProvider>
+      </GestureHandlerRootView>
+    </ErrorBoundary>
   );
 }

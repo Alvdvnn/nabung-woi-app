@@ -241,6 +241,7 @@ export interface ImportSummary {
   transactions: number;
   accounts: number;
   categories: number;
+  orphanTransactions: number;
 }
 
 // Merges imported data into existing by id (imported wins on conflict). Never deletes current data.
@@ -275,11 +276,18 @@ export async function importAll(json: string): Promise<ImportSummary> {
     getCustomCategories(),
   ]);
 
-  const mergedTx = mergeById(curTx, inTx).sort(
-    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-  );
   const mergedAcc = mergeById(curAcc, inAcc);
   const mergedCat = mergeById(curCat, inCat);
+
+  // Drop incoming transactions that point at an unknown account so import
+  // doesn't permanently create orphan rows the UI has to special-case.
+  const knownAccountIds = new Set(mergedAcc.map((a) => a.id));
+  const acceptedInTx = inTx.filter((t) => knownAccountIds.has(t.accountId));
+  const orphanTx = inTx.length - acceptedInTx.length;
+
+  const mergedTx = mergeById(curTx, acceptedInTx).sort(
+    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+  );
 
   await Promise.all([
     AsyncStorage.setItem(KEYS.transactions, JSON.stringify(mergedTx)),
@@ -287,5 +295,10 @@ export async function importAll(json: string): Promise<ImportSummary> {
     saveCustomCategories(mergedCat),
   ]);
 
-  return { transactions: inTx.length, accounts: inAcc.length, categories: inCat.length };
+  return {
+    transactions: acceptedInTx.length,
+    accounts: inAcc.length,
+    categories: inCat.length,
+    orphanTransactions: orphanTx,
+  };
 }

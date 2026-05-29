@@ -3,6 +3,7 @@ import DatePickerField from '../components/DatePickerField';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { fabBottomForFullScreen } from '../constants/layout';
 import {
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -102,6 +103,12 @@ export default function InputScreen() {
     setSelectedDate(new Date());
   }
 
+  function resolveReturnTarget(): '/calendar' | '/history' | '/dashboard' {
+    if (returnTo === 'calendar') return '/calendar';
+    if (returnTo === 'history') return '/history';
+    return '/dashboard';
+  }
+
   async function handleSave() {
     const num = parseFloat(amount);
     if (!num || num <= 0) { toast.show('error', t('input.errInvalidAmount')); return; }
@@ -122,8 +129,7 @@ export default function InputScreen() {
           dayKey,
         });
         toast.show('success', t('input.txUpdated'));
-        const target = returnTo === 'calendar' ? '/calendar' : returnTo === 'history' ? '/history' : '/dashboard';
-        router.replace(target);
+        router.replace(resolveReturnTarget());
       } else {
         await addTx({
           id: genId('t'),
@@ -152,8 +158,7 @@ export default function InputScreen() {
 
   function doCancelEdit() {
     setConfirmCancel(false);
-    const target = returnTo === 'calendar' ? '/calendar' : returnTo === 'history' ? '/history' : '/dashboard';
-    router.replace(target);
+    router.replace(resolveReturnTarget());
   }
 
   const styles = useMemo(() => StyleSheet.create({
@@ -282,7 +287,13 @@ export default function InputScreen() {
             value={note}
             onChangeText={setNote}
             maxLength={80}
-            onFocus={() => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100)}
+            onFocus={() => {
+              // Wait for keyboard up before scrolling, instead of a brittle 100ms timer.
+              const sub = Keyboard.addListener('keyboardDidShow', () => {
+                scrollRef.current?.scrollToEnd({ animated: true });
+                sub.remove();
+              });
+            }}
           />
 
           <View style={styles.actions}>
