@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import {
   FlatList,
   SafeAreaView,
@@ -16,6 +16,7 @@ import { useData } from '../context/DataContext';
 import { useT } from '../i18n';
 import { tBuiltin } from '../i18n/labels';
 import { radius, spacing, fontSize } from '../constants/theme';
+import { Transaction } from '../utils/storage';
 import { filterByPeriod, Period } from '../utils/aggregate';
 import { findAccountType } from '../constants/accountTypes';
 import { formatIDR, formatDate } from '../utils/format';
@@ -195,6 +196,47 @@ export default function AccountDetailScreen() {
   const hasEntries = periodTxs.length > 0;
   const accountMissing = accountsLoaded && !account;
 
+  const keyExtractor = useCallback((tx: Transaction) => tx.id, []);
+  const renderItem = useCallback(
+    ({ item }: { item: Transaction }) => {
+      const cat = find(item.categoryId);
+      const Icon = cat?.icon ?? CircleDollarSign;
+      const isIncome = item.type === 'income';
+      return (
+        <View style={styles.entryRow}>
+          <View
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: radius.full,
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginRight: spacing.md,
+              backgroundColor: isIncome ? colors.incomeLight : colors.expenseLight,
+            }}
+          >
+            <Icon size={20} color={isIncome ? colors.income : colors.expense} />
+          </View>
+          <View style={styles.entryInfo}>
+            {item.note ? (
+              <Text style={styles.entryNote} numberOfLines={3}>{item.note}</Text>
+            ) : (
+              <Text style={styles.entryNoteEmpty}>{cat?.name ?? t('common.other')}</Text>
+            )}
+            <Text style={styles.entryMeta}>{cat?.name ?? t('common.other')}</Text>
+            <Text style={styles.entryDate}>{formatDate(item.date)}</Text>
+          </View>
+          <Text
+            style={[styles.entryAmount, { color: isIncome ? colors.income : colors.expense }]}
+          >
+            {isIncome ? '+' : '-'}{formatIDR(item.amount)}
+          </Text>
+        </View>
+      );
+    },
+    [find, styles, colors, t]
+  );
+
   if (accountMissing) {
     return (
       <SafeAreaView style={styles.safe}>
@@ -225,7 +267,7 @@ export default function AccountDetailScreen() {
       />
       <FlatList
         data={periodTxs}
-        keyExtractor={(tx) => tx.id}
+        keyExtractor={keyExtractor}
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
@@ -283,57 +325,7 @@ export default function AccountDetailScreen() {
             />
           </View>
         }
-        renderItem={({ item }) => {
-          const cat = find(item.categoryId);
-          const Icon = cat?.icon ?? CircleDollarSign;
-          const isIncome = item.type === 'income';
-          return (
-            <View style={styles.entryRow}>
-              <View
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: radius.full,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginRight: spacing.md,
-                  backgroundColor: isIncome
-                    ? colors.incomeLight
-                    : colors.expenseLight,
-                }}
-              >
-                <Icon
-                  size={20}
-                  color={isIncome ? colors.income : colors.expense}
-                />
-              </View>
-              <View style={styles.entryInfo}>
-                {item.note ? (
-                  <Text style={styles.entryNote} numberOfLines={3}>
-                    {item.note}
-                  </Text>
-                ) : (
-                  <Text style={styles.entryNoteEmpty}>
-                    {cat?.name ?? t('common.other')}
-                  </Text>
-                )}
-                <Text style={styles.entryMeta}>
-                  {cat?.name ?? t('common.other')}
-                </Text>
-                <Text style={styles.entryDate}>{formatDate(item.date)}</Text>
-              </View>
-              <Text
-                style={[
-                  styles.entryAmount,
-                  { color: isIncome ? colors.income : colors.expense },
-                ]}
-              >
-                {isIncome ? '+' : '-'}
-                {formatIDR(item.amount)}
-              </Text>
-            </View>
-          );
-        }}
+        renderItem={renderItem}
       />
     </SafeAreaView>
   );

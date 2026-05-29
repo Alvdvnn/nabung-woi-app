@@ -68,12 +68,12 @@ Each finding has: **what / where / why it matters / how to fix**. Severity:
 - **Where:** `app/(main)/dashboard.tsx:53-68`.
 - **What:** OK as-is, but only re-render trigger should be a tx mutation, not a period toggle. Currently fine because deps are `[accounts, txs]`; verify after introducing `TransactionsProvider`.
 
-### 2.6 FlatList `renderItem` defined inline (re-created each render)
+### 2.6 FlatList `renderItem` defined inline (re-created each render) — ✅
 - **Where:** `app/(main)/history.tsx:218`, `app/account-detail.tsx:264`, `app/category-detail.tsx:248`.
 - **What:** Forces FlatList to remount rows on parent re-render. With 100+ rows this is the most common RN scroll-jank source.
 - **Fix:** Extract to `useCallback`, memoize the row component (`React.memo(TransactionItem)` — already lightweight, just needs the wrapper). Pass `extraData` only when something outside `item` matters (e.g. account name map updates).
 
-### 2.7 Splash blocks every cold start for 1200 ms
+### 2.7 Splash blocks every cold start for 1200 ms — ✅
 - **Where:** `components/SplashIntro.tsx:11-13`.
 - **What:** Hard delay before app is usable. For daily use that is friction.
 - **Fix:** Either trim `HOLD_MS` to ~500, gate on `useEffect`-driven hydration completion (skip if hydration finishes earlier), or skip entirely on subsequent foregrounds within N minutes.
@@ -154,17 +154,17 @@ Each finding has: **what / where / why it matters / how to fix**. Severity:
 - **What:** `LocaleProvider`, `ThemeProvider`, `PinProvider` each gate render with `if (!hydrated) return null`. Three sequential null-renders cause a brief blank flash before the splash logo appears.
 - **Fix:** Hydrate in parallel inside a single root effect, or render the splash *unconditionally* and reveal app once all providers report ready.
 
-### 4.2 Shadowed `t` identifiers
+### 4.2 Shadowed `t` identifiers — ✅
 - **Where:** `history.tsx:216`, `category-detail.tsx:205`, plus `dayTxs.filter((t) => …)` in `calendar.tsx:56`, `totalsOf` in `aggregate.ts`.
 - **What:** `keyExtractor={(t) => t.id}` and arrow params named `t` shadow the imported `useT()` translate fn — readability hazard and a real bug waiting to happen the moment someone moves a `t('…')` inside one of those closures.
 - **Fix:** Rename callback args to `tx` / `item`.
 
-### 4.3 `Symbol` interface shadows the global
+### 4.3 `Symbol` interface shadows the global — ✅
 - **Where:** `app/(main)/gacha.tsx:27`.
 - **What:** Local `interface Symbol { … }` shadows the JS built-in. Harmless today, deeply confusing for any future maintainer using `Symbol.for(...)`.
 - **Fix:** Rename to `ReelSymbol`.
 
-### 4.4 `flex1` style duplicate of `flex`
+### 4.4 `flex1` style duplicate of `flex` — ✅
 - **Where:** `app/index.tsx:157-158`.
 - **What:** Two style entries with identical value (`{ flex: 1 }`). Dead code.
 
@@ -173,7 +173,7 @@ Each finding has: **what / where / why it matters / how to fix**. Severity:
 - **What:** Inline style object => new identity each render, defeats StyleSheet caching. Negligible per use but a habit worth breaking.
 - **Fix:** Promote to a static `StyleSheet` entry.
 
-### 4.6 `genId` is `Date.now()` + 6 chars of `Math.random()`
+### 4.6 `genId` is `Date.now()` + 6 chars of `Math.random()` — ✅ (documented)
 - **Where:** `utils/id.ts:1-5`.
 - **What:** Acceptable for single-device, but two rapid-fire imports of the same file would re-merge correctly (id-keyed). Collision risk on import of foreign exports though — a friend’s export with overlapping `t<base36>` could clobber yours.
 - **Fix:** Bump randomness to 10 chars or namespace by device (`a${deviceId}_…`). Or accept it — single-user phone.

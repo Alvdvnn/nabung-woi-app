@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { memo, useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Pencil, Trash2, CircleDollarSign } from 'lucide-react-native';
 import { radius, spacing, fontSize, shadow } from '../constants/theme';
@@ -15,7 +15,7 @@ interface Props {
   onPress?: (id: string) => void;
 }
 
-export default function TransactionItem({ item, accountName, onDelete, onPress }: Props) {
+function TransactionItemImpl({ item, accountName, onDelete, onPress }: Props) {
   const { colors } = useTheme();
   const { find } = useCategories();
   const t = useT();
@@ -93,3 +93,6 @@ export default function TransactionItem({ item, accountName, onDelete, onPress }
     </View>
   );
 }
+
+const TransactionItem = memo(TransactionItemImpl);
+export default TransactionItem;

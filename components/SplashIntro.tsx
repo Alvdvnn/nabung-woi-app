@@ -8,8 +8,8 @@ interface Props {
   onDone: () => void;
 }
 
-const HOLD_MS = 1200;
-const FADE_MS = 320;
+const HOLD_MS = 500;
+const FADE_MS = 280;
 
 export default function SplashIntro({ onDone }: Props) {
   const { colors } = useTheme();

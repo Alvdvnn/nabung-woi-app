@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import {
   FlatList,
   SafeAreaView,
@@ -15,6 +15,7 @@ import { useCategories } from '../context/CategoriesContext';
 import { useData } from '../context/DataContext';
 import { useT } from '../i18n';
 import { radius, spacing, fontSize } from '../constants/theme';
+import { Transaction } from '../utils/storage';
 import { filterByPeriod, Period, totalsOf } from '../utils/aggregate';
 import { formatIDR, formatDate } from '../utils/format';
 
@@ -40,7 +41,7 @@ export default function CategoryDetailScreen() {
   const filteredForCategory = useMemo(() => {
     const inPeriod = filterByPeriod(txs, period);
     return inPeriod
-      .filter((t) => t.categoryId === categoryId)
+      .filter((tx) => tx.categoryId === categoryId)
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [txs, categoryId, period]);
 
@@ -179,6 +180,32 @@ export default function CategoryDetailScreen() {
 
   const hasEntries = filteredForCategory.length > 0;
 
+  const keyExtractor = useCallback((tx: Transaction) => tx.id, []);
+  const renderItem = useCallback(
+    ({ item }: { item: Transaction }) => (
+      <View style={styles.entryRow}>
+        <View style={styles.entryIconWrap}>
+          <Icon size={20} color={isIncome ? colors.income : colors.expense} />
+        </View>
+        <View style={styles.entryInfo}>
+          {item.note ? (
+            <Text style={styles.entryNote} numberOfLines={3}>{item.note}</Text>
+          ) : (
+            <Text style={styles.entryNoteEmpty}>{t('common.noNote')}</Text>
+          )}
+          <Text style={styles.entryMeta}>
+            {accountNameMap.get(item.accountId) ?? t('common.unknownAccount')}
+          </Text>
+          <Text style={styles.entryDate}>{formatDate(item.date)}</Text>
+        </View>
+        <Text style={styles.entryAmount}>
+          {isIncome ? '+' : '-'}{formatIDR(item.amount)}
+        </Text>
+      </View>
+    ),
+    [styles, Icon, isIncome, colors, accountNameMap, t]
+  );
+
   return (
     <SafeAreaView style={styles.safe}>
       <TopBar
@@ -189,7 +216,7 @@ export default function CategoryDetailScreen() {
       />
       <FlatList
         data={filteredForCategory}
-        keyExtractor={(t) => t.id}
+        keyExtractor={keyExtractor}
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
@@ -232,27 +259,7 @@ export default function CategoryDetailScreen() {
             />
           </View>
         }
-        renderItem={({ item }) => (
-          <View style={styles.entryRow}>
-            <View style={styles.entryIconWrap}>
-              <Icon size={20} color={isIncome ? colors.income : colors.expense} />
-            </View>
-            <View style={styles.entryInfo}>
-              {item.note ? (
-                <Text style={styles.entryNote} numberOfLines={3}>{item.note}</Text>
-              ) : (
-                <Text style={styles.entryNoteEmpty}>{t('common.noNote')}</Text>
-              )}
-              <Text style={styles.entryMeta}>
-                {accountNameMap.get(item.accountId) ?? t('common.unknownAccount')}
-              </Text>
-              <Text style={styles.entryDate}>{formatDate(item.date)}</Text>
-            </View>
-            <Text style={styles.entryAmount}>
-              {isIncome ? '+' : '-'}{formatIDR(item.amount)}
-            </Text>
-          </View>
-        )}
+        renderItem={renderItem}
       />
     </SafeAreaView>
   );

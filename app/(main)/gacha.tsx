@@ -24,13 +24,13 @@ type Result = 'buy' | 'skip' | null;
 const REEL_HEIGHT = 92;
 const REEL_WIDTH = 76;
 
-interface Symbol {
+interface ReelSymbol {
   Icon: any;
   key: string;
   win: boolean;
 }
 
-const SYMBOLS: Symbol[] = [
+const SYMBOLS: ReelSymbol[] = [
   { key: 'coin', Icon: Coins, win: true },
   { key: 'gem', Icon: Gem, win: true },
   { key: 'dollar', Icon: DollarSign, win: true },
@@ -41,7 +41,7 @@ const SYMBOLS: Symbol[] = [
 
 // Build a long strip; result symbol placed at a known index.
 function buildStrip(targetIdx: number, cycles: number) {
-  const strip: Symbol[] = [];
+  const strip: ReelSymbol[] = [];
   for (let c = 0; c < cycles; c++) {
     for (let i = 0; i < SYMBOLS.length; i++) strip.push(SYMBOLS[i]);
   }
@@ -56,7 +56,7 @@ export default function GachaScreen() {
   const t = useT();
   const [result, setResult] = useState<Result>(null);
   const [spinning, setSpinning] = useState(false);
-  const [strips, setStrips] = useState<Symbol[][]>(() => [
+  const [strips, setStrips] = useState<ReelSymbol[][]>(() => [
     buildStrip(0, 1),
     buildStrip(0, 1),
     buildStrip(0, 1),

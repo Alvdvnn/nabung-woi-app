@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { FlatList, Modal, Platform, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -15,7 +15,7 @@ import { useToast } from '../../hooks/useToast';
 import { radius, spacing, fontSize } from '../../constants/theme';
 import { useTheme } from '../../hooks/useTheme';
 import { useData } from '../../context/DataContext';
-import { TransactionType } from '../../utils/storage';
+import { Transaction, TransactionType } from '../../utils/storage';
 import { useT, useLocale } from '../../i18n';
 import { DICTS } from '../../i18n/dicts';
 import { filterByPeriod, Period, totalsOf } from '../../utils/aggregate';
@@ -81,7 +81,7 @@ export default function HistoryScreen() {
 
   const filtered = useMemo(() => {
     if (filter === 'all') return txsInPeriod;
-    return txsInPeriod.filter((t) => t.type === filter);
+    return txsInPeriod.filter((tx) => tx.type === filter);
   }, [txsInPeriod, filter]);
 
   const accountNameMap = useMemo(() => {
@@ -90,11 +90,25 @@ export default function HistoryScreen() {
     return m;
   }, [accounts]);
 
-  function handleDelete(id: string) {
-    setPendingDeleteId(id);
-  }
+  const keyExtractor = useCallback((tx: Transaction) => tx.id, []);
+  const handleDelete = useCallback((id: string) => setPendingDeleteId(id), []);
+  const handlePressItem = useCallback(
+    (id: string) => router.push({ pathname: '/', params: { id, returnTo: 'history' } }),
+    [router]
+  );
+  const renderItem = useCallback(
+    ({ item }: { item: Transaction }) => (
+      <TransactionItem
+        item={item}
+        accountName={accountNameMap.get(item.accountId)}
+        onDelete={handleDelete}
+        onPress={handlePressItem}
+      />
+    ),
+    [accountNameMap, handleDelete, handlePressItem]
+  );
 
-  async function confirmDelete() {
+  const confirmDelete = useCallback(async () => {
     if (!pendingDeleteId) return;
     const id = pendingDeleteId;
     setPendingDeleteId(null);
@@ -104,7 +118,7 @@ export default function HistoryScreen() {
     } catch {
       toast.show('error', t('history.deleteFailed'));
     }
-  }
+  }, [pendingDeleteId, deleteTx, toast, t]);
 
   const styles = useMemo(() => StyleSheet.create({
     safe: { flex: 1, backgroundColor: colors.bg },
@@ -210,17 +224,11 @@ export default function HistoryScreen() {
       ) : (
         <FlatList
           data={filtered}
-          keyExtractor={(t) => t.id}
+          keyExtractor={keyExtractor}
           showsVerticalScrollIndicator={false}
-          renderItem={({ item }) => (
-            <TransactionItem
-              item={item}
-              accountName={accountNameMap.get(item.accountId)}
-              onDelete={handleDelete}
-              onPress={(id) => router.push({ pathname: '/', params: { id, returnTo: 'history' } })}
-            />
-          )}
+          renderItem={renderItem}
           contentContainerStyle={styles.list}
+          extraData={accountNameMap}
         />
       )}
       

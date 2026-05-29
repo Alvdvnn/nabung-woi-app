@@ -158,7 +158,6 @@ export default function InputScreen() {
   const styles = useMemo(() => StyleSheet.create({
     safe: { flex: 1, backgroundColor: colors.bg },
     flex: { flex: 1 },
-    flex1: { flex: 1 },
     content: { padding: spacing.lg, paddingBottom: 160 },
     heading: { fontSize: fontSize.xxl, fontWeight: '800', color: colors.textPrimary },
     subheading: { fontSize: fontSize.sm, color: colors.textMuted, marginTop: 4 },
@@ -292,7 +291,7 @@ export default function InputScreen() {
               </Pressable>
             )}
             <Pressable
-              style={[styles.saveBtn, saving && styles.saveBtnDisabled, isEditing && styles.flex1]}
+              style={[styles.saveBtn, saving && styles.saveBtnDisabled, isEditing && styles.flex]}
               onPress={handleSave}
               disabled={saving}
             >
