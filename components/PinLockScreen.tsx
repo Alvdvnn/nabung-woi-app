@@ -3,13 +3,13 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Lock, ShieldQuestion } from 'lucide-react-native';
 import { useTheme } from '../hooks/useTheme';
 import { fontSize, radius, spacing } from '../constants/theme';

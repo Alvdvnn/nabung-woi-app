@@ -4,7 +4,6 @@ import {
   Modal,
   Platform,
   Pressable,
-  SafeAreaView,
   ScrollView,
   Share,
   StyleSheet,
@@ -14,7 +13,7 @@ import {
 } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback } from 'react';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { contentBottomForFab, fabBottomForTabScreen } from '../../constants/layout';
 import { Database, Download, Upload, Trash, Wallet, Tag, Plus, Sun, Moon, Smartphone, Lock, Languages } from 'lucide-react-native';
 import TopBar from '../../components/TopBar';

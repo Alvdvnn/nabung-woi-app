@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { isoDay } from './format';
+import { isoDay } from './date';
 
 export type TransactionType = 'income' | 'expense';
 

@@ -1,4 +1,8 @@
 import { getCurrentLocale } from '../i18n';
+import { isoDay } from './date';
+
+// Re-exported so existing `import { isoDay } from '../utils/format'` callers keep working.
+export { isoDay };
 
 function dateLocale(): string {
   return getCurrentLocale() === 'id' ? 'id-ID' : 'en-US';
@@ -29,13 +33,6 @@ export function formatDate(iso: string): string {
 
 export function formatDayMonth(iso: string): string {
   return new Date(iso).toLocaleDateString(dateLocale(), { day: 'numeric', month: 'short' });
-}
-
-export function isoDay(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
 }
 
 export function groupDigits(raw: string | number): string {

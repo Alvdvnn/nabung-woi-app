@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
-import { SafeAreaView, StyleSheet, Text, View, ScrollView } from 'react-native';
+import { StyleSheet, Text, View, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { contentBottomForFab, fabBottomForTabScreen } from '../../constants/layout';
 import { CalendarX, Plus } from 'lucide-react-native';
 import TopBar from '../../components/TopBar';
