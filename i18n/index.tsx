@@ -87,7 +87,9 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<LocaleContextValue>(() => ({ locale, setLocale, t }), [locale, setLocale, t]);
 
-  if (!hydrated) return null;
+  // Render eagerly with the 'en' default so sibling providers hydrate in
+  // parallel. Splash covers the millisecond window before stored locale loads.
+  void hydrated;
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 

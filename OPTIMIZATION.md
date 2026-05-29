@@ -55,7 +55,7 @@ Each finding has: **what / where / why it matters / how to fix**. Severity:
 - **What:** Builds `new Set(txs.map(isoDay(new Date(t.date))))` then sorts; runs whenever the `txs` array reference changes (i.e. every focus). For 1000+ rows this is needless work — current streak only needs the recent N days.
 - **Fix:** Short-circuit current streak: scan only descending from today until a day without entries (early break). Cache longest separately, or recompute incrementally on write.
 
-### 2.3 `txDates` Set rebuilt on every calendar render
+### 2.3 `txDates` Set rebuilt on every calendar render — ✅
 - **Where:** `app/(main)/calendar.tsx:54`.
 - **What:** `new Set(txs.map(isoDay(new Date(t.date))))` — same O(N) every paint. Memoized by `[txs]` but `txs` ref changes every focus.
 - **Fix:** Belongs in `TransactionsProvider` as a memoized derived selector.
@@ -149,7 +149,7 @@ Each finding has: **what / where / why it matters / how to fix**. Severity:
 
 ## 4. Bad approaches (P2)
 
-### 4.1 Multiple provider wrapping creates hydration cascade
+### 4.1 Multiple provider wrapping creates hydration cascade — ✅
 - **Where:** `app/_layout.tsx:46-67`.
 - **What:** `LocaleProvider`, `ThemeProvider`, `PinProvider` each gate render with `if (!hydrated) return null`. Three sequential null-renders cause a brief blank flash before the splash logo appears.
 - **Fix:** Hydrate in parallel inside a single root effect, or render the splash *unconditionally* and reveal app once all providers report ready.

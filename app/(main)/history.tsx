@@ -24,6 +24,8 @@ import { formatDate, formatIDR } from '../../utils/format';
 
 type Filter = 'all' | TransactionType;
 
+const FILTER_IDS: Filter[] = ['all', 'income', 'expense'];
+
 export default function HistoryScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -69,11 +71,13 @@ export default function HistoryScreen() {
     }, [period, cursor])
   );
 
-  const FILTERS: { id: Filter; label: string }[] = [
-    { id: 'all', label: t('type.all') },
-    { id: 'income', label: t('type.income') },
-    { id: 'expense', label: t('type.expense') },
-  ];
+  const FILTERS = useMemo(
+    () => FILTER_IDS.map((id) => ({
+      id,
+      label: id === 'all' ? t('type.all') : id === 'income' ? t('type.income') : t('type.expense'),
+    })),
+    [t]
+  );
 
   const shiftCursor = (dir: 1 | -1) =>
     setCursor((prev) => {

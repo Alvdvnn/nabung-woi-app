@@ -23,6 +23,8 @@ interface DataContextValue {
   txs: Transaction[];
   accounts: Account[];
   hydrated: boolean;
+  // Derived selectors memoized once for the entire app to share.
+  txDates: Set<string>;
   // Read helpers (cache-backed).
   findTx: (id: string) => Transaction | undefined;
   // Mutations — update cache optimistically and persist.
@@ -113,9 +115,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setAccounts([]);
   }, []);
 
+  const txDates = useMemo(() => {
+    const s = new Set<string>();
+    for (const tx of txs) s.add(tx.dayKey);
+    return s;
+  }, [txs]);
+
   const value = useMemo<DataContextValue>(
-    () => ({ txs, accounts, hydrated, findTx, addTx, updateTx, deleteTx, saveAccounts, refresh, resetCache }),
-    [txs, accounts, hydrated, findTx, addTx, updateTx, deleteTx, saveAccounts, refresh, resetCache]
+    () => ({ txs, accounts, hydrated, txDates, findTx, addTx, updateTx, deleteTx, saveAccounts, refresh, resetCache }),
+    [txs, accounts, hydrated, txDates, findTx, addTx, updateTx, deleteTx, saveAccounts, refresh, resetCache]
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

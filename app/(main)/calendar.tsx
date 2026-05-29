@@ -22,7 +22,7 @@ import { formatIDR } from '../../utils/format';
 export default function CalendarScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { txs, accounts, deleteTx } = useData();
+  const { txs, accounts, deleteTx, txDates } = useData();
   const [month, setMonth] = useState(new Date());
   const [selected, setSelected] = useState(new Date());
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
@@ -43,7 +43,6 @@ export default function CalendarScreen() {
     dayNet: { fontSize: fontSize.md, fontWeight: '700' },
   }), [colors, insets.bottom]);
 
-  const txDates = useMemo(() => new Set(txs.map((tx) => tx.dayKey)), [txs]);
   const selectedKey = useMemo(() => isoDay(selected), [selected]);
   const dayTxs = useMemo(
     () => txs.filter((tx) => tx.dayKey === selectedKey),

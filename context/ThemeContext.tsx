@@ -46,7 +46,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const resolved: Resolved = mode === 'system' ? systemScheme : mode;
   const colors = resolved === 'dark' ? darkColors : lightColors;
 
-  if (!hydrated) return null;
+  // Render eagerly with defaults so sibling providers can hydrate in parallel.
+  // The splash screen covers the brief window before stored mode is loaded.
+  void hydrated;
 
   return (
     <ThemeContext.Provider value={{ colors, mode, resolved, setMode }}>
