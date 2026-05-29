@@ -1,6 +1,6 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { SafeAreaView, StyleSheet, Text, View, ScrollView } from 'react-native';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { contentBottomForFab, fabBottomForTabScreen } from '../../constants/layout';
 import { CalendarX, Plus } from 'lucide-react-native';
@@ -14,7 +14,7 @@ import { useToast } from '../../hooks/useToast';
 import { spacing, fontSize } from '../../constants/theme';
 import { useTheme } from '../../hooks/useTheme';
 import { useT } from '../../i18n';
-import { deleteTransaction, getAccounts, getTransactions, Account, Transaction } from '../../utils/storage';
+import { useData } from '../../context/DataContext';
 import { isoDay, formatDate } from '../../utils/format';
 import { totalsOf } from '../../utils/aggregate';
 import { formatIDR } from '../../utils/format';
@@ -22,8 +22,7 @@ import { formatIDR } from '../../utils/format';
 export default function CalendarScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [txs, setTxs] = useState<Transaction[]>([]);
-  const [accounts, setAccounts] = useState<Account[]>([]);
+  const { txs, accounts, deleteTx } = useData();
   const [month, setMonth] = useState(new Date());
   const [selected, setSelected] = useState(new Date());
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
@@ -43,13 +42,6 @@ export default function CalendarScreen() {
     dayTitle: { fontSize: fontSize.md, fontWeight: '700', color: colors.textPrimary },
     dayNet: { fontSize: fontSize.md, fontWeight: '700' },
   }), [colors, insets.bottom]);
-
-  useFocusEffect(
-    useCallback(() => {
-      getTransactions().then(setTxs);
-      getAccounts().then(setAccounts);
-    }, [])
-  );
 
   const txDates = useMemo(() => new Set(txs.map((tx) => tx.dayKey)), [txs]);
   const selectedKey = useMemo(() => isoDay(selected), [selected]);
@@ -71,10 +63,14 @@ export default function CalendarScreen() {
 
   async function confirmDelete() {
     if (!pendingDeleteId) return;
-    await deleteTransaction(pendingDeleteId);
-    setTxs((prev) => prev.filter((tx) => tx.id !== pendingDeleteId));
+    const id = pendingDeleteId;
     setPendingDeleteId(null);
-    toast.show('success', t('history.deleted'));
+    try {
+      await deleteTx(id);
+      toast.show('success', t('history.deleted'));
+    } catch {
+      toast.show('error', t('history.deleteFailed'));
+    }
   }
 
   return (

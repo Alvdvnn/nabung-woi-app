@@ -8,6 +8,7 @@ import { ThemeProvider } from '../context/ThemeContext';
 import { ToastProvider } from '../context/ToastContext';
 import { PinProvider, usePin } from '../context/PinContext';
 import { CategoriesProvider } from '../context/CategoriesContext';
+import { DataProvider } from '../context/DataContext';
 import { CalculatorProvider } from '../components/CalculatorProvider';
 import { LocaleProvider } from '../i18n';
 import PinLockScreen from '../components/PinLockScreen';
@@ -53,7 +54,9 @@ export default function RootLayout() {
                 <CalculatorProvider>
                   <PinProvider>
                     <CategoriesProvider>
-                      <ThemedStack />
+                      <DataProvider>
+                        <ThemedStack />
+                      </DataProvider>
                     </CategoriesProvider>
                   </PinProvider>
                 </CalculatorProvider>

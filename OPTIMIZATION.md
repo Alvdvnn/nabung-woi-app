@@ -45,7 +45,7 @@ Each finding has: **what / where / why it matters / how to fix**. Severity:
 
 ## 2. Performance issues (P1)
 
-### 2.1 Every screen re-reads the entire transactions JSON on focus
+### 2.1 Every screen re-reads the entire transactions JSON on focus — ✅
 - **Where:** dashboard / history / calendar / account-detail / category-detail / index — each has its own `useFocusEffect → getTransactions().then(setTxs)`.
 - **What:** `getTransactions` does `AsyncStorage.getItem` + `JSON.parse` of the **whole** array every tab switch. With years of daily entries (1000s of rows) this stalls the JS thread for tens of ms per switch and triggers GC.
 - **Fix:** Introduce a `TransactionsProvider` (and an `AccountsProvider`) holding the cache in memory with a manual `refresh()` API. Wrap writes (`addTransaction`/`updateTransaction`/`deleteTransaction`) so they update both AsyncStorage **and** the in-memory cache. Replace each screen’s `useFocusEffect` with `const { txs } = useTransactions()`. Net: O(1) reads after first hydrate.
@@ -96,7 +96,7 @@ Each finding has: **what / where / why it matters / how to fix**. Severity:
 
 ## 3. Bugs & data-integrity issues (P1)
 
-### 3.1 Optimistic delete in `history.tsx` doesn’t roll back on failure
+### 3.1 Optimistic delete in `history.tsx` doesn’t roll back on failure — ✅
 - **Where:** `app/(main)/history.tsx:104-110`, `app/(main)/calendar.tsx:71-77`.
 - **What:** `await deleteTransaction(...)` then local `setTxs` filter. If the AsyncStorage write throws, UI shows the row gone but disk still has it. Next focus restores it — confusing.
 - **Fix:** Wrap in try/catch, restore prior state + toast on error.

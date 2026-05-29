@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import {
   FlatList,
   SafeAreaView,
@@ -6,20 +6,15 @@ import {
   Text,
   View,
 } from 'react-native';
-import { useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { Inbox, CircleDollarSign } from 'lucide-react-native';
 import EmptyState from '../components/EmptyState';
 import TopBar from '../components/TopBar';
 import { useTheme } from '../hooks/useTheme';
 import { useCategories } from '../context/CategoriesContext';
+import { useData } from '../context/DataContext';
 import { useT } from '../i18n';
 import { radius, spacing, fontSize } from '../constants/theme';
-import {
-  getAccounts,
-  getTransactions,
-  Account,
-  Transaction,
-} from '../utils/storage';
 import { filterByPeriod, Period, totalsOf } from '../utils/aggregate';
 import { formatIDR, formatDate } from '../utils/format';
 
@@ -37,15 +32,7 @@ export default function CategoryDetailScreen() {
   const categoryId = params.categoryId ?? '';
   const period: Period = (params.period as Period) ?? 'month';
 
-  const [txs, setTxs] = useState<Transaction[]>([]);
-  const [accounts, setAccounts] = useState<Account[]>([]);
-
-  useFocusEffect(
-    useCallback(() => {
-      getTransactions().then(setTxs);
-      getAccounts().then(setAccounts);
-    }, [])
-  );
+  const { txs, accounts } = useData();
 
   const cat = find(categoryId);
   const Icon = cat?.icon ?? CircleDollarSign;

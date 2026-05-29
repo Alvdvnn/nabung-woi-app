@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import {
   FlatList,
   SafeAreaView,
@@ -6,21 +6,16 @@ import {
   Text,
   View,
 } from 'react-native';
-import { useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { Inbox, CircleDollarSign, CircleAlert } from 'lucide-react-native';
 import EmptyState from '../components/EmptyState';
 import TopBar from '../components/TopBar';
 import { useTheme } from '../hooks/useTheme';
 import { useCategories } from '../context/CategoriesContext';
+import { useData } from '../context/DataContext';
 import { useT } from '../i18n';
 import { tBuiltin } from '../i18n/labels';
 import { radius, spacing, fontSize } from '../constants/theme';
-import {
-  getAccounts,
-  getTransactions,
-  Account,
-  Transaction,
-} from '../utils/storage';
 import { filterByPeriod, Period } from '../utils/aggregate';
 import { findAccountType } from '../constants/accountTypes';
 import { formatIDR, formatDate } from '../utils/format';
@@ -40,19 +35,8 @@ export default function AccountDetailScreen() {
   const accountId = params.accountId ?? '';
   const period: Period = (params.period as Period) ?? 'month';
 
-  const [txs, setTxs] = useState<Transaction[]>([]);
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [accountsLoaded, setAccountsLoaded] = useState(false);
-
-  useFocusEffect(
-    useCallback(() => {
-      getTransactions().then(setTxs);
-      getAccounts().then((list) => {
-        setAccounts(list);
-        setAccountsLoaded(true);
-      });
-    }, [])
-  );
+  const { txs, accounts, hydrated } = useData();
+  const accountsLoaded = hydrated;
 
   const account = useMemo(
     () => accounts.find((a) => a.id === accountId),

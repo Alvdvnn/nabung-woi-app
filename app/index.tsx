@@ -28,15 +28,11 @@ import { useTheme } from '../hooks/useTheme';
 import { useCategories } from '../context/CategoriesContext';
 import { useT } from '../i18n';
 import {
-  addTransaction,
-  getAccounts,
   getLastAccount,
-  getTransaction,
   setLastAccount,
-  updateTransaction,
-  Account,
   TransactionType,
 } from '../utils/storage';
+import { useData } from '../context/DataContext';
 import { genId } from '../utils/id';
 import { isoDay } from '../utils/format';
 
@@ -51,11 +47,12 @@ export default function InputScreen() {
   const isEditing = !!editId;
   const { byType, refresh: refreshCategories } = useCategories();
 
+  const { accounts, findTx, addTx, updateTx } = useData();
+
   const [type, setType] = useState<TransactionType>('expense');
   const [amount, setAmount] = useState('');
   const [categoryId, setCategoryId] = useState(byType('expense')[0].id);
   const [note, setNote] = useState('');
-  const [accounts, setAccounts] = useState<Account[]>([]);
   const [accountId, setAccountId] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -67,11 +64,9 @@ export default function InputScreen() {
     useCallback(() => {
       (async () => {
         refreshCategories();
-        const accs = await getAccounts();
-        setAccounts(accs);
 
         if (editId) {
-          const tx = await getTransaction(editId);
+          const tx = findTx(editId);
           if (tx) {
             setType(tx.type);
             setAmount(String(tx.amount));
@@ -84,11 +79,11 @@ export default function InputScreen() {
           }
         }
         const last = await getLastAccount();
-        const id = last && accs.find((a) => a.id === last) ? last : accs[0]?.id ?? null;
+        const id = last && accounts.find((a) => a.id === last) ? last : accounts[0]?.id ?? null;
         setAccountId(id);
         setHydrated(true);
       })();
-    }, [editId, refreshCategories])
+    }, [editId, refreshCategories, findTx, accounts])
   );
 
   const categories = useMemo(() => byType(type), [byType, type]);
@@ -113,36 +108,40 @@ export default function InputScreen() {
 
     setSaving(true);
     const dayKey = isoDay(selectedDate);
-    if (isEditing && editId) {
-      await updateTransaction({
-        id: editId,
-        type,
-        amount: num,
-        categoryId,
-        accountId,
-        note: note.trim(),
-        date: selectedDate.toISOString(),
-        dayKey,
-      });
+    try {
+      if (isEditing && editId) {
+        await updateTx({
+          id: editId,
+          type,
+          amount: num,
+          categoryId,
+          accountId,
+          note: note.trim(),
+          date: selectedDate.toISOString(),
+          dayKey,
+        });
+        toast.show('success', t('input.txUpdated'));
+        const target = returnTo === 'calendar' ? '/calendar' : returnTo === 'history' ? '/history' : '/dashboard';
+        router.replace(target);
+      } else {
+        await addTx({
+          id: genId('t'),
+          type,
+          amount: num,
+          categoryId,
+          accountId,
+          note: note.trim(),
+          date: selectedDate.toISOString(),
+          dayKey,
+        });
+        await setLastAccount(accountId);
+        resetForm();
+        toast.show('success', type === 'income' ? t('input.incomeRecorded') : t('input.expenseRecorded'));
+      }
+    } catch {
+      toast.show('error', t('input.saveFailed'));
+    } finally {
       setSaving(false);
-      toast.show('success', t('input.txUpdated'));
-      const target = returnTo === 'calendar' ? '/calendar' : returnTo === 'history' ? '/history' : '/dashboard';
-      router.replace(target);
-    } else {
-      await addTransaction({
-        id: genId('t'),
-        type,
-        amount: num,
-        categoryId,
-        accountId,
-        note: note.trim(),
-        date: selectedDate.toISOString(),
-        dayKey,
-      });
-      await setLastAccount(accountId);
-      resetForm();
-      setSaving(false);
-      toast.show('success', type === 'income' ? t('input.incomeRecorded') : t('input.expenseRecorded'));
     }
   }
 

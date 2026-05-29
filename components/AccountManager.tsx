@@ -4,7 +4,7 @@ import { Plus, Trash2 } from 'lucide-react-native';
 import { radius, spacing, fontSize } from '../constants/theme';
 import { useTheme } from '../hooks/useTheme';
 import { useToast } from '../hooks/useToast';
-import { Account, saveAccounts } from '../utils/storage';
+import { Account } from '../utils/storage';
 import { ACCOUNT_TYPES, findAccountType } from '../constants/accountTypes';
 import { formatIDR, groupDigits } from '../utils/format';
 import { genId } from '../utils/id';
@@ -14,7 +14,7 @@ import { tBuiltin } from '../i18n/labels';
 
 interface Props {
   accounts: Account[];
-  onChange: (accounts: Account[]) => void;
+  onChange: (accounts: Account[]) => void | Promise<void>;
 }
 
 export default function AccountManager({ accounts, onChange }: Props) {
@@ -86,8 +86,7 @@ export default function AccountManager({ accounts, onChange }: Props) {
         startingBalance: parseFloat(balance) || 0,
       },
     ];
-    await saveAccounts(next);
-    onChange(next);
+    await onChange(next);
     setName(''); setBalance(''); setTypeId(ACCOUNT_TYPES[0].id); setShowForm(false);
     toast.show('success', t('account.added'));
   }
@@ -95,8 +94,7 @@ export default function AccountManager({ accounts, onChange }: Props) {
   async function confirmDelete() {
     if (!pendingDelete) return;
     const next = accounts.filter((a) => a.id !== pendingDelete.id);
-    await saveAccounts(next);
-    onChange(next);
+    await onChange(next);
     setPendingDelete(null);
     toast.show('success', t('account.removed'));
   }

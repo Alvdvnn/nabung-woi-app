@@ -1,6 +1,6 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { contentBottomForFab, fabBottomForTabScreen } from '../../constants/layout';
 import {
@@ -19,7 +19,7 @@ import TopCategoriesRow from '../../components/TopCategoriesRow';
 import { useStreak } from '../../hooks/useStreak';
 import { radius, spacing, fontSize, shadow } from '../../constants/theme';
 import { useTheme } from '../../hooks/useTheme';
-import { getTransactions, getAccounts, Transaction, Account } from '../../utils/storage';
+import { useTransactions, useAccounts } from '../../context/DataContext';
 import { filterByPeriod, Period, sumByCategory, totalsOf } from '../../utils/aggregate';
 import { formatIDR } from '../../utils/format';
 import { findAccountType } from '../../constants/accountTypes';
@@ -34,16 +34,9 @@ export default function DashboardScreen() {
   const { colors, resolved } = useTheme();
   const t = useT();
 
-  const [txs, setTxs] = useState<Transaction[]>([]);
+  const txs = useTransactions();
+  const accounts = useAccounts();
   const [period, setPeriod] = useState<Period>('month');
-  const [accounts, setAccounts] = useState<Account[]>([]);
-
-  useFocusEffect(
-    useCallback(() => {
-      getTransactions().then(setTxs);
-      getAccounts().then(setAccounts);
-    }, [])
-  );
 
   const filtered = useMemo(() => filterByPeriod(txs, period), [txs, period]);
   const totals = useMemo(() => totalsOf(filtered), [filtered]);

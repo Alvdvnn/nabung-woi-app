@@ -1,6 +1,6 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { FlatList, Modal, Platform, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { contentBottomForFab, fabBottomForTabScreen } from '../../constants/layout';
@@ -14,7 +14,8 @@ import PeriodSelector from '../../components/PeriodSelector';
 import { useToast } from '../../hooks/useToast';
 import { radius, spacing, fontSize } from '../../constants/theme';
 import { useTheme } from '../../hooks/useTheme';
-import { deleteTransaction, getAccounts, getTransactions, Account, Transaction, TransactionType } from '../../utils/storage';
+import { useData } from '../../context/DataContext';
+import { TransactionType } from '../../utils/storage';
 import { useT, useLocale } from '../../i18n';
 import { DICTS } from '../../i18n/dicts';
 import { filterByPeriod, Period, totalsOf } from '../../utils/aggregate';
@@ -30,11 +31,10 @@ export default function HistoryScreen() {
   const t = useT();
   const { locale } = useLocale();
 
-  const [txs, setTxs] = useState<Transaction[]>([]);
-  const [accounts, setAccounts] = useState<Account[]>([]);
+  const { txs, accounts, deleteTx } = useData();
   const [filter, setFilter] = useState<Filter>('all');
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
-  
+
   const [period, setPeriod] = useState<Period>('month');
   const [cursor, setCursor] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -45,13 +45,6 @@ export default function HistoryScreen() {
     { id: 'income', label: t('type.income') },
     { id: 'expense', label: t('type.expense') },
   ];
-
-  useFocusEffect(
-    useCallback(() => {
-      getTransactions().then(setTxs);
-      getAccounts().then(setAccounts);
-    }, [])
-  );
 
   const shiftCursor = (dir: 1 | -1) =>
     setCursor((prev) => {
@@ -103,10 +96,14 @@ export default function HistoryScreen() {
 
   async function confirmDelete() {
     if (!pendingDeleteId) return;
-    await deleteTransaction(pendingDeleteId);
-    setTxs((prev) => prev.filter((t) => t.id !== pendingDeleteId));
+    const id = pendingDeleteId;
     setPendingDeleteId(null);
-    toast.show('success', t('history.deleted'));
+    try {
+      await deleteTx(id);
+      toast.show('success', t('history.deleted'));
+    } catch {
+      toast.show('error', t('history.deleteFailed'));
+    }
   }
 
   const styles = useMemo(() => StyleSheet.create({

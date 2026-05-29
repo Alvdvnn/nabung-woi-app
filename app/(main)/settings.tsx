@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Modal,
@@ -13,6 +13,7 @@ import {
   View,
 } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
+import { useCallback } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { contentBottomForFab, fabBottomForTabScreen } from '../../constants/layout';
 import { Database, Download, Upload, Trash, Wallet, Tag, Plus, Sun, Moon, Smartphone, Lock, Languages } from 'lucide-react-native';
@@ -24,6 +25,7 @@ import PinManager from '../../components/PinManager';
 import ConfirmModal from '../../components/ConfirmModal';
 import { usePin } from '../../context/PinContext';
 import { useCategories } from '../../context/CategoriesContext';
+import { useData } from '../../context/DataContext';
 import { useToast } from '../../hooks/useToast';
 import { radius, spacing, fontSize } from '../../constants/theme';
 import { useTheme, ThemeMode } from '../../hooks/useTheme';
@@ -35,7 +37,6 @@ import {
   clearAll,
   exportAll,
   importAll,
-  getAccounts,
   getCustomCategories,
 } from '../../utils/storage';
 
@@ -43,7 +44,7 @@ export default function SettingsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const toast = useToast();
-  const [accounts, setAccounts] = useState<Account[]>([]);
+  const { accounts, saveAccounts, refresh: refreshData, resetCache } = useData();
   const [customCats, setCustomCats] = useState<CustomCategory[]>([]);
   const [confirmClear, setConfirmClear] = useState(false);
   const [clearing, setClearing] = useState(false);
@@ -99,7 +100,6 @@ export default function SettingsScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      getAccounts().then(setAccounts);
       getCustomCategories().then(setCustomCats);
     }, [])
   );
@@ -117,9 +117,9 @@ export default function SettingsScreen() {
     setImporting(true);
     try {
       const summary = await importAll(importText);
-      const [accs, cats] = await Promise.all([getAccounts(), getCustomCategories()]);
-      setAccounts(accs);
+      const cats = await getCustomCategories();
       setCustomCats(cats);
+      await refreshData();
       await refreshCategories();
       toast.show('success', t('settings.importSuccess', {
         tx: summary.transactions,
@@ -143,8 +143,9 @@ export default function SettingsScreen() {
   async function doClearAll() {
     setClearing(true);
     await clearAll();
-    setAccounts([]);
+    resetCache();
     setCustomCats([]);
+    await refreshCategories();
     setClearing(false);
     setConfirmClear(false);
     toast.show('success', t('settings.allCleared'));
@@ -155,7 +156,7 @@ export default function SettingsScreen() {
       <TopBar title={t('settings.title')} showLogo={false} />
       <ScrollView contentContainerStyle={styles.content}>
         <Section Icon={Wallet} title={t('settings.accounts')}>
-          <AccountManager accounts={accounts} onChange={setAccounts} />
+          <AccountManager accounts={accounts} onChange={saveAccounts} />
         </Section>
 
         <Section Icon={Tag} title={t('settings.categories')}>
