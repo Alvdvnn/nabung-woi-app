@@ -1,11 +1,11 @@
 import { useCallback, useMemo } from 'react';
 import {
   FlatList,
+  SafeAreaView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
 import { Inbox, CircleDollarSign, CircleAlert } from 'lucide-react-native';
 import EmptyState from '../components/EmptyState';
