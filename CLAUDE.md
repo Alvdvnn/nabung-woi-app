@@ -19,16 +19,17 @@ Expo Router file-based navigation rooted at `app/`.
 - `app/(main)/gacha.tsx` — 50/50 "buy or skip" decision wheel.
 - `app/(main)/settings.tsx` — accounts, categories, data export/clear, security (PIN), appearance.
 
-State and side effects live in three context providers:
+State and side effects live in four context providers:
 
-- `context/ThemeContext.tsx` — `system | light | dark`, persisted, with Appearance listener.
-- `context/ToastContext.tsx` — global toast queue rendered via `components/Toast`.
+- `context/ThemeContext.tsx` — `system | light | dark`, persisted, with `Appearance` listener that flips `resolved` when the OS scheme changes (only while `mode === 'system'`).
+- `context/ToastContext.tsx` — global FIFO toast queue rendered via `components/Toast`. Subsequent `show()` calls queue rather than overwrite.
 - `context/PinContext.tsx` — PIN lock state, hydrates from AsyncStorage, re-locks after 60s in background.
+- `context/DataContext.tsx` — in-memory cache of transactions and accounts plus `addTx` / `updateTx` / `deleteTx` / `saveAccounts` action wrappers. Screens read from the cache instead of refetching AsyncStorage on focus; mutations optimistically update the cache and roll back on a storage failure.
 
 Data layer:
 
-- `utils/storage.ts` — typed AsyncStorage wrappers for transactions, accounts, custom categories, theme mode, last-used account.
-- `utils/aggregate.ts` — `filterByPeriod`, `totalsOf`, `sumByCategory`, `accountBalance`.
+- `utils/storage.ts` — typed AsyncStorage wrappers for transactions, accounts, custom categories, theme mode, locale, last-used account, history prefs. Transaction / account / category writes are serialized through per-key promise chains so concurrent edits can't clobber each other.
+- `utils/aggregate.ts` — `filterByPeriod`, `totalsOf`, `sumByCategory`, `accountBalance`. Period filtering uses each transaction's `dayKey` (local-calendar `YYYY-MM-DD` set at write time) so results stay stable across DST and timezone shifts.
 - `utils/streak.ts` — current and longest day streak from transactions.
 - `utils/format.ts` — IDR formatting, ISO day helpers.
 - `utils/id.ts` — collision-resistant id generator (use instead of `Date.now().toString()`).
@@ -58,7 +59,8 @@ Expo Go works for iteration. Production builds use `eas build`.
 
 ## Code Conventions
 
-- Reach for the context hooks (`useTheme`, `useToast`, `usePin`, `useCalculator`) rather than passing props through.
+- Reach for the context hooks (`useTheme`, `useToast`, `usePin`, `useCalculator`, `useData`) rather than passing props through. Specifically, do not call `getTransactions`/`getAccounts` from a screen — go through `useData()` (or the `useTransactions`/`useAccounts` shortcuts) so the shared cache stays the single source of truth and writes can be rolled back.
+- Always persist transactions through `useData().addTx` / `updateTx` / `deleteTx`. Pass an explicit `dayKey: isoDay(selectedDate)` so the local-calendar bucketing stays correct.
 - IDs come from `genId()` in `utils/id.ts`.
 - Localize money via `formatIDR` / `formatIDRCompact`; never call `toLocaleString` directly.
 - Compute derived view state inside `useMemo` with the right dependency array — dashboard relies on this to stay responsive when the period toggles.

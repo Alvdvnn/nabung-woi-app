@@ -218,15 +218,15 @@ Each finding has: **what / where / why it matters / how to fix**. Severity:
 
 ---
 
-## 6. CLAUDE.md mismatches (worth fixing while here)
+## 6. CLAUDE.md mismatches (worth fixing while here) — ✅
 
-> Code-side claims are now true after the P0/P1 fixes — only the doc itself still lags. CLAUDE.md edits are pending user approval (auto-mode declined to commit changes to the agent's project instructions file without explicit authorization).
+CLAUDE.md updated to describe the post-fix architecture:
 
-- Claims `system | light | dark` theme support → **now implemented** in `context/ThemeContext.tsx` (CLAUDE.md no longer wrong, just incomplete).
-- Claims "Appearance listener" → **now implemented**.
-- Claims `accountBalance` helper in `utils/aggregate.ts` → **now exists** and is used by both `dashboard.tsx` and `account-detail.tsx`.
-- Claims 60s background-relock → lives in `PinContext` (out of scope here, but verify when you revisit security).
-- Still to add to CLAUDE.md: `DataContext` shared cache as the canonical source for transactions/accounts; `dayKey` field on `Transaction`; per-key write queues; new `useData()` convention.
+- Theme: `system | light | dark` + `Appearance` listener now matches code.
+- Toast: documented as a FIFO queue.
+- Data layer: `DataContext` documented as the canonical source for transactions/accounts; `dayKey` mentioned in `utils/aggregate.ts` description; per-key write queues called out.
+- Conventions: added rule directing future work to `useData()` / `useTransactions()` / `useAccounts()` instead of raw `getTransactions` calls, and reminder to pass `dayKey` on every write.
+- 60s background-relock note retained (lives in `PinContext`, out of scope here).
 
 ---
 
