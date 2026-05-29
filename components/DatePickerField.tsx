@@ -71,7 +71,7 @@ export default function DatePickerField({ value, onChange }: Props) {
       )}
 
       {Platform.OS === 'ios' && (
-        <Modal visible={open} transparent statusBarTranslucent navigationBarTranslucent animationType="slide" onRequestClose={() => setOpen(false)}>
+        <Modal visible={open} transparent animationType="slide" onRequestClose={() => setOpen(false)}>
           <Pressable style={styles.sheet} onPress={() => setOpen(false)}>
             <Pressable style={styles.sheetCard} onPress={(e) => e.stopPropagation()}>
               <Pressable style={styles.sheetDone} onPress={() => setOpen(false)}>

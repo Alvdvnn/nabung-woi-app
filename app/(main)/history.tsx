@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { FlatList, Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Modal, Platform, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { contentBottomForFab, fabBottomForTabScreen } from '../../constants/layout';
 import { Inbox, Plus, ChevronLeft, ChevronRight, Calendar as CalendarIcon, SlidersHorizontal, X } from 'lucide-react-native';
@@ -283,7 +283,7 @@ export default function HistoryScreen() {
         <DateTimePicker value={cursor} mode="date" onChange={onPickDate} />
       )}
       {Platform.OS === 'ios' && (
-        <Modal visible={showDatePicker} transparent statusBarTranslucent navigationBarTranslucent animationType="slide" onRequestClose={() => setShowDatePicker(false)}>
+        <Modal visible={showDatePicker} transparent animationType="slide" onRequestClose={() => setShowDatePicker(false)}>
           <Pressable style={styles.modalOverlay} onPress={() => setShowDatePicker(false)}>
             <Pressable style={styles.pickerCard} onPress={(e) => e.stopPropagation()}>
               <Pressable style={styles.pickerDone} onPress={() => setShowDatePicker(false)}>
