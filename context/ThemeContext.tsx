@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
+import { Appearance } from 'react-native';
 import { lightColors, darkColors, ColorTokens } from '../constants/theme';
 import { getThemeMode, setThemeMode, StoredThemeMode } from '../utils/storage';
 
@@ -14,8 +15,13 @@ interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
+function currentSystemScheme(): Resolved {
+  return Appearance.getColorScheme() === 'dark' ? 'dark' : 'light';
+}
+
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [mode, setModeState] = useState<ThemeMode>('light');
+  const [mode, setModeState] = useState<ThemeMode>('system');
+  const [systemScheme, setSystemScheme] = useState<Resolved>(currentSystemScheme);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
@@ -25,12 +31,19 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  useEffect(() => {
+    const sub = Appearance.addChangeListener(({ colorScheme }) => {
+      setSystemScheme(colorScheme === 'dark' ? 'dark' : 'light');
+    });
+    return () => sub.remove();
+  }, []);
+
   const setMode = useCallback(async (next: ThemeMode) => {
     setModeState(next);
     await setThemeMode(next);
   }, []);
 
-  const resolved: Resolved = mode;
+  const resolved: Resolved = mode === 'system' ? systemScheme : mode;
   const colors = resolved === 'dark' ? darkColors : lightColors;
 
   if (!hydrated) return null;

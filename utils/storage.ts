@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { isoDay } from './format';
 
 export type TransactionType = 'income' | 'expense';
 
@@ -10,6 +11,14 @@ export interface Transaction {
   accountId: string;
   note: string;
   date: string;
+  // Local calendar day key (YYYY-MM-DD) derived from `date` at write time.
+  // Stable across timezone/DST changes — use this for day/month/year filtering.
+  dayKey: string;
+}
+
+function ensureDayKey(tx: Transaction): Transaction {
+  if (tx.dayKey) return tx;
+  return { ...tx, dayKey: isoDay(new Date(tx.date)) };
 }
 
 export interface Account {
@@ -45,13 +54,15 @@ function enqueueTxWrite<T>(fn: () => Promise<T>): Promise<T> {
 
 export async function getTransactions(): Promise<Transaction[]> {
   const raw = await AsyncStorage.getItem(KEYS.transactions);
-  return raw ? JSON.parse(raw) : [];
+  if (!raw) return [];
+  const list: Transaction[] = JSON.parse(raw);
+  return list.map(ensureDayKey);
 }
 
 export function addTransaction(tx: Transaction): Promise<void> {
   return enqueueTxWrite(async () => {
     const list = await getTransactions();
-    list.unshift(tx);
+    list.unshift(ensureDayKey(tx));
     await AsyncStorage.setItem(KEYS.transactions, JSON.stringify(list));
   });
 }
@@ -66,8 +77,11 @@ export function deleteTransaction(id: string): Promise<void> {
 export function updateTransaction(updated: Transaction): Promise<void> {
   return enqueueTxWrite(async () => {
     const list = await getTransactions();
-    const next = list.map((t) => (t.id === updated.id ? updated : t));
-    await AsyncStorage.setItem(KEYS.transactions, JSON.stringify(next));
+    const next = ensureDayKey(updated);
+    await AsyncStorage.setItem(
+      KEYS.transactions,
+      JSON.stringify(list.map((t) => (t.id === next.id ? next : t))),
+    );
   });
 }
 
@@ -102,12 +116,12 @@ export async function setLastAccount(id: string): Promise<void> {
   await AsyncStorage.setItem(KEYS.lastAccount, id);
 }
 
-export type StoredThemeMode = 'light' | 'dark';
+export type StoredThemeMode = 'system' | 'light' | 'dark';
 
 export async function getThemeMode(): Promise<StoredThemeMode> {
   const raw = await AsyncStorage.getItem(KEYS.themeMode);
-  if (raw === 'light' || raw === 'dark') return raw;
-  return 'light';
+  if (raw === 'light' || raw === 'dark' || raw === 'system') return raw;
+  return 'system';
 }
 
 export async function setThemeMode(mode: StoredThemeMode): Promise<void> {
@@ -147,6 +161,7 @@ function isTransaction(x: any): x is Transaction {
     typeof x.accountId === 'string' &&
     typeof x.note === 'string' &&
     typeof x.date === 'string'
+    // dayKey is optional in import payloads; backfilled by ensureDayKey.
   );
 }
 
@@ -196,7 +211,7 @@ export async function importAll(json: string): Promise<ImportSummary> {
   }
 
   const inTx: Transaction[] = Array.isArray(parsed.transactions)
-    ? parsed.transactions.filter(isTransaction)
+    ? parsed.transactions.filter(isTransaction).map(ensureDayKey)
     : [];
   const inAcc: Account[] = Array.isArray(parsed.accounts)
     ? parsed.accounts.filter(isAccount)

@@ -13,7 +13,7 @@ function parseIsoDayLocal(iso: string): Date {
 
 export function computeStreak(txs: Transaction[], today: Date = new Date()): StreakResult {
   if (txs.length === 0) return { current: 0, longest: 0 };
-  const dates = new Set(txs.map((t) => isoDay(new Date(t.date))));
+  const dates = new Set(txs.map((t) => t.dayKey));
 
   let current = 0;
   const cursor = new Date(today);

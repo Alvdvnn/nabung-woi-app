@@ -25,9 +25,25 @@ interface LocaleContextValue {
 
 const Ctx = createContext<LocaleContextValue | null>(null);
 
+// Locale store with subscribe API. Single source of truth for non-React
+// utility code (formatters). LocaleProvider keeps this in sync with React state.
+type LocaleListener = (loc: Locale) => void;
 let _currentLocale: Locale = 'en';
+const _localeListeners = new Set<LocaleListener>();
+
 export function getCurrentLocale(): Locale {
   return _currentLocale;
+}
+
+export function subscribeLocale(fn: LocaleListener): () => void {
+  _localeListeners.add(fn);
+  return () => { _localeListeners.delete(fn); };
+}
+
+function setStoreLocale(next: Locale) {
+  if (_currentLocale === next) return;
+  _currentLocale = next;
+  for (const fn of _localeListeners) fn(next);
 }
 
 function interpolate(str: string, vars?: Record<string, string | number>): string {
@@ -47,14 +63,14 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     getLocale().then((loc) => {
-      _currentLocale = loc;
+      setStoreLocale(loc);
       setLocaleState(loc);
       setHydrated(true);
     });
   }, []);
 
   const setLocale = useCallback(async (next: Locale) => {
-    _currentLocale = next;
+    setStoreLocale(next);
     setLocaleState(next);
     await persistLocale(next);
   }, []);

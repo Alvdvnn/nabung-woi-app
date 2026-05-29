@@ -38,6 +38,7 @@ import {
   TransactionType,
 } from '../utils/storage';
 import { genId } from '../utils/id';
+import { isoDay } from '../utils/format';
 
 export default function InputScreen() {
   const router = useRouter();
@@ -111,6 +112,7 @@ export default function InputScreen() {
     if (!accountId) { toast.show('error', t('input.errNoAccount')); return; }
 
     setSaving(true);
+    const dayKey = isoDay(selectedDate);
     if (isEditing && editId) {
       await updateTransaction({
         id: editId,
@@ -120,6 +122,7 @@ export default function InputScreen() {
         accountId,
         note: note.trim(),
         date: selectedDate.toISOString(),
+        dayKey,
       });
       setSaving(false);
       toast.show('success', t('input.txUpdated'));
@@ -134,6 +137,7 @@ export default function InputScreen() {
         accountId,
         note: note.trim(),
         date: selectedDate.toISOString(),
+        dayKey,
       });
       await setLastAccount(accountId);
       resetForm();

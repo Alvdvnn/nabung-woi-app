@@ -15,27 +15,32 @@ interface ToastContextValue {
 const ToastContext = createContext<ToastContextValue | null>(null);
 
 export function ToastProvider({ children }: { children: ReactNode }) {
-  const [toast, setToast] = useState<ToastState | null>(null);
+  const [queue, setQueue] = useState<ToastState[]>([]);
   const idRef = useRef(0);
 
   const show = useCallback((variant: ToastVariant, message: string, opts?: { duration?: number }) => {
     idRef.current += 1;
-    setToast({ id: idRef.current, variant, message, duration: opts?.duration ?? 2500 });
+    const next: ToastState = { id: idRef.current, variant, message, duration: opts?.duration ?? 2500 };
+    setQueue((q) => [...q, next]);
   }, []);
 
-  const dismiss = useCallback(() => setToast(null), []);
+  const dismissHead = useCallback((id: number) => {
+    setQueue((q) => (q.length > 0 && q[0].id === id ? q.slice(1) : q));
+  }, []);
+
   const value = useMemo<ToastContextValue>(() => ({ show }), [show]);
+  const head = queue[0];
 
   return (
     <ToastContext.Provider value={value}>
       {children}
-      {toast && (
+      {head && (
         <Toast
-          key={toast.id}
-          variant={toast.variant}
-          message={toast.message}
-          duration={toast.duration}
-          onDismiss={dismiss}
+          key={head.id}
+          variant={head.variant}
+          message={head.message}
+          duration={head.duration}
+          onDismiss={() => dismissHead(head.id)}
         />
       )}
     </ToastContext.Provider>

@@ -7,7 +7,7 @@ import {
   View,
 } from 'react-native';
 import { useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { Inbox, CircleDollarSign } from 'lucide-react-native';
+import { Inbox, CircleDollarSign, CircleAlert } from 'lucide-react-native';
 import EmptyState from '../components/EmptyState';
 import TopBar from '../components/TopBar';
 import { useTheme } from '../hooks/useTheme';
@@ -42,11 +42,15 @@ export default function AccountDetailScreen() {
 
   const [txs, setTxs] = useState<Transaction[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
+  const [accountsLoaded, setAccountsLoaded] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
       getTransactions().then(setTxs);
-      getAccounts().then(setAccounts);
+      getAccounts().then((list) => {
+        setAccounts(list);
+        setAccountsLoaded(true);
+      });
     }, [])
   );
 
@@ -205,6 +209,27 @@ export default function AccountDetailScreen() {
   );
 
   const hasEntries = periodTxs.length > 0;
+  const accountMissing = accountsLoaded && !account;
+
+  if (accountMissing) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <TopBar
+          title={t('accountDetail.fallbackTitle')}
+          showLogo={false}
+          showBack
+          showActions={false}
+        />
+        <View style={{ flex: 1, justifyContent: 'center', backgroundColor: colors.bg }}>
+          <EmptyState
+            Icon={CircleAlert}
+            title={t('accountDetail.notFound')}
+            subtitle={t('accountDetail.notFoundSub')}
+          />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safe}>

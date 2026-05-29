@@ -51,10 +51,11 @@ export default function CalendarScreen() {
     }, [])
   );
 
-  const txDates = useMemo(() => new Set(txs.map((t) => isoDay(new Date(t.date)))), [txs]);
+  const txDates = useMemo(() => new Set(txs.map((tx) => tx.dayKey)), [txs]);
+  const selectedKey = useMemo(() => isoDay(selected), [selected]);
   const dayTxs = useMemo(
-    () => txs.filter((t) => isoDay(new Date(t.date)) === isoDay(selected)),
-    [txs, selected]
+    () => txs.filter((tx) => tx.dayKey === selectedKey),
+    [txs, selectedKey]
   );
   const dayTotals = useMemo(() => totalsOf(dayTxs), [dayTxs]);
 

@@ -15,7 +15,7 @@ import {
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { contentBottomForFab, fabBottomForTabScreen } from '../../constants/layout';
-import { Database, Download, Upload, Trash, Wallet, Tag, Plus, Sun, Moon, Lock, Languages } from 'lucide-react-native';
+import { Database, Download, Upload, Trash, Wallet, Tag, Plus, Sun, Moon, Smartphone, Lock, Languages } from 'lucide-react-native';
 import TopBar from '../../components/TopBar';
 import Fab from '../../components/Fab';
 import AccountManager from '../../components/AccountManager';
@@ -292,6 +292,7 @@ function AppearanceRow() {
   }), [colors]);
 
   const opts: { id: ThemeMode; label: string; Icon: typeof Sun }[] = [
+    { id: 'system', label: t('settings.system'), Icon: Smartphone },
     { id: 'light', label: t('settings.light'), Icon: Sun },
     { id: 'dark', label: t('settings.dark'), Icon: Moon },
   ];

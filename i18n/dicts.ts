@@ -108,6 +108,7 @@ export const en = {
     language: 'Language',
     light: 'Light',
     dark: 'Dark',
+    system: 'System',
     english: 'English',
     indonesian: 'Indonesian',
     clearTitle: 'Clear all data?',
@@ -167,6 +168,8 @@ export const en = {
     noEntries: 'No entries',
     noEntriesSub: 'No transactions for "{name}" in this period.',
     thisAccount: 'this account',
+    notFound: 'Account not found',
+    notFoundSub: 'This account may have been removed. Go back and pick another one.',
   },
 
   account: {
@@ -402,6 +405,7 @@ export const id: typeof en = {
     language: 'Bahasa',
     light: 'Terang',
     dark: 'Gelap',
+    system: 'Sistem',
     english: 'English',
     indonesian: 'Indonesia',
     clearTitle: 'Hapus semua data?',
@@ -461,6 +465,8 @@ export const id: typeof en = {
     noEntries: 'Tidak ada entri',
     noEntriesSub: 'Tidak ada transaksi untuk "{name}" pada periode ini.',
     thisAccount: 'akun ini',
+    notFound: 'Akun tidak ditemukan',
+    notFoundSub: 'Akun ini mungkin sudah dihapus. Kembali dan pilih akun lain.',
   },
 
   account: {

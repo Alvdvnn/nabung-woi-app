@@ -1,22 +1,19 @@
 import { Transaction } from './storage';
+import { isoDay } from './format';
 
 export type Period = 'day' | 'month' | 'year';
 
 export function filterByPeriod(txs: Transaction[], period: Period, ref: Date = new Date()): Transaction[] {
-  return txs.filter((t) => {
-    const d = new Date(t.date);
-    if (period === 'day') {
-      return (
-        d.getFullYear() === ref.getFullYear() &&
-        d.getMonth() === ref.getMonth() &&
-        d.getDate() === ref.getDate()
-      );
-    }
-    if (period === 'month') {
-      return d.getFullYear() === ref.getFullYear() && d.getMonth() === ref.getMonth();
-    }
-    return d.getFullYear() === ref.getFullYear();
-  });
+  const refKey = isoDay(ref);
+  if (period === 'day') {
+    return txs.filter((t) => t.dayKey === refKey);
+  }
+  if (period === 'month') {
+    const prefix = refKey.slice(0, 7); // YYYY-MM
+    return txs.filter((t) => t.dayKey.startsWith(prefix));
+  }
+  const prefix = refKey.slice(0, 4); // YYYY
+  return txs.filter((t) => t.dayKey.startsWith(prefix));
 }
 
 export interface CategorySum {
