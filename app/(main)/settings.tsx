@@ -38,6 +38,7 @@ import {
   importAll,
   getCustomCategories,
 } from '../../utils/storage';
+import { copyToClipboardOnWeb, downloadJsonOnWeb, pickJsonFileOnWeb } from '../../utils/webShare';
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -106,10 +107,29 @@ export default function SettingsScreen() {
   async function handleExport() {
     try {
       const json = await exportAll();
+      if (Platform.OS === 'web') {
+        const stamp = new Date().toISOString().slice(0, 10);
+        const downloaded = downloadJsonOnWeb(`nabung-woi-${stamp}.json`, json);
+        const copied = await copyToClipboardOnWeb(json);
+        if (downloaded) toast.show('success', t('settings.exportDownloaded'));
+        else if (copied) toast.show('success', t('settings.exportCopied'));
+        else toast.show('error', t('settings.exportFailed'));
+        return;
+      }
       await Share.share({ message: json, title: t('settings.exportShareTitle') });
     } catch {
       toast.show('error', t('settings.exportFailed'));
     }
+  }
+
+  async function handlePickImportFile() {
+    const text = await pickJsonFileOnWeb();
+    if (text == null) return;
+    if (!text.trim()) {
+      toast.show('error', t('settings.importReadFailed'));
+      return;
+    }
+    setImportText(text);
   }
 
   async function doImport() {
@@ -210,6 +230,17 @@ export default function SettingsScreen() {
             <Pressable style={styles.modalCard} onPress={(e) => e.stopPropagation()}>
               <Text style={styles.modalTitle}>{t('settings.importTitle')}</Text>
               <Text style={styles.modalMsg}>{t('settings.importMsg')}</Text>
+              {Platform.OS === 'web' && (
+                <Pressable
+                  style={[styles.actionRow, { borderColor: colors.primary }]}
+                  onPress={handlePickImportFile}
+                >
+                  <Upload size={18} color={colors.primary} />
+                  <Text style={[styles.actionText, { color: colors.primary }]}>
+                    {t('settings.importPickFile')}
+                  </Text>
+                </Pressable>
+              )}
               <TextInput
                 style={styles.importInput}
                 value={importText}

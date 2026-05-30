@@ -128,6 +128,10 @@ export const en = {
     importOrphans: 'Skipped {n} transactions pointing at unknown accounts.',
     importInvalidJson: 'Invalid JSON',
     importInvalidShape: 'No valid data found in JSON',
+    exportDownloaded: 'Backup downloaded',
+    exportCopied: 'JSON copied to clipboard',
+    importPickFile: 'Choose file',
+    importReadFailed: 'Could not read file',
   },
 
   gacha: {
@@ -430,6 +434,10 @@ export const id: typeof en = {
     importOrphans: '{n} transaksi dilewati karena merujuk akun yang tidak ada.',
     importInvalidJson: 'JSON tidak valid',
     importInvalidShape: 'Tidak ada data valid dalam JSON',
+    exportDownloaded: 'Backup diunduh',
+    exportCopied: 'JSON disalin ke clipboard',
+    importPickFile: 'Pilih file',
+    importReadFailed: 'Gagal membaca file',
   },
 
   gacha: {

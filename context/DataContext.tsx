@@ -18,6 +18,7 @@ import {
   getTransactions as storageGetTxs,
   saveAccounts as storageSaveAccounts,
 } from '../utils/storage';
+import { runMigrations } from '../utils/migrations';
 
 interface DataContextValue {
   txs: Transaction[];
@@ -58,7 +59,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    refresh().finally(() => setHydrated(true));
+    // Migrations run before the first read so screens never see stale shapes.
+    runMigrations()
+      .then(refresh)
+      .finally(() => setHydrated(true));
   }, [refresh]);
 
   const findTx = useCallback(

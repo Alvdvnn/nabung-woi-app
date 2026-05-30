@@ -11,6 +11,7 @@ import TransactionItem from '../../components/TransactionItem';
 import EmptyState from '../../components/EmptyState';
 import ConfirmModal from '../../components/ConfirmModal';
 import PeriodSelector from '../../components/PeriodSelector';
+import WebDateTrigger from '../../components/WebDateTrigger';
 import { useToast } from '../../hooks/useToast';
 import { radius, spacing, fontSize } from '../../constants/theme';
 import { useTheme } from '../../hooks/useTheme';
@@ -282,6 +283,12 @@ export default function HistoryScreen() {
       {showDatePicker && Platform.OS === 'android' && (
         <DateTimePicker value={cursor} mode="date" onChange={onPickDate} />
       )}
+      <WebDateTrigger
+        open={showDatePicker}
+        value={cursor}
+        onChange={setCursor}
+        onClose={() => setShowDatePicker(false)}
+      />
       {Platform.OS === 'ios' && (
         <Modal visible={showDatePicker} transparent animationType="slide" onRequestClose={() => setShowDatePicker(false)}>
           <Pressable style={styles.modalOverlay} onPress={() => setShowDatePicker(false)}>

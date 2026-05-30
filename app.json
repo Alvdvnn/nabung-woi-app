@@ -22,13 +22,35 @@
         "backgroundColor": "#10B981"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.vinnyvv.nabungwoi"
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro",
+      "output": "static",
+      "name": "Nabung Woi",
+      "shortName": "Nabung Woi",
+      "themeColor": "#10B981",
+      "backgroundColor": "#10B981",
+      "display": "standalone",
+      "orientation": "portrait",
+      "lang": "en"
     },
     "plugins": [
       "expo-router"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "11966bd2-d1a0-458e-be61-0dc5fe39d76c"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/11966bd2-d1a0-458e-be61-0dc5fe39d76c"
+    }
   }
 }

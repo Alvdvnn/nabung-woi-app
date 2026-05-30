@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import { Tabs } from 'expo-router';
 import { LayoutDashboard, CalendarDays, Settings, History, Dices } from 'lucide-react-native';
 import { useTheme } from '../../hooks/useTheme';
@@ -19,6 +20,12 @@ export default function MainLayout() {
           height: 62,
           paddingTop: 6,
           paddingBottom: 8,
+          // On web/PWA, add safe-area-inset-bottom so the tab bar clears
+          // the iPhone home indicator when installed as a PWA.
+          ...(Platform.OS === 'web' && {
+            height: 'auto' as any,
+            paddingBottom: 'calc(8px + env(safe-area-inset-bottom))' as any,
+          }),
         },
         tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
       }}

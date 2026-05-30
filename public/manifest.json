@@ -1,0 +1,26 @@
+{
+  "name": "Nabung Woi",
+  "short_name": "Nabung Woi",
+  "description": "Personal finance tracker — income, expenses, accounts, streaks.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "lang": "en",
+  "background_color": "#10B981",
+  "theme_color": "#10B981",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-1024.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
