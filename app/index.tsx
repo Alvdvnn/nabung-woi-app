@@ -251,7 +251,7 @@ export default function InputScreen() {
 
           <View style={{ marginTop: spacing.xl }}>
             <Text style={styles.label}>{t('input.amount')}</Text>
-            <AmountInput value={amount} onChange={setAmount} autoFocus={!isEditing} />
+            <AmountInput value={amount} onChange={setAmount} autoFocus={!isEditing && Platform.OS !== 'web'} />
           </View>
 
           <Text style={styles.label}>{t('input.category')}</Text>
