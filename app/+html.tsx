@@ -62,7 +62,10 @@ const rawCss = `
 html, body {
   margin: 0;
   height: 100%;
-  background-color: #10B981;
+  /* App bg (light), not the green splash color, so any pixel that peeks out
+     behind the status bar / home-indicator safe areas in an iOS standalone
+     PWA blends with the UI instead of showing a green band. */
+  background-color: #f8fafc;
 }
 body {
   overflow: hidden;
