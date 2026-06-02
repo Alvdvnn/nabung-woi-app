@@ -31,8 +31,8 @@
       "output": "static",
       "name": "Nabung Woi",
       "shortName": "Nabung Woi",
-      "themeColor": "#10B981",
-      "backgroundColor": "#10B981",
+      "themeColor": "#f8fafc",
+      "backgroundColor": "#f8fafc",
       "display": "standalone",
       "orientation": "portrait",
       "lang": "en"

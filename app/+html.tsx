@@ -17,9 +17,12 @@ export default function Root({ children }: PropsWithChildren) {
         <meta name="theme-color" content="#10B981" />
         <meta name="application-name" content="Nabung Woi" />
 
-        {/* iOS PWA */}
+        {/* iOS PWA. status-bar-style "default" keeps the status bar opaque and
+            starts the web content BELOW it (like Android), so there is no
+            translucent overlay forcing a safe-area-inset-top gap above the
+            TopBar. "black-translucent" would overlay and reintroduce the gap. */}
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="Nabung Woi" />
         <meta name="mobile-web-app-capable" content="yes" />
 

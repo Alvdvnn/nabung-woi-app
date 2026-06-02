@@ -9,7 +9,7 @@
 //
 // Bump CACHE_VERSION on every deploy so old caches get evicted on activate.
 
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v3';
 const RUNTIME_CACHE = `nabung-runtime-${CACHE_VERSION}`;
 const SHELL_CACHE = `nabung-shell-${CACHE_VERSION}`;
 const APP_SHELL = '/';
