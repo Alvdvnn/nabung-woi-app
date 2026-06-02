@@ -44,6 +44,8 @@ export const en = {
     cashflow: 'Cashflow',
     netFlow: 'Net Flow ({period})',
     topCategories: 'Top Categories',
+    hideBalance: 'Hide balance',
+    showBalance: 'Show balance',
   },
 
   input: {
@@ -350,6 +352,8 @@ export const id: typeof en = {
     cashflow: 'Arus Kas',
     netFlow: 'Arus Bersih ({period})',
     topCategories: 'Kategori Teratas',
+    hideBalance: 'Sembunyikan saldo',
+    showBalance: 'Tampilkan saldo',
   },
 
   input: {

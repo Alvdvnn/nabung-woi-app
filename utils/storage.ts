@@ -43,6 +43,7 @@ const KEYS = {
   themeMode: 'nw.themeMode',
   locale: 'nw.locale',
   historyPrefs: 'nw.historyPrefs',
+  balanceHidden: 'nw.balanceHidden',
 };
 
 // Serialize read-modify-write ops so concurrent mutations can't clobber each other.
@@ -171,6 +172,14 @@ export async function getHistoryPrefs(): Promise<HistoryPrefs | null> {
 
 export async function setHistoryPrefs(prefs: HistoryPrefs): Promise<void> {
   await AsyncStorage.setItem(KEYS.historyPrefs, JSON.stringify(prefs));
+}
+
+export async function getBalanceHidden(): Promise<boolean> {
+  return (await AsyncStorage.getItem(KEYS.balanceHidden)) === '1';
+}
+
+export async function setBalanceHidden(hidden: boolean): Promise<void> {
+  await AsyncStorage.setItem(KEYS.balanceHidden, hidden ? '1' : '0');
 }
 
 export type StoredLocale = 'en' | 'id';

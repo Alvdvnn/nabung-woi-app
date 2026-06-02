@@ -53,20 +53,19 @@ if ('serviceWorker' in navigator) {
 `;
 
 // Hardens the body against iOS Safari quirks:
-// - 100dvh so bottom bars don't crop under the URL bar
+// - #root pinned with position:fixed/inset:0 instead of 100dvh. In an iOS
+//   standalone PWA (added to home screen) 100dvh miscalculates and leaves the
+//   green html/body background bleeding as empty strips top and bottom. Pinning
+//   to the visual viewport makes the app fill the screen edge-to-edge.
 // - overscroll-behavior to kill bounce-into-nothing
-// - safe-area padding so notched devices don't cut off content
 const rawCss = `
-html {
-  height: 100dvh;
+html, body {
+  margin: 0;
+  height: 100%;
   background-color: #10B981;
 }
 body {
-  margin: 0;
-  height: 100dvh;
-  max-height: 100dvh;
   overflow: hidden;
-  background-color: #10B981;
   overscroll-behavior-y: none;
   -webkit-tap-highlight-color: transparent;
   -webkit-touch-callout: none;
@@ -74,8 +73,11 @@ body {
   user-select: none;
 }
 #root {
-  height: 100dvh;
-  max-height: 100dvh;
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;

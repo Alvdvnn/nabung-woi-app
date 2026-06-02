@@ -232,7 +232,10 @@ export default function InputScreen() {
       <TopBar />
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        // Android runs edge-to-edge (window does not resize for the keyboard),
+        // so KeyboardAvoidingView must pad on both platforms or the last field
+        // (note) ends up hidden behind the keyboard.
+        behavior="padding"
         keyboardVerticalOffset={0}
       >
         <ScrollView

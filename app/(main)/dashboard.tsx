@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -9,6 +9,8 @@ import {
   Wallet,
   Plus,
   ArrowRightLeft,
+  Eye,
+  EyeClosed,
 } from 'lucide-react-native';
 import TopBar from '../../components/TopBar';
 import Fab from '../../components/Fab';
@@ -21,6 +23,7 @@ import { radius, spacing, fontSize, shadow } from '../../constants/theme';
 import { useTheme } from '../../hooks/useTheme';
 import { useTransactions, useAccounts } from '../../context/DataContext';
 import { accountBalance, filterByPeriod, Period, sumByCategory, totalsOf } from '../../utils/aggregate';
+import { getBalanceHidden, setBalanceHidden } from '../../utils/storage';
 import { formatIDR } from '../../utils/format';
 import { findAccountType } from '../../constants/accountTypes';
 import { useT } from '../../i18n';
@@ -37,6 +40,24 @@ export default function DashboardScreen() {
   const txs = useTransactions();
   const accounts = useAccounts();
   const [period, setPeriod] = useState<Period>('month');
+  const [hidden, setHidden] = useState(false);
+
+  useEffect(() => {
+    getBalanceHidden().then(setHidden);
+  }, []);
+
+  const toggleHidden = useCallback(() => {
+    setHidden((prev) => {
+      const next = !prev;
+      setBalanceHidden(next);
+      return next;
+    });
+  }, []);
+
+  const mask = useCallback(
+    (value: number) => (hidden ? 'Rp ******' : formatIDR(value)),
+    [hidden]
+  );
 
   const filtered = useMemo(() => filterByPeriod(txs, period), [txs, period]);
   const totals = useMemo(() => totalsOf(filtered), [filtered]);
@@ -85,13 +106,28 @@ export default function DashboardScreen() {
       letterSpacing: 0.8,
       textTransform: 'uppercase',
     },
+    balanceValueRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      justifyContent: 'space-between',
+      gap: spacing.sm,
+      marginTop: 8,
+    },
     balanceValue: {
+      flex: 1,
       color: colors.white,
       fontSize: 44,
       fontWeight: '900',
       letterSpacing: -1,
-      marginTop: 8,
       lineHeight: 50,
+    },
+    eyeBtn: {
+      width: 28,
+      height: 28,
+      borderRadius: radius.full,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: -2,
     },
 
     // Accounts row centered on hero/body boundary.
@@ -221,9 +257,23 @@ export default function DashboardScreen() {
             <Wallet size={14} color={colors.primarySoft} />
             <Text style={styles.balanceLabel}>{t('dashboard.totalBalance')}</Text>
           </View>
-          <Text style={styles.balanceValue} numberOfLines={1} adjustsFontSizeToFit>
-            {formatIDR(totalAccountBalance)}
-          </Text>
+          <View style={styles.balanceValueRow}>
+            <Text style={styles.balanceValue} numberOfLines={1} adjustsFontSizeToFit>
+              {mask(totalAccountBalance)}
+            </Text>
+            <Pressable
+              onPress={toggleHidden}
+              hitSlop={12}
+              style={styles.eyeBtn}
+              accessibilityLabel={hidden ? t('dashboard.showBalance') : t('dashboard.hideBalance')}
+            >
+              {hidden ? (
+                <EyeClosed size={16} color={colors.white} />
+              ) : (
+                <Eye size={16} color={colors.white} />
+              )}
+            </Pressable>
+          </View>
         </View>
 
         <View style={styles.sheet}>
@@ -260,7 +310,7 @@ export default function DashboardScreen() {
                         </View>
                       </View>
                       <Text style={styles.accountBalance} numberOfLines={1} adjustsFontSizeToFit>
-                        {formatIDR(item.currentBalance)}
+                        {mask(item.currentBalance)}
                       </Text>
                     </View>
                   </Pressable>
