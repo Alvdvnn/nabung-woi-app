@@ -6,8 +6,13 @@ export type Period = 'day' | 'month' | 'year';
 export function accountBalance(account: Account, txs: Transaction[]): number {
   let delta = 0;
   for (const t of txs) {
-    if (t.accountId !== account.id) continue;
-    delta += t.type === 'income' ? t.amount : -t.amount;
+    if (t.type === 'transfer') {
+      if (t.accountId === account.id) delta -= t.amount; 
+      if (t.toAccountId === account.id) delta += t.amount; 
+    } 
+    else if (t.accountId === account.id) {
+      delta += t.type === 'income' ? t.amount : -t.amount;
+    }
   }
   return account.startingBalance + delta;
 }
@@ -30,7 +35,7 @@ export interface CategorySum {
   total: number;
 }
 
-export function sumByCategory(txs: Transaction[], type: 'income' | 'expense'): CategorySum[] {
+export function sumByCategory(txs: Transaction[], type: 'income' | 'expense' | 'transfer'): CategorySum[] {
   const map = new Map<string, number>();
   txs
     .filter((t) => t.type === type)
@@ -46,8 +51,11 @@ export function totalsOf(txs: Transaction[]): { income: number; expense: number;
   let income = 0;
   let expense = 0;
   for (const t of txs) {
-    if (t.type === 'income') income += t.amount;
-    else expense += t.amount;
+    if (t.type === 'income') {
+      income += t.amount;
+    } else if (t.type === 'expense') {
+      expense += t.amount;
+    }
   }
   return { income, expense, net: income - expense };
 }

@@ -32,7 +32,7 @@ import {
   setLastAccount,
   TransactionType,
 } from '../utils/storage';
-import { useData } from '../context/DataContext';
+import { useData, useTransactions } from '../context/DataContext'; // <-- import txs ditambahkan di sini
 import { genId } from '../utils/id';
 import { isoDay } from '../utils/format';
 
@@ -48,14 +48,19 @@ export default function InputScreen() {
   const { byType, refresh: refreshCategories } = useCategories();
 
   const { accounts, findTx, addTx, updateTx } = useData();
+  const txs = useTransactions(); // <-- txs dipanggil di sini untuk cek saldo
 
   const [type, setType] = useState<TransactionType>('expense');
   const [amount, setAmount] = useState('');
-  const [categoryId, setCategoryId] = useState(byType('expense')[0]?.id ?? '');
+  const [categoryId, setCategoryId] = useState('');
   const [note, setNote] = useState('');
   const [accountId, setAccountId] = useState<string | null>(null);
+  const [toAccountId, setToAccountId] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [pickerOpen, setPickerOpen] = useState(false);
+  
+  const [fromPickerOpen, setFromPickerOpen] = useState(false);
+  const [toPickerOpen, setToPickerOpen] = useState(false);
+  
   const [saving, setSaving] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [hydrated, setHydrated] = useState(!editId);
@@ -73,28 +78,44 @@ export default function InputScreen() {
             setCategoryId(tx.categoryId);
             setNote(tx.note);
             setAccountId(tx.accountId);
+            setToAccountId(tx.toAccountId ?? null);
             setSelectedDate(new Date(tx.date));
             setHydrated(true);
             return;
           }
         }
+        
         const last = await getLastAccount();
         const id = last && accounts.find((a) => a.id === last) ? last : accounts[0]?.id ?? null;
         setAccountId(id);
+        
+        if (accounts.length > 1) {
+          const possibleTo = accounts.find((a) => a.id !== id);
+          if (possibleTo) setToAccountId(possibleTo.id);
+        }
+        
         setHydrated(true);
       })();
     }, [editId, refreshCategories, findTx, accounts])
   );
 
-  const categories = useMemo(() => byType(type), [byType, type]);
+  const categories = useMemo(() => {
+    if (type === 'transfer') return [];
+    return byType(type);
+  }, [byType, type]);
 
   useEffect(() => {
     if (isEditing) return;
+    if (type === 'transfer') {
+      setCategoryId('transfer');
+      return;
+    }
     if (categories.length === 0) return;
     if (!categories.find((c) => c.id === categoryId)) setCategoryId(categories[0].id);
-  }, [categoryId, isEditing, categories]);
+  }, [categoryId, isEditing, categories, type]);
 
   const selectedAccount = accounts.find((a) => a.id === accountId);
+  const selectedToAccount = accounts.find((a) => a.id === toAccountId);
 
   function resetForm() {
     setAmount('');
@@ -112,37 +133,64 @@ export default function InputScreen() {
     const num = parseFloat(amount);
     if (!num || num <= 0) { toast.show('error', t('input.errInvalidAmount')); return; }
     if (!accountId) { toast.show('error', t('input.errNoAccount')); return; }
+    
+    if (type === 'transfer') {
+      if (!toAccountId) { toast.show('error', 'Please select a destination account'); return; }
+      if (accountId === toAccountId) { toast.show('error', 'Cannot transfer to the same account'); return; }
+
+      // --- LOGIKA CEK SALDO DARI SINI ---
+      const accTxs = txs.filter((t) => t.accountId === accountId || t.toAccountId === accountId);
+      const inc = accTxs.filter((t) => t.type === 'income' && t.accountId === accountId).reduce((sum, t) => sum + t.amount, 0);
+      const exp = accTxs.filter((t) => t.type === 'expense' && t.accountId === accountId).reduce((sum, t) => sum + t.amount, 0);
+      const tOut = accTxs.filter((t) => t.type === 'transfer' && t.accountId === accountId).reduce((sum, t) => sum + t.amount, 0);
+      const tIn = accTxs.filter((t) => t.type === 'transfer' && t.toAccountId === accountId).reduce((sum, t) => sum + t.amount, 0);
+      
+      let currentBalance = (selectedAccount?.startingBalance || 0) + inc - exp - tOut + tIn;
+
+      // Jika sedang mode edit, tambahkan kembali nominal lama agar validasi akurat
+      if (isEditing && editId) {
+        const oldTx = findTx(editId);
+        if (oldTx && oldTx.accountId === accountId) {
+          currentBalance += oldTx.amount;
+        }
+      }
+
+      if (num > currentBalance) {
+        toast.show('error', 'Saldo tidak mencukupi!');
+        return;
+      }
+      // --- SAMPAI SINI ---
+    }
 
     setSaving(true);
     const dayKey = isoDay(selectedDate);
+    
+    const txData = {
+      type,
+      amount: num,
+      categoryId: type === 'transfer' ? 'transfer' : categoryId,
+      accountId,
+      toAccountId: type === 'transfer' ? (toAccountId as string) : undefined,
+      note: note.trim(),
+      date: selectedDate.toISOString(),
+      dayKey,
+    };
+
     try {
       if (isEditing && editId) {
-        await updateTx({
-          id: editId,
-          type,
-          amount: num,
-          categoryId,
-          accountId,
-          note: note.trim(),
-          date: selectedDate.toISOString(),
-          dayKey,
-        });
+        await updateTx({ id: editId, ...txData });
         toast.show('success', t('input.txUpdated'));
         router.replace(resolveReturnTarget());
       } else {
-        await addTx({
-          id: genId('t'),
-          type,
-          amount: num,
-          categoryId,
-          accountId,
-          note: note.trim(),
-          date: selectedDate.toISOString(),
-          dayKey,
-        });
+        await addTx({ id: genId('t'), ...txData });
         await setLastAccount(accountId);
         resetForm();
-        toast.show('success', type === 'income' ? t('input.incomeRecorded') : t('input.expenseRecorded'));
+        
+        const successMsg = type === 'transfer' 
+          ? 'Transfer recorded' 
+          : (type === 'income' ? t('input.incomeRecorded') : t('input.expenseRecorded'));
+          
+        toast.show('success', successMsg);
       }
     } catch {
       toast.show('error', t('input.saveFailed'));
@@ -232,9 +280,6 @@ export default function InputScreen() {
       <TopBar />
       <KeyboardAvoidingView
         style={styles.flex}
-        // Android runs edge-to-edge (window does not resize for the keyboard),
-        // so KeyboardAvoidingView must pad on both platforms or the last field
-        // (note) ends up hidden behind the keyboard.
         behavior="padding"
         keyboardVerticalOffset={0}
       >
@@ -257,26 +302,52 @@ export default function InputScreen() {
             <AmountInput value={amount} onChange={setAmount} autoFocus={!isEditing && Platform.OS !== 'web'} />
           </View>
 
-          <Text style={styles.label}>{t('input.category')}</Text>
-          <View style={styles.cats}>
-            {categories.map((c) => (
-              <CategoryChip
-                key={c.id}
-                label={c.name}
-                Icon={c.icon}
-                active={categoryId === c.id}
-                onPress={() => setCategoryId(c.id)}
-              />
-            ))}
-          </View>
+          {type !== 'transfer' && (
+            <>
+              <Text style={styles.label}>{t('input.category')}</Text>
+              <View style={styles.cats}>
+                {categories.map((c) => (
+                  <CategoryChip
+                    key={c.id}
+                    label={c.name}
+                    Icon={c.icon}
+                    active={categoryId === c.id}
+                    onPress={() => setCategoryId(c.id)}
+                  />
+                ))}
+              </View>
+            </>
+          )}
 
-          <Text style={styles.label}>{t('input.account')}</Text>
-          <Pressable style={styles.accountPill} onPress={() => setPickerOpen(true)}>
-            <Text style={styles.accountText}>
-              {selectedAccount ? selectedAccount.name : t('input.selectAccount')}
-            </Text>
-            <ChevronDown size={16} color={colors.textSecondary} />
-          </Pressable>
+          {type === 'transfer' ? (
+            <>
+              <Text style={styles.label}>From Account</Text>
+              <Pressable style={styles.accountPill} onPress={() => setFromPickerOpen(true)}>
+                <Text style={styles.accountText}>
+                  {selectedAccount ? selectedAccount.name : t('input.selectAccount')}
+                </Text>
+                <ChevronDown size={16} color={colors.textSecondary} />
+              </Pressable>
+
+              <Text style={styles.label}>To Account</Text>
+              <Pressable style={styles.accountPill} onPress={() => setToPickerOpen(true)}>
+                <Text style={styles.accountText}>
+                  {selectedToAccount ? selectedToAccount.name : t('input.selectAccount')}
+                </Text>
+                <ChevronDown size={16} color={colors.textSecondary} />
+              </Pressable>
+            </>
+          ) : (
+            <>
+              <Text style={styles.label}>{t('input.account')}</Text>
+              <Pressable style={styles.accountPill} onPress={() => setFromPickerOpen(true)}>
+                <Text style={styles.accountText}>
+                  {selectedAccount ? selectedAccount.name : t('input.selectAccount')}
+                </Text>
+                <ChevronDown size={16} color={colors.textSecondary} />
+              </Pressable>
+            </>
+          )}
 
           <Text style={styles.label}>{t('input.date')}</Text>
           <DatePickerField value={selectedDate} onChange={setSelectedDate} />
@@ -290,7 +361,6 @@ export default function InputScreen() {
             onChangeText={setNote}
             maxLength={80}
             onFocus={() => {
-              // Wait for keyboard up before scrolling, instead of a brittle 100ms timer.
               const sub = Keyboard.addListener('keyboardDidShow', () => {
                 scrollRef.current?.scrollToEnd({ animated: true });
                 sub.remove();
@@ -320,11 +390,19 @@ export default function InputScreen() {
       {!isEditing && <Fab bottom={fabBottomForFullScreen(insets.bottom)} onPress={() => router.push('/dashboard')} />}
 
       <AccountPickerSheet
-        visible={pickerOpen}
+        visible={fromPickerOpen}
         accounts={accounts}
         selectedId={accountId}
         onSelect={setAccountId}
-        onClose={() => setPickerOpen(false)}
+        onClose={() => setFromPickerOpen(false)}
+      />
+
+      <AccountPickerSheet
+        visible={toPickerOpen}
+        accounts={accounts}
+        selectedId={toAccountId}
+        onSelect={setToAccountId}
+        onClose={() => setToPickerOpen(false)}
       />
 
       <ConfirmModal

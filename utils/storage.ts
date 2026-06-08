@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { isoDay } from './date';
 
-export type TransactionType = 'income' | 'expense';
+export type TransactionType = 'income' | 'expense' | 'transfer';
 
 export interface Transaction {
   id: string;
@@ -9,6 +9,7 @@ export interface Transaction {
   amount: number;
   categoryId: string;
   accountId: string;
+  toAccountId?: string;
   note: string;
   date: string;
   // Local calendar day key (YYYY-MM-DD) derived from `date` at write time.
@@ -46,7 +47,6 @@ const KEYS = {
   balanceHidden: 'nw.balanceHidden',
 };
 
-// Serialize read-modify-write ops so concurrent mutations can't clobber each other.
 let txWriteChain: Promise<unknown> = Promise.resolve();
 function enqueueTxWrite<T>(fn: () => Promise<T>): Promise<T> {
   const run = txWriteChain.then(fn, fn);
@@ -161,7 +161,7 @@ export async function getHistoryPrefs(): Promise<HistoryPrefs | null> {
   try {
     const p = JSON.parse(raw);
     const filter: HistoryFilter =
-      p.filter === 'income' || p.filter === 'expense' ? p.filter : 'all';
+      p.filter === 'income' || p.filter === 'expense' || p.filter === 'transfer' ? p.filter : 'all';
     const period: HistoryPeriod =
       p.period === 'day' || p.period === 'year' ? p.period : 'month';
     return { filter, period };
@@ -209,7 +209,7 @@ export async function exportAll(): Promise<string> {
 function isTransaction(x: any): x is Transaction {
   return (
     x && typeof x.id === 'string' &&
-    (x.type === 'income' || x.type === 'expense') &&
+    (x.type === 'income' || x.type === 'expense' || x.type === 'transfer') &&
     typeof x.amount === 'number' &&
     typeof x.categoryId === 'string' &&
     typeof x.accountId === 'string' &&
@@ -253,7 +253,6 @@ export interface ImportSummary {
   orphanTransactions: number;
 }
 
-// Merges imported data into existing by id (imported wins on conflict). Never deletes current data.
 export async function importAll(json: string): Promise<ImportSummary> {
   let parsed: any;
   try {
@@ -288,8 +287,6 @@ export async function importAll(json: string): Promise<ImportSummary> {
   const mergedAcc = mergeById(curAcc, inAcc);
   const mergedCat = mergeById(curCat, inCat);
 
-  // Drop incoming transactions that point at an unknown account so import
-  // doesn't permanently create orphan rows the UI has to special-case.
   const knownAccountIds = new Set(mergedAcc.map((a) => a.id));
   const acceptedInTx = inTx.filter((t) => knownAccountIds.has(t.accountId));
   const orphanTx = inTx.length - acceptedInTx.length;

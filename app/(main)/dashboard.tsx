@@ -22,7 +22,7 @@ import { useStreak } from '../../hooks/useStreak';
 import { radius, spacing, fontSize, shadow } from '../../constants/theme';
 import { useTheme } from '../../hooks/useTheme';
 import { useTransactions, useAccounts } from '../../context/DataContext';
-import { accountBalance, filterByPeriod, Period, sumByCategory, totalsOf } from '../../utils/aggregate';
+import { filterByPeriod, Period, sumByCategory, totalsOf } from '../../utils/aggregate';
 import { getBalanceHidden, setBalanceHidden } from '../../utils/storage';
 import { formatIDR } from '../../utils/format';
 import { findAccountType } from '../../constants/accountTypes';
@@ -64,10 +64,21 @@ export default function DashboardScreen() {
   const byCategory = useMemo(() => sumByCategory(filtered, 'expense'), [filtered]);
   const streak = useStreak(txs);
 
-  const accountBalances = useMemo(
-    () => accounts.map((acc) => ({ ...acc, currentBalance: accountBalance(acc, txs) })),
-    [accounts, txs]
-  );
+  const accountBalances = useMemo(() => {
+    return accounts.map((acc) => {
+      const accTxs = txs.filter((t) => t.accountId === acc.id || t.toAccountId === acc.id);
+      
+      const income = accTxs.filter((t) => t.type === 'income' && t.accountId === acc.id).reduce((sum, t) => sum + t.amount, 0);
+      const expense = accTxs.filter((t) => t.type === 'expense' && t.accountId === acc.id).reduce((sum, t) => sum + t.amount, 0);
+      const transferOut = accTxs.filter((t) => t.type === 'transfer' && t.accountId === acc.id).reduce((sum, t) => sum + t.amount, 0);
+      const transferIn = accTxs.filter((t) => t.type === 'transfer' && t.toAccountId === acc.id).reduce((sum, t) => sum + t.amount, 0);
+      
+      return {
+        ...acc,
+        currentBalance: acc.startingBalance + income - expense - transferOut + transferIn
+      };
+    });
+  }, [accounts, txs]);
 
   const totalAccountBalance = useMemo(
     () => accountBalances.reduce((sum, acc) => sum + acc.currentBalance, 0),
@@ -130,7 +141,6 @@ export default function DashboardScreen() {
       marginBottom: -2,
     },
 
-    // Accounts row centered on hero/body boundary.
     accountsWrap: {
       marginTop: -CARD_HEIGHT / 2,
       marginBottom: spacing.md,

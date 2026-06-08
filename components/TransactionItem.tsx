@@ -1,6 +1,6 @@
 import { memo, useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { Pencil, Trash2, CircleDollarSign } from 'lucide-react-native';
+import { Pencil, Trash2, CircleDollarSign, ArrowRightLeft } from 'lucide-react-native';
 import { radius, spacing, fontSize, shadow } from '../constants/theme';
 import { useTheme } from '../hooks/useTheme';
 import { Transaction } from '../utils/storage';
@@ -19,6 +19,7 @@ function TransactionItemImpl({ item, accountName, onDelete, onPress }: Props) {
   const { colors } = useTheme();
   const { find } = useCategories();
   const t = useT();
+  
   const styles = useMemo(() => StyleSheet.create({
     row: {
       flexDirection: 'row',
@@ -39,6 +40,7 @@ function TransactionItemImpl({ item, accountName, onDelete, onPress }: Props) {
     },
     iconIncome: { backgroundColor: colors.incomeLight },
     iconExpense: { backgroundColor: colors.expenseLight },
+    iconTransfer: { backgroundColor: colors.primarySoft || '#EAEFFF' },
     info: { flex: 1 },
     category: { fontSize: fontSize.md, fontWeight: '600', color: colors.textPrimary },
     metaRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
@@ -49,21 +51,33 @@ function TransactionItemImpl({ item, accountName, onDelete, onPress }: Props) {
     amount: { fontSize: fontSize.lg, fontWeight: '700' },
     incomeText: { color: colors.income },
     expenseText: { color: colors.expense },
+    transferText: { color: colors.primary },
     actionsRow: { flexDirection: 'row', alignItems: 'center', gap: 2 },
     iconBtn: { padding: 4 },
     editBtn: { padding: 4 },
   }), [colors]);
 
   const cat = find(item.categoryId);
-  const Icon = cat?.icon ?? CircleDollarSign;
+  
   const isIncome = item.type === 'income';
+  const isTransfer = item.type === 'transfer';
+
+  const Icon = isTransfer ? ArrowRightLeft : (cat?.icon ?? CircleDollarSign);
+  const iconBg = isTransfer ? styles.iconTransfer : (isIncome ? styles.iconIncome : styles.iconExpense);
+  const iconColor = isTransfer ? colors.primary : (isIncome ? colors.income : colors.expense);
+
+  const title = isTransfer ? 'Transfer' : (cat?.name ?? t('common.other'));
+
+  const amountColor = isTransfer ? styles.transferText : (isIncome ? styles.incomeText : styles.expenseText);
+  const amountSign = isTransfer ? '' : (isIncome ? '+' : '-');
+
   return (
     <View style={styles.row}>
-      <View style={[styles.iconWrap, isIncome ? styles.iconIncome : styles.iconExpense]}>
-        <Icon size={18} color={isIncome ? colors.income : colors.expense} />
+      <View style={[styles.iconWrap, iconBg]}>
+        <Icon size={18} color={iconColor} />
       </View>
       <View style={styles.info}>
-        <Text style={styles.category}>{cat?.name ?? t('common.other')}</Text>
+        <Text style={styles.category}>{title}</Text>
         <View style={styles.metaRow}>
           {accountName ? <Text style={styles.meta}>{accountName}</Text> : null}
           {item.note ? <Text style={styles.metaDot}>•</Text> : null}
@@ -72,8 +86,8 @@ function TransactionItemImpl({ item, accountName, onDelete, onPress }: Props) {
         <Text style={styles.date}>{formatDate(item.date)}</Text>
       </View>
       <View style={styles.right}>
-        <Text style={[styles.amount, isIncome ? styles.incomeText : styles.expenseText]}>
-          {isIncome ? '+' : '-'}{formatIDR(item.amount)}
+        <Text style={[styles.amount, amountColor]}>
+          {amountSign}{formatIDR(item.amount)}
         </Text>
         {(onPress || onDelete) && (
           <View style={styles.actionsRow}>
