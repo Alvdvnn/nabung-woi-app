@@ -67,8 +67,7 @@ export default function TypeToggle({ value, onChange }: Props) {
         onPress={() => onChange('transfer')}
       >
         <ArrowRightLeft size={16} color={isTrans ? colors.white : colors.textSecondary} />
-        {/* Tambahan fallback 'Transfer' jaga-jaga jika belum ada di file bahasa (i18n) */}
-        <Text style={[styles.label, isTrans && styles.labelActive]}>{t('type.transfer') ?? 'Transfer'}</Text>
+        <Text style={[styles.label, isTrans && styles.labelActive]}>{t('type.transfer')}</Text>
       </Pressable>
     </View>
   );

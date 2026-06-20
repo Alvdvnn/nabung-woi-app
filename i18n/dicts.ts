@@ -35,6 +35,7 @@ export const en = {
   type: {
     income: 'Income',
     expense: 'Expense',
+    transfer: 'Transfer',
     all: 'All',
   },
 
@@ -68,6 +69,12 @@ export const en = {
     txUpdated: 'Transaction updated',
     incomeRecorded: 'Income recorded',
     expenseRecorded: 'Expense recorded',
+    transferRecorded: 'Transfer recorded',
+    fromAccount: 'From account',
+    toAccount: 'To account',
+    errNoDestination: 'Select a destination account',
+    errSameAccount: 'Cannot transfer to the same account',
+    errInsufficientBalance: 'Insufficient balance',
     saveFailed: 'Could not save. Try again.',
     discardTitle: 'Discard changes?',
     discardMsg: 'Your edits to this transaction will not be saved.',
@@ -343,6 +350,7 @@ export const id: typeof en = {
   type: {
     income: 'Pemasukan',
     expense: 'Pengeluaran',
+    transfer: 'Transfer',
     all: 'Semua',
   },
 
@@ -376,6 +384,12 @@ export const id: typeof en = {
     txUpdated: 'Transaksi diperbarui',
     incomeRecorded: 'Pemasukan dicatat',
     expenseRecorded: 'Pengeluaran dicatat',
+    transferRecorded: 'Transfer dicatat',
+    fromAccount: 'Dari akun',
+    toAccount: 'Ke akun',
+    errNoDestination: 'Pilih akun tujuan',
+    errSameAccount: 'Tidak bisa transfer ke akun yang sama',
+    errInsufficientBalance: 'Saldo tidak mencukupi',
     saveFailed: 'Gagal menyimpan. Coba lagi.',
     discardTitle: 'Buang perubahan?',
     discardMsg: 'Perubahan pada transaksi ini tidak akan disimpan.',

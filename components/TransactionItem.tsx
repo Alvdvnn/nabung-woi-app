@@ -5,6 +5,7 @@ import { radius, spacing, fontSize, shadow } from '../constants/theme';
 import { useTheme } from '../hooks/useTheme';
 import { Transaction } from '../utils/storage';
 import { useCategories } from '../context/CategoriesContext';
+import { useAccounts } from '../context/DataContext';
 import { formatIDR, formatDate } from '../utils/format';
 import { useT } from '../i18n';
 
@@ -18,8 +19,9 @@ interface Props {
 function TransactionItemImpl({ item, accountName, onDelete, onPress }: Props) {
   const { colors } = useTheme();
   const { find } = useCategories();
+  const accounts = useAccounts();
   const t = useT();
-  
+
   const styles = useMemo(() => StyleSheet.create({
     row: {
       flexDirection: 'row',
@@ -40,7 +42,7 @@ function TransactionItemImpl({ item, accountName, onDelete, onPress }: Props) {
     },
     iconIncome: { backgroundColor: colors.incomeLight },
     iconExpense: { backgroundColor: colors.expenseLight },
-    iconTransfer: { backgroundColor: colors.primarySoft || '#EAEFFF' },
+    iconTransfer: { backgroundColor: colors.primarySoft },
     info: { flex: 1 },
     category: { fontSize: fontSize.md, fontWeight: '600', color: colors.textPrimary },
     metaRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
@@ -58,7 +60,7 @@ function TransactionItemImpl({ item, accountName, onDelete, onPress }: Props) {
   }), [colors]);
 
   const cat = find(item.categoryId);
-  
+
   const isIncome = item.type === 'income';
   const isTransfer = item.type === 'transfer';
 
@@ -66,7 +68,15 @@ function TransactionItemImpl({ item, accountName, onDelete, onPress }: Props) {
   const iconBg = isTransfer ? styles.iconTransfer : (isIncome ? styles.iconIncome : styles.iconExpense);
   const iconColor = isTransfer ? colors.primary : (isIncome ? colors.income : colors.expense);
 
-  const title = isTransfer ? 'Transfer' : (cat?.name ?? t('common.other'));
+  const title = isTransfer ? t('type.transfer') : (cat?.name ?? t('common.other'));
+
+  // For transfers, show "source → destination" instead of just the source.
+  const toName = isTransfer && item.toAccountId
+    ? accounts.find((a) => a.id === item.toAccountId)?.name
+    : undefined;
+  const accountLabel = isTransfer && toName
+    ? `${accountName ?? ''} → ${toName}`
+    : accountName;
 
   const amountColor = isTransfer ? styles.transferText : (isIncome ? styles.incomeText : styles.expenseText);
   const amountSign = isTransfer ? '' : (isIncome ? '+' : '-');
@@ -79,7 +89,7 @@ function TransactionItemImpl({ item, accountName, onDelete, onPress }: Props) {
       <View style={styles.info}>
         <Text style={styles.category}>{title}</Text>
         <View style={styles.metaRow}>
-          {accountName ? <Text style={styles.meta}>{accountName}</Text> : null}
+          {accountLabel ? <Text style={styles.meta}>{accountLabel}</Text> : null}
           {item.note ? <Text style={styles.metaDot}>•</Text> : null}
           {item.note ? <Text style={styles.meta} numberOfLines={1}>{item.note}</Text> : null}
         </View>

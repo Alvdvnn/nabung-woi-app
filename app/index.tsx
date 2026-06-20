@@ -32,7 +32,8 @@ import {
   setLastAccount,
   TransactionType,
 } from '../utils/storage';
-import { useData, useTransactions } from '../context/DataContext'; // <-- import txs ditambahkan di sini
+import { useData, useTransactions } from '../context/DataContext';
+import { accountBalance } from '../utils/aggregate';
 import { genId } from '../utils/id';
 import { isoDay } from '../utils/format';
 
@@ -48,7 +49,7 @@ export default function InputScreen() {
   const { byType, refresh: refreshCategories } = useCategories();
 
   const { accounts, findTx, addTx, updateTx } = useData();
-  const txs = useTransactions(); // <-- txs dipanggil di sini untuk cek saldo
+  const txs = useTransactions(); // needed for the transfer balance check
 
   const [type, setType] = useState<TransactionType>('expense');
   const [amount, setAmount] = useState('');
@@ -135,31 +136,22 @@ export default function InputScreen() {
     if (!accountId) { toast.show('error', t('input.errNoAccount')); return; }
     
     if (type === 'transfer') {
-      if (!toAccountId) { toast.show('error', 'Please select a destination account'); return; }
-      if (accountId === toAccountId) { toast.show('error', 'Cannot transfer to the same account'); return; }
+      if (!toAccountId) { toast.show('error', t('input.errNoDestination')); return; }
+      if (accountId === toAccountId) { toast.show('error', t('input.errSameAccount')); return; }
+      if (!selectedAccount) { toast.show('error', t('input.errNoAccount')); return; }
 
-      // --- LOGIKA CEK SALDO DARI SINI ---
-      const accTxs = txs.filter((t) => t.accountId === accountId || t.toAccountId === accountId);
-      const inc = accTxs.filter((t) => t.type === 'income' && t.accountId === accountId).reduce((sum, t) => sum + t.amount, 0);
-      const exp = accTxs.filter((t) => t.type === 'expense' && t.accountId === accountId).reduce((sum, t) => sum + t.amount, 0);
-      const tOut = accTxs.filter((t) => t.type === 'transfer' && t.accountId === accountId).reduce((sum, t) => sum + t.amount, 0);
-      const tIn = accTxs.filter((t) => t.type === 'transfer' && t.toAccountId === accountId).reduce((sum, t) => sum + t.amount, 0);
-      
-      let currentBalance = (selectedAccount?.startingBalance || 0) + inc - exp - tOut + tIn;
-
-      // Jika sedang mode edit, tambahkan kembali nominal lama agar validasi akurat
+      // Available balance via the shared helper. When editing this transfer,
+      // add the old amount back so the source still counts as having it.
+      let available = accountBalance(selectedAccount, txs);
       if (isEditing && editId) {
         const oldTx = findTx(editId);
-        if (oldTx && oldTx.accountId === accountId) {
-          currentBalance += oldTx.amount;
-        }
+        if (oldTx && oldTx.accountId === accountId) available += oldTx.amount;
       }
 
-      if (num > currentBalance) {
-        toast.show('error', 'Saldo tidak mencukupi!');
+      if (num > available) {
+        toast.show('error', t('input.errInsufficientBalance'));
         return;
       }
-      // --- SAMPAI SINI ---
     }
 
     setSaving(true);
@@ -185,11 +177,11 @@ export default function InputScreen() {
         await addTx({ id: genId('t'), ...txData });
         await setLastAccount(accountId);
         resetForm();
-        
-        const successMsg = type === 'transfer' 
-          ? 'Transfer recorded' 
+
+        const successMsg = type === 'transfer'
+          ? t('input.transferRecorded')
           : (type === 'income' ? t('input.incomeRecorded') : t('input.expenseRecorded'));
-          
+
         toast.show('success', successMsg);
       }
     } catch {
@@ -280,6 +272,9 @@ export default function InputScreen() {
       <TopBar />
       <KeyboardAvoidingView
         style={styles.flex}
+        // Android runs edge-to-edge (window does not resize for the keyboard),
+        // so KeyboardAvoidingView must pad on both platforms or the last field
+        // (note) ends up hidden behind the keyboard.
         behavior="padding"
         keyboardVerticalOffset={0}
       >
@@ -321,7 +316,7 @@ export default function InputScreen() {
 
           {type === 'transfer' ? (
             <>
-              <Text style={styles.label}>From Account</Text>
+              <Text style={styles.label}>{t('input.fromAccount')}</Text>
               <Pressable style={styles.accountPill} onPress={() => setFromPickerOpen(true)}>
                 <Text style={styles.accountText}>
                   {selectedAccount ? selectedAccount.name : t('input.selectAccount')}
@@ -329,7 +324,7 @@ export default function InputScreen() {
                 <ChevronDown size={16} color={colors.textSecondary} />
               </Pressable>
 
-              <Text style={styles.label}>To Account</Text>
+              <Text style={styles.label}>{t('input.toAccount')}</Text>
               <Pressable style={styles.accountPill} onPress={() => setToPickerOpen(true)}>
                 <Text style={styles.accountText}>
                   {selectedToAccount ? selectedToAccount.name : t('input.selectAccount')}
@@ -361,6 +356,7 @@ export default function InputScreen() {
             onChangeText={setNote}
             maxLength={80}
             onFocus={() => {
+              // Wait for keyboard up before scrolling, instead of a brittle 100ms timer.
               const sub = Keyboard.addListener('keyboardDidShow', () => {
                 scrollRef.current?.scrollToEnd({ animated: true });
                 sub.remove();

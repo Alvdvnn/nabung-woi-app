@@ -26,8 +26,7 @@ import { formatDate, formatIDR } from '../../utils/format';
 
 type Filter = 'all' | TransactionType;
 
-// 1. TAMBAHKAN 'transfer' DI SINI
-const FILTER_IDS: Filter[] = ['all', 'income', 'expense', 'transfer']; 
+const FILTER_IDS: Filter[] = ['all', 'income', 'expense', 'transfer'];
 
 export default function HistoryScreen() {
   const router = useRouter();
@@ -47,6 +46,7 @@ export default function HistoryScreen() {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const prefsLoaded = useRef(false);
 
+  // Load persisted filter + period on mount.
   useEffect(() => {
     getHistoryPrefs().then((p) => {
       if (p) {
@@ -57,11 +57,14 @@ export default function HistoryScreen() {
     });
   }, []);
 
+  // Persist after each change (skip the initial render before load completes).
   useEffect(() => {
     if (!prefsLoaded.current) return;
     setHistoryPrefs({ filter, period });
   }, [filter, period]);
 
+  // If the user opened the app yesterday and is still on the day view,
+  // bump cursor to today on focus so the list reflects the new day.
   useFocusEffect(
     useCallback(() => {
       if (period !== 'day') return;
@@ -70,14 +73,13 @@ export default function HistoryScreen() {
     }, [period, cursor])
   );
 
-  // 2. SESUAIKAN LABEL UNTUK FILTER 'transfer' AGAR TIDAK ERROR
   const FILTERS = useMemo(
     () => FILTER_IDS.map((id) => ({
       id,
-      label: id === 'all' ? t('type.all') : 
-             id === 'income' ? t('type.income') : 
-             id === 'expense' ? t('type.expense') : 
-             'Transfer',
+      label: id === 'all' ? t('type.all') :
+             id === 'income' ? t('type.income') :
+             id === 'expense' ? t('type.expense') :
+             t('type.transfer'),
     })),
     [t]
   );

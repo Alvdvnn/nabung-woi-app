@@ -5,7 +5,7 @@ import { radius, spacing, fontSize } from '../constants/theme';
 import { useTheme } from '../hooks/useTheme';
 import { useToast } from '../hooks/useToast';
 import { useCategories } from '../context/CategoriesContext';
-import { CustomCategory, saveCustomCategories, TransactionType } from '../utils/storage';
+import { CustomCategory, saveCustomCategories, CategoryKind } from '../utils/storage';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, CUSTOM_ICON_CHOICES, iconForCustom } from '../constants/categories';
 import ConfirmModal from './ConfirmModal';
 import { genId } from '../utils/id';
@@ -18,7 +18,7 @@ interface Props {
 }
 
 export default function CategoryManager({ categories, onChange }: Props) {
-  const [type, setType] = useState<TransactionType>('expense');
+  const [type, setType] = useState<CategoryKind>('expense');
   const [name, setName] = useState('');
   const [iconId, setIconId] = useState<string>(CUSTOM_ICON_CHOICES[0]);
   const [pendingDelete, setPendingDelete] = useState<CustomCategory | null>(null);
@@ -119,7 +119,7 @@ export default function CategoryManager({ categories, onChange }: Props) {
   return (
     <View>
       <View style={styles.toggle}>
-        {(['expense', 'income'] as TransactionType[]).map((kind) => (
+        {(['expense', 'income'] as CategoryKind[]).map((kind) => (
           <Pressable
             key={kind}
             style={[styles.toggleBtn, type === kind && styles.toggleActive]}
