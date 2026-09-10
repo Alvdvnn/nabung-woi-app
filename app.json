@@ -3,16 +3,10 @@
     "name": "Nabung Woi",
     "slug": "nabung-woi",
     "scheme": "nabung-woi",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#10B981"
-    },
     "ios": {
       "supportsTablet": true
     },
@@ -21,7 +15,6 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#10B981"
       },
-      "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "com.vinnyvv.nabungwoi"
     },
@@ -31,14 +24,22 @@
       "output": "static",
       "name": "Nabung Woi",
       "shortName": "Nabung Woi",
-      "themeColor": "#f8fafc",
-      "backgroundColor": "#f8fafc",
+      "themeColor": "#f4f6f9",
+      "backgroundColor": "#f4f6f9",
       "display": "standalone",
       "orientation": "portrait",
       "lang": "en"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#10B981"
+        }
+      ]
     ],
     "extra": {
       "router": {},

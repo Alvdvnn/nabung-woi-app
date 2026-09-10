@@ -1,43 +1,41 @@
-import { useMemo, useState } from 'react';
-import {
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  Share,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { useCallback, useMemo, useState } from 'react';
+import { Platform, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback } from 'react';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  Database,
+  Download,
+  Languages,
+  Lock,
+  Moon,
+  Plus,
+  Smartphone,
+  Sun,
+  Tag,
+  Trash,
+  Upload,
+  Wallet,
+} from 'lucide-react-native';
+import Screen from '../../components/ui/Screen';
+import TopBar from '../../components/ui/TopBar';
+import Fab from '../../components/ui/Fab';
+import Button from '../../components/ui/Button';
+import Sheet from '../../components/ui/Sheet';
+import SegmentedControl, { Segment } from '../../components/ui/SegmentedControl';
+import AccountManager from '../../components/account/AccountManager';
+import CategoryManager from '../../components/category/CategoryManager';
+import PinManager from '../../components/security/PinManager';
+import ConfirmModal from '../../components/feedback/ConfirmModal';
 import { contentBottomForFab, fabBottomForTabScreen } from '../../constants/layout';
-import { Database, Download, Upload, Trash, Wallet, Tag, Plus, Sun, Moon, Smartphone, Lock, Languages } from 'lucide-react-native';
-import TopBar from '../../components/TopBar';
-import Fab from '../../components/Fab';
-import AccountManager from '../../components/AccountManager';
-import CategoryManager from '../../components/CategoryManager';
-import PinManager from '../../components/PinManager';
-import ConfirmModal from '../../components/ConfirmModal';
+import { fontSize, radius, spacing, weight } from '../../constants/theme';
 import { usePin } from '../../context/PinContext';
 import { useCategories } from '../../context/CategoriesContext';
 import { useData } from '../../context/DataContext';
 import { useToast } from '../../hooks/useToast';
-import { radius, spacing, fontSize } from '../../constants/theme';
 import { useTheme, ThemeMode } from '../../hooks/useTheme';
 import { useLocale, useT } from '../../i18n';
 import { Locale } from '../../i18n/dicts';
-import {
-  Account,
-  CustomCategory,
-  clearAll,
-  exportAll,
-  importAll,
-  getCustomCategories,
-} from '../../utils/storage';
+import { CustomCategory, clearAll, exportAll, importAll, getCustomCategories } from '../../utils/storage';
 import { copyToClipboardOnWeb, downloadJsonOnWeb, pickJsonFileOnWeb } from '../../utils/webShare';
 
 export default function SettingsScreen() {
@@ -55,53 +53,49 @@ export default function SettingsScreen() {
   const pin = usePin();
   const { refresh: refreshCategories } = useCategories();
   const t = useT();
-  const styles = useMemo(() => StyleSheet.create({
-    safe: { flex: 1, backgroundColor: colors.bg },
-    content: { padding: spacing.lg, gap: spacing.lg, paddingBottom: contentBottomForFab(insets.bottom) },
-    actionRow: {
-      flexDirection: 'row', alignItems: 'center', gap: spacing.md,
-      backgroundColor: colors.card,
-      padding: spacing.md, borderRadius: radius.md,
-      borderWidth: 1, borderColor: colors.border,
-    },
-    danger: { borderColor: colors.expenseLight },
-    actionText: { fontSize: fontSize.md, fontWeight: '600', color: colors.textPrimary },
-    modalOverlay: { flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' },
-    modalCard: {
-      backgroundColor: colors.bg,
-      borderTopLeftRadius: radius.lg,
-      borderTopRightRadius: radius.lg,
-      paddingHorizontal: spacing.lg,
-      paddingTop: spacing.lg,
-      paddingBottom: spacing.xl + insets.bottom,
-      gap: spacing.md,
-    },
-    modalTitle: { fontSize: fontSize.lg, fontWeight: '700', color: colors.textPrimary },
-    modalMsg: { fontSize: fontSize.sm, color: colors.textSecondary },
-    importInput: {
-      backgroundColor: colors.card,
-      borderRadius: radius.md,
-      borderWidth: 1,
-      borderColor: colors.border,
-      padding: spacing.md,
-      color: colors.textPrimary,
-      fontSize: fontSize.sm,
-      minHeight: 140,
-      maxHeight: 240,
-      textAlignVertical: 'top',
-    },
-    modalActions: { flexDirection: 'row', gap: spacing.sm },
-    modalBtn: { flex: 1, paddingVertical: spacing.md, borderRadius: radius.full, alignItems: 'center' },
-    modalCancel: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border },
-    modalConfirm: { backgroundColor: colors.primary },
-    modalCancelText: { fontSize: fontSize.md, fontWeight: '600', color: colors.textSecondary },
-    modalConfirmText: { fontSize: fontSize.md, fontWeight: '700', color: colors.white },
-  }), [colors, insets.bottom]);
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        content: {
+          padding: spacing.lg,
+          gap: spacing.xl,
+          paddingBottom: contentBottomForFab(insets.bottom),
+        },
+        actionRow: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: spacing.md,
+          backgroundColor: colors.surface,
+          minHeight: 52,
+          paddingHorizontal: spacing.md,
+          borderRadius: radius.md,
+          borderWidth: 1,
+          borderColor: colors.border,
+        },
+        danger: { borderColor: colors.expenseLight },
+        actionText: { fontSize: fontSize.md, fontWeight: weight.semibold, color: colors.textPrimary },
+        importInput: {
+          backgroundColor: colors.surface,
+          borderRadius: radius.md,
+          borderWidth: 1,
+          borderColor: colors.border,
+          padding: spacing.md,
+          color: colors.textPrimary,
+          fontSize: fontSize.sm,
+          minHeight: 140,
+          maxHeight: 240,
+          textAlignVertical: 'top',
+        },
+        modalMsg: { fontSize: fontSize.sm, color: colors.textSecondary },
+      }),
+    [colors, insets.bottom],
+  );
 
   useFocusEffect(
     useCallback(() => {
       getCustomCategories().then(setCustomCats);
-    }, [])
+    }, []),
   );
 
   async function handleExport() {
@@ -136,15 +130,17 @@ export default function SettingsScreen() {
     setImporting(true);
     try {
       const summary = await importAll(importText);
-      const cats = await getCustomCategories();
-      setCustomCats(cats);
+      setCustomCats(await getCustomCategories());
       await refreshData();
       await refreshCategories();
-      toast.show('success', t('settings.importSuccess', {
-        tx: summary.transactions,
-        acc: summary.accounts,
-        cat: summary.categories,
-      }));
+      toast.show(
+        'success',
+        t('settings.importSuccess', {
+          tx: summary.transactions,
+          acc: summary.accounts,
+          cat: summary.categories,
+        }),
+      );
       if (summary.orphanTransactions > 0) {
         toast.show('info', t('settings.importOrphans', { n: summary.orphanTransactions }));
       }
@@ -153,9 +149,7 @@ export default function SettingsScreen() {
     } catch (e: any) {
       toast.show(
         'error',
-        e?.message === 'invalidJson'
-          ? t('settings.importInvalidJson')
-          : t('settings.importInvalidShape'),
+        e?.message === 'invalidJson' ? t('settings.importInvalidJson') : t('settings.importInvalidShape'),
       );
     } finally {
       setImporting(false);
@@ -174,9 +168,9 @@ export default function SettingsScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safe} edges={['left', 'right']}>
+    <Screen>
       <TopBar title={t('settings.title')} showLogo={false} />
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Section Icon={Wallet} title={t('settings.accounts')}>
           <AccountManager accounts={accounts} onChange={saveAccounts} />
         </Section>
@@ -186,15 +180,19 @@ export default function SettingsScreen() {
         </Section>
 
         <Section Icon={Database} title={t('settings.data')}>
-          <Pressable style={styles.actionRow} onPress={handleExport}>
+          <Pressable style={styles.actionRow} onPress={handleExport} accessibilityRole="button">
             <Download size={18} color={colors.primary} />
             <Text style={styles.actionText}>{t('settings.exportData')}</Text>
           </Pressable>
-          <Pressable style={styles.actionRow} onPress={() => setImportOpen(true)}>
+          <Pressable style={styles.actionRow} onPress={() => setImportOpen(true)} accessibilityRole="button">
             <Upload size={18} color={colors.primary} />
             <Text style={styles.actionText}>{t('settings.importData')}</Text>
           </Pressable>
-          <Pressable style={[styles.actionRow, styles.danger]} onPress={() => setConfirmClear(true)}>
+          <Pressable
+            style={[styles.actionRow, styles.danger]}
+            onPress={() => setConfirmClear(true)}
+            accessibilityRole="button"
+          >
             <Trash size={18} color={colors.expense} />
             <Text style={[styles.actionText, { color: colors.expense }]}>{t('settings.clearData')}</Text>
           </Pressable>
@@ -212,64 +210,57 @@ export default function SettingsScreen() {
           <LanguageRow />
         </Section>
       </ScrollView>
+
       <Fab Icon={Plus} bottom={fabBottomForTabScreen(insets.bottom)} onPress={() => router.push('/')} />
 
-      <Modal
+      <Sheet
         visible={importOpen}
-        transparent
-        statusBarTranslucent
-        navigationBarTranslucent
-        animationType="slide"
-        onRequestClose={() => setImportOpen(false)}
+        title={t('settings.importTitle')}
+        onClose={() => setImportOpen(false)}
+        scroll
       >
-        <KeyboardAvoidingView
-          style={{ flex: 1 }}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        >
-          <Pressable style={styles.modalOverlay} onPress={() => setImportOpen(false)}>
-            <Pressable style={styles.modalCard} onPress={(e) => e.stopPropagation()}>
-              <Text style={styles.modalTitle}>{t('settings.importTitle')}</Text>
-              <Text style={styles.modalMsg}>{t('settings.importMsg')}</Text>
-              {Platform.OS === 'web' && (
-                <Pressable
-                  style={[styles.actionRow, { borderColor: colors.primary }]}
-                  onPress={handlePickImportFile}
-                >
-                  <Upload size={18} color={colors.primary} />
-                  <Text style={[styles.actionText, { color: colors.primary }]}>
-                    {t('settings.importPickFile')}
-                  </Text>
-                </Pressable>
-              )}
-              <TextInput
-                style={styles.importInput}
-                value={importText}
-                onChangeText={setImportText}
-                placeholder={t('settings.importPlaceholder')}
-                placeholderTextColor={colors.textMuted}
-                multiline
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-              <View style={styles.modalActions}>
-                <Pressable
-                  style={[styles.modalBtn, styles.modalCancel]}
-                  onPress={() => setImportOpen(false)}
-                >
-                  <Text style={styles.modalCancelText}>{t('common.cancel')}</Text>
-                </Pressable>
-                <Pressable
-                  style={[styles.modalBtn, styles.modalConfirm, (importing || !importText.trim()) && { opacity: 0.6 }]}
-                  onPress={doImport}
-                  disabled={importing || !importText.trim()}
-                >
-                  <Text style={styles.modalConfirmText}>{t('settings.importBtn')}</Text>
-                </Pressable>
-              </View>
+        <View style={{ gap: spacing.md }}>
+          <Text style={styles.modalMsg}>{t('settings.importMsg')}</Text>
+          {Platform.OS === 'web' ? (
+            <Pressable
+              style={[styles.actionRow, { borderColor: colors.primary }]}
+              onPress={handlePickImportFile}
+              accessibilityRole="button"
+            >
+              <Upload size={18} color={colors.primary} />
+              <Text style={[styles.actionText, { color: colors.primary }]}>
+                {t('settings.importPickFile')}
+              </Text>
             </Pressable>
-          </Pressable>
-        </KeyboardAvoidingView>
-      </Modal>
+          ) : null}
+          <TextInput
+            style={styles.importInput}
+            value={importText}
+            onChangeText={setImportText}
+            placeholder={t('settings.importPlaceholder')}
+            placeholderTextColor={colors.textMuted}
+            multiline
+            autoCapitalize="none"
+            autoCorrect={false}
+            accessibilityLabel={t('settings.importTitle')}
+          />
+          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+            <Button
+              label={t('common.cancel')}
+              variant="secondary"
+              onPress={() => setImportOpen(false)}
+              fullWidth
+            />
+            <Button
+              label={t('settings.importBtn')}
+              onPress={doImport}
+              loading={importing}
+              disabled={!importText.trim()}
+              fullWidth
+            />
+          </View>
+        </View>
+      </Sheet>
 
       <ConfirmModal
         visible={confirmClear}
@@ -282,23 +273,29 @@ export default function SettingsScreen() {
         onConfirm={doClearAll}
         onCancel={() => setConfirmClear(false)}
       />
-    </SafeAreaView>
+    </Screen>
   );
 }
 
 function Section({ Icon, title, children }: { Icon: any; title: string; children: React.ReactNode }) {
   const { colors } = useTheme();
-  const styles = useMemo(() => StyleSheet.create({
-    section: { gap: spacing.md },
-    sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xs },
-    sectionTitle: { fontSize: fontSize.lg, fontWeight: '700', color: colors.textPrimary },
-  }), [colors]);
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        section: { gap: spacing.md },
+        header: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+        title: { fontSize: fontSize.lg, fontWeight: weight.bold, color: colors.textPrimary },
+      }),
+    [colors],
+  );
 
   return (
     <View style={styles.section}>
-      <View style={styles.sectionHeader}>
+      <View style={styles.header}>
         <Icon size={18} color={colors.primary} />
-        <Text style={styles.sectionTitle}>{title}</Text>
+        <Text style={styles.title} accessibilityRole="header">
+          {title}
+        </Text>
       </View>
       {children}
     </View>
@@ -306,81 +303,28 @@ function Section({ Icon, title, children }: { Icon: any; title: string; children
 }
 
 function AppearanceRow() {
-  const { colors, mode, setMode } = useTheme();
+  const { mode, setMode } = useTheme();
   const t = useT();
-  const styles = useMemo(() => StyleSheet.create({
-    row: { flexDirection: 'row', gap: spacing.sm },
-    option: {
-      flex: 1,
-      paddingVertical: spacing.md,
-      borderRadius: radius.md,
-      borderWidth: 1,
-      borderColor: colors.border,
-      backgroundColor: colors.card,
-      alignItems: 'center',
-      gap: 6,
-    },
-    optionActive: { borderColor: colors.primary, backgroundColor: colors.primarySoft },
-    label: { fontSize: fontSize.sm, fontWeight: '600', color: colors.textSecondary },
-    labelActive: { color: colors.primary },
-  }), [colors]);
-
-  const opts: { id: ThemeMode; label: string; Icon: typeof Sun }[] = [
-    { id: 'system', label: t('settings.system'), Icon: Smartphone },
-    { id: 'light', label: t('settings.light'), Icon: Sun },
-    { id: 'dark', label: t('settings.dark'), Icon: Moon },
-  ];
-
-  return (
-    <View style={styles.row}>
-      {opts.map((o) => {
-        const active = mode === o.id;
-        return (
-          <Pressable key={o.id} style={[styles.option, active && styles.optionActive]} onPress={() => setMode(o.id)}>
-            <o.Icon size={20} color={active ? colors.primary : colors.textSecondary} />
-            <Text style={[styles.label, active && styles.labelActive]}>{o.label}</Text>
-          </Pressable>
-        );
-      })}
-    </View>
+  const options = useMemo<Segment<ThemeMode>[]>(
+    () => [
+      { id: 'system', label: t('settings.system'), Icon: Smartphone },
+      { id: 'light', label: t('settings.light'), Icon: Sun },
+      { id: 'dark', label: t('settings.dark'), Icon: Moon },
+    ],
+    [t],
   );
+  return <SegmentedControl options={options} value={mode} onChange={setMode} />;
 }
 
 function LanguageRow() {
-  const { colors } = useTheme();
   const { locale, setLocale } = useLocale();
   const t = useT();
-  const styles = useMemo(() => StyleSheet.create({
-    row: { flexDirection: 'row', gap: spacing.sm },
-    option: {
-      flex: 1,
-      paddingVertical: spacing.md,
-      borderRadius: radius.md,
-      borderWidth: 1,
-      borderColor: colors.border,
-      backgroundColor: colors.card,
-      alignItems: 'center',
-    },
-    optionActive: { borderColor: colors.primary, backgroundColor: colors.primarySoft },
-    label: { fontSize: fontSize.sm, fontWeight: '600', color: colors.textSecondary },
-    labelActive: { color: colors.primary },
-  }), [colors]);
-
-  const opts: { id: Locale; label: string }[] = [
-    { id: 'en', label: t('settings.english') },
-    { id: 'id', label: t('settings.indonesian') },
-  ];
-
-  return (
-    <View style={styles.row}>
-      {opts.map((o) => {
-        const active = locale === o.id;
-        return (
-          <Pressable key={o.id} style={[styles.option, active && styles.optionActive]} onPress={() => setLocale(o.id)}>
-            <Text style={[styles.label, active && styles.labelActive]}>{o.label}</Text>
-          </Pressable>
-        );
-      })}
-    </View>
+  const options = useMemo<Segment<Locale>[]>(
+    () => [
+      { id: 'en', label: t('settings.english') },
+      { id: 'id', label: t('settings.indonesian') },
+    ],
+    [t],
   );
+  return <SegmentedControl options={options} value={locale} onChange={setLocale} />;
 }

@@ -1,9 +1,13 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { isoDay } from './date';
 
-export type TransactionType = 'income' | 'expense' | 'transfer';
-// Custom categories only apply to income/expense — transfers have no category.
+export type TransactionType = 'income' | 'expense' | 'transfer' | 'adjustment';
+// Custom categories only apply to income/expense — transfers and adjustments
+// have no category (they use the reserved ids 'transfer' / 'adjustment').
 export type CategoryKind = 'income' | 'expense';
+
+/** Which way an adjustment moves the account balance. */
+export type AdjustmentDirection = 'in' | 'out';
 
 export interface Transaction {
   id: string;
@@ -12,6 +16,12 @@ export interface Transaction {
   categoryId: string;
   accountId: string;
   toAccountId?: string;
+  /**
+   * Adjustment rows only. `amount` stays positive for every transaction type;
+   * this is what decides whether the balance goes up or down. Reading code must
+   * treat a missing direction on an adjustment as 'out' (the common case).
+   */
+  direction?: AdjustmentDirection;
   note: string;
   date: string;
   // Local calendar day key (YYYY-MM-DD) derived from `date` at write time.
@@ -78,11 +88,23 @@ export async function getTransactions(): Promise<Transaction[]> {
   return list.map(ensureDayKey);
 }
 
+// The list is kept newest-first. Inserting at the right index (instead of
+// always prepending) keeps a back-dated entry in its chronological place, so
+// screens can render the stored order directly without re-sorting.
+export function insertSorted(list: Transaction[], tx: Transaction): Transaction[] {
+  const at = new Date(tx.date).getTime();
+  let i = 0;
+  while (i < list.length && new Date(list[i].date).getTime() >= at) i += 1;
+  const next = list.slice();
+  next.splice(i, 0, tx);
+  return next;
+}
+
 export function addTransaction(tx: Transaction): Promise<void> {
   return enqueueTxWrite(async () => {
     const list = await getTransactions();
-    list.unshift(ensureDayKey(tx));
-    await AsyncStorage.setItem(KEYS.transactions, JSON.stringify(list));
+    const next = insertSorted(list, ensureDayKey(tx));
+    await AsyncStorage.setItem(KEYS.transactions, JSON.stringify(next));
   });
 }
 
@@ -152,7 +174,7 @@ export async function setThemeMode(mode: StoredThemeMode): Promise<void> {
 }
 
 export type HistoryFilter = 'all' | TransactionType;
-export type HistoryPeriod = 'day' | 'month' | 'year';
+export type HistoryPeriod = 'day' | 'week' | 'month' | 'year';
 export interface HistoryPrefs {
   filter: HistoryFilter;
   period: HistoryPeriod;
@@ -164,9 +186,14 @@ export async function getHistoryPrefs(): Promise<HistoryPrefs | null> {
   try {
     const p = JSON.parse(raw);
     const filter: HistoryFilter =
-      p.filter === 'income' || p.filter === 'expense' || p.filter === 'transfer' ? p.filter : 'all';
+      p.filter === 'income' ||
+      p.filter === 'expense' ||
+      p.filter === 'transfer' ||
+      p.filter === 'adjustment'
+        ? p.filter
+        : 'all';
     const period: HistoryPeriod =
-      p.period === 'day' || p.period === 'year' ? p.period : 'month';
+      p.period === 'day' || p.period === 'week' || p.period === 'year' ? p.period : 'month';
     return { filter, period };
   } catch {
     return null;
@@ -212,7 +239,7 @@ export async function exportAll(): Promise<string> {
 function isTransaction(x: any): x is Transaction {
   return (
     x && typeof x.id === 'string' &&
-    (x.type === 'income' || x.type === 'expense' || x.type === 'transfer') &&
+    (x.type === 'income' || x.type === 'expense' || x.type === 'transfer' || x.type === 'adjustment') &&
     typeof x.amount === 'number' &&
     typeof x.categoryId === 'string' &&
     typeof x.accountId === 'string' &&

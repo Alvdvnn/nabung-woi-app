@@ -1,26 +1,48 @@
 import { createContext, useCallback, useContext, useMemo, useRef, useState, ReactNode } from 'react';
-import Toast, { ToastVariant } from '../components/Toast';
+import Toast, { ToastVariant } from '../components/feedback/Toast';
+
+export interface ToastAction {
+  label: string;
+  onPress: () => void;
+}
+
+export interface ToastOptions {
+  duration?: number;
+  /** Optional inline button, e.g. "Undo" after a delete. */
+  action?: ToastAction;
+}
 
 interface ToastState {
   id: number;
   variant: ToastVariant;
   message: string;
   duration: number;
+  action?: ToastAction;
 }
 
 interface ToastContextValue {
-  show: (variant: ToastVariant, message: string, opts?: { duration?: number }) => void;
+  show: (variant: ToastVariant, message: string, opts?: ToastOptions) => void;
 }
 
 const ToastContext = createContext<ToastContextValue | null>(null);
+
+const DEFAULT_DURATION = 2500;
+// Undoable toasts stay long enough to actually be undone.
+const ACTION_DURATION = 5000;
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [queue, setQueue] = useState<ToastState[]>([]);
   const idRef = useRef(0);
 
-  const show = useCallback((variant: ToastVariant, message: string, opts?: { duration?: number }) => {
+  const show = useCallback((variant: ToastVariant, message: string, opts?: ToastOptions) => {
     idRef.current += 1;
-    const next: ToastState = { id: idRef.current, variant, message, duration: opts?.duration ?? 2500 };
+    const next: ToastState = {
+      id: idRef.current,
+      variant,
+      message,
+      duration: opts?.duration ?? (opts?.action ? ACTION_DURATION : DEFAULT_DURATION),
+      action: opts?.action,
+    };
     setQueue((q) => [...q, next]);
   }, []);
 
@@ -40,6 +62,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           variant={head.variant}
           message={head.message}
           duration={head.duration}
+          action={head.action}
           onDismiss={() => dismissHead(head.id)}
         />
       )}

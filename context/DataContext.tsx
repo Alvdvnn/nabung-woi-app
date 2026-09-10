@@ -16,9 +16,11 @@ import {
   deleteTransaction as storageDeleteTx,
   getAccounts as storageGetAccounts,
   getTransactions as storageGetTxs,
+  insertSorted,
   saveAccounts as storageSaveAccounts,
 } from '../utils/storage';
 import { runMigrations } from '../utils/migrations';
+import { accountBalances } from '../utils/aggregate';
 
 interface DataContextValue {
   txs: Transaction[];
@@ -26,6 +28,12 @@ interface DataContextValue {
   hydrated: boolean;
   // Derived selectors memoized once for the entire app to share.
   txDates: Set<string>;
+  /** dayKey → transactions on that day, newest first. */
+  txByDay: Map<string, Transaction[]>;
+  accountsById: Map<string, Account>;
+  /** accountId → current balance across all time. */
+  balances: Map<string, number>;
+  totalBalance: number;
   // Read helpers (cache-backed).
   findTx: (id: string) => Transaction | undefined;
   // Mutations — update cache optimistically and persist.
@@ -41,6 +49,9 @@ interface DataContextValue {
 
 const Ctx = createContext<DataContextValue | null>(null);
 
+const byDateDesc = (a: Transaction, b: Transaction) =>
+  new Date(b.date).getTime() - new Date(a.date).getTime();
+
 export function DataProvider({ children }: { children: ReactNode }) {
   const [txs, setTxs] = useState<Transaction[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -54,7 +65,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(async () => {
     const [t, a] = await Promise.all([storageGetTxs(), storageGetAccounts()]);
-    setTxs(t.sort((x, y) => new Date(y.date).getTime() - new Date(x.date).getTime()));
+    setTxs(t.sort(byDateDesc));
     setAccounts(a);
   }, []);
 
@@ -72,7 +83,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const addTx = useCallback(async (tx: Transaction) => {
     const prev = txsRef.current;
-    setTxs([tx, ...prev]);
+    setTxs(insertSorted(prev, tx));
     try {
       await storageAddTx(tx);
     } catch (err) {
@@ -83,7 +94,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const updateTx = useCallback(async (tx: Transaction) => {
     const prev = txsRef.current;
-    setTxs(prev.map((t) => (t.id === tx.id ? tx : t)));
+    // The date may have moved, so re-place the row instead of patching in situ.
+    setTxs(insertSorted(prev.filter((t) => t.id !== tx.id), tx));
     try {
       await storageUpdateTx(tx);
     } catch (err) {
@@ -119,15 +131,56 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setAccounts([]);
   }, []);
 
-  const txDates = useMemo(() => {
-    const s = new Set<string>();
-    for (const tx of txs) s.add(tx.dayKey);
-    return s;
+  // One pass builds both the day index and the "has any transaction" set the
+  // calendar dots read, so screens never re-scan the list to answer either.
+  const { txDates, txByDay } = useMemo(() => {
+    const dates = new Set<string>();
+    const byDay = new Map<string, Transaction[]>();
+    for (const tx of txs) {
+      dates.add(tx.dayKey);
+      const bucket = byDay.get(tx.dayKey);
+      if (bucket) bucket.push(tx);
+      else byDay.set(tx.dayKey, [tx]);
+    }
+    return { txDates: dates, txByDay: byDay };
   }, [txs]);
 
+  const accountsById = useMemo(() => {
+    const m = new Map<string, Account>();
+    for (const a of accounts) m.set(a.id, a);
+    return m;
+  }, [accounts]);
+
+  const balances = useMemo(() => accountBalances(accounts, txs), [accounts, txs]);
+
+  const totalBalance = useMemo(() => {
+    let sum = 0;
+    for (const value of balances.values()) sum += value;
+    return sum;
+  }, [balances]);
+
   const value = useMemo<DataContextValue>(
-    () => ({ txs, accounts, hydrated, txDates, findTx, addTx, updateTx, deleteTx, saveAccounts, refresh, resetCache }),
-    [txs, accounts, hydrated, txDates, findTx, addTx, updateTx, deleteTx, saveAccounts, refresh, resetCache]
+    () => ({
+      txs,
+      accounts,
+      hydrated,
+      txDates,
+      txByDay,
+      accountsById,
+      balances,
+      totalBalance,
+      findTx,
+      addTx,
+      updateTx,
+      deleteTx,
+      saveAccounts,
+      refresh,
+      resetCache,
+    }),
+    [
+      txs, accounts, hydrated, txDates, txByDay, accountsById, balances, totalBalance,
+      findTx, addTx, updateTx, deleteTx, saveAccounts, refresh, resetCache,
+    ]
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

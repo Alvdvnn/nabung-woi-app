@@ -13,8 +13,8 @@ import {
   Sparkles,
   Crown,
 } from 'lucide-react-native';
-import TopBar from '../../components/TopBar';
-import Fab from '../../components/Fab';
+import TopBar from '../../components/ui/TopBar';
+import Fab from '../../components/ui/Fab';
 import { radius, spacing, fontSize, shadow } from '../../constants/theme';
 import { useTheme } from '../../hooks/useTheme';
 import { useT } from '../../i18n';
@@ -417,8 +417,7 @@ export default function GachaScreen() {
               );
             })}
             <Animated.View
-              pointerEvents="none"
-              style={[styles.flashOverlay, { backgroundColor: flashColor, opacity: flash }]}
+              style={[styles.flashOverlay, { backgroundColor: flashColor, opacity: flash, pointerEvents: 'none' }]}
             />
           </View>
 

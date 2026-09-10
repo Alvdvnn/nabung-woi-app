@@ -14,7 +14,7 @@ export default function Root({ children }: PropsWithChildren) {
           content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
         />
 
-        <meta name="theme-color" content="#10B981" />
+        <meta name="theme-color" content="#f4f6f9" />
         <meta name="application-name" content="Nabung Woi" />
 
         {/* iOS PWA. status-bar-style "default" keeps the status bar opaque and
@@ -68,7 +68,7 @@ html, body {
   /* App bg (light), not the green splash color, so any pixel that peeks out
      behind the status bar / home-indicator safe areas in an iOS standalone
      PWA blends with the UI instead of showing a green band. */
-  background-color: #f8fafc;
+  background-color: #f4f6f9;
 }
 body {
   overflow: hidden;

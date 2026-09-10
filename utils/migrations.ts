@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { isoDay } from './date';
 
 // Bump this whenever the on-disk shape changes. Add a matching entry in `migrations`.
-export const CURRENT_SCHEMA_VERSION = 1;
+export const CURRENT_SCHEMA_VERSION = 2;
 
 const VERSION_KEY = 'nw.schemaVersion';
 
@@ -37,12 +37,31 @@ const migrations: Migration[] = [
       }
     },
   },
-  // Future example:
-  // {
-  //   version: 2,
-  //   name: 'add Transaction.tags = []',
-  //   up: async () => { /* read, default tags, write */ },
-  // },
+  {
+    version: 2,
+    name: 'sort transactions by date desc; normalize adjustment direction',
+    up: async () => {
+      const raw = await AsyncStorage.getItem('nw.transactions');
+      if (!raw) return;
+      try {
+        const list = JSON.parse(raw);
+        if (!Array.isArray(list)) return;
+        // Rows used to be prepended on write regardless of their date, so a
+        // back-dated entry could sit at the top of the list forever. Sort once
+        // here; writes keep the order from now on.
+        const next = list
+          .map((tx: any) =>
+            tx && tx.type === 'adjustment' && tx.direction !== 'in' && tx.direction !== 'out'
+              ? { ...tx, direction: 'out' }
+              : tx,
+          )
+          .sort((a: any, b: any) => new Date(b?.date ?? 0).getTime() - new Date(a?.date ?? 0).getTime());
+        await AsyncStorage.setItem('nw.transactions', JSON.stringify(next));
+      } catch {
+        // Corrupt JSON — leave it; storage layer will treat as empty on next read.
+      }
+    },
+  },
 ];
 
 async function readVersion(): Promise<number> {

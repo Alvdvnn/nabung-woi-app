@@ -37,20 +37,28 @@ export function CategoriesProvider({ children }: { children: ReactNode }) {
       ...def,
       name: tBuiltin(t, 'categories', def.id),
     });
+
+    // `find` runs once per rendered transaction row, so it resolves through a
+    // prebuilt index instead of scanning the builtin + custom arrays each time.
+    const index = new Map<string, CategoryDef>();
+    for (const def of ALL_CATEGORIES) index.set(def.id, localize(def));
+    for (const custom of customCats) index.set(custom.id, customToDef(custom));
+
+    const expense: CategoryDef[] = [];
+    const income: CategoryDef[] = [];
+    for (const def of EXPENSE_CATEGORIES) expense.push(index.get(def.id) ?? localize(def));
+    for (const def of INCOME_CATEGORIES) income.push(index.get(def.id) ?? localize(def));
+    for (const custom of customCats) {
+      const def = index.get(custom.id);
+      if (!def) continue;
+      (custom.type === 'expense' ? expense : income).push(def);
+    }
+
     return {
       customCats,
       refresh,
-      byType: (type) => {
-        const defaults = type === 'expense' ? EXPENSE_CATEGORIES : INCOME_CATEGORIES;
-        const extras = customCats.filter((c) => c.type === type).map(customToDef);
-        return [...defaults.map(localize), ...extras];
-      },
-      find: (id) => {
-        const builtin = ALL_CATEGORIES.find((c) => c.id === id);
-        if (builtin) return localize(builtin);
-        const custom = customCats.find((c) => c.id === id);
-        return custom ? customToDef(custom) : undefined;
-      },
+      byType: (type) => (type === 'expense' ? expense : income),
+      find: (id) => index.get(id),
     };
   }, [customCats, refresh, t]);
 

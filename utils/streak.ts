@@ -1,5 +1,5 @@
 import { Transaction } from './storage';
-import { isoDay } from './format';
+import { isoDay } from './date';
 
 export interface StreakResult {
   current: number;

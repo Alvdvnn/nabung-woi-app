@@ -1,48 +1,46 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { FlatList, Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Inbox, Plus, SlidersHorizontal } from 'lucide-react-native';
+import Screen from '../../components/ui/Screen';
+import TopBar from '../../components/ui/TopBar';
+import Fab from '../../components/ui/Fab';
+import Card from '../../components/ui/Card';
+import SegmentedControl, { Segment } from '../../components/ui/SegmentedControl';
+import FilterChips, { FilterOption } from '../../components/ui/FilterChips';
+import Sheet from '../../components/ui/Sheet';
+import { SkeletonCard } from '../../components/ui/Skeleton';
+import TransactionItem, { TRANSACTION_ITEM_HEIGHT } from '../../components/transaction/TransactionItem';
+import EmptyState from '../../components/feedback/EmptyState';
+import ConfirmModal from '../../components/feedback/ConfirmModal';
+import RangeNav from '../../components/report/RangeNav';
 import { contentBottomForFab, fabBottomForTabScreen } from '../../constants/layout';
-import { Inbox, Plus, ChevronLeft, ChevronRight, Calendar as CalendarIcon, SlidersHorizontal, X } from 'lucide-react-native';
-import TopBar from '../../components/TopBar';
-import Fab from '../../components/Fab';
-import TransactionItem from '../../components/TransactionItem';
-import EmptyState from '../../components/EmptyState';
-import ConfirmModal from '../../components/ConfirmModal';
-import PeriodSelector from '../../components/PeriodSelector';
-import WebDateTrigger from '../../components/WebDateTrigger';
-import { useToast } from '../../hooks/useToast';
-import { radius, spacing, fontSize } from '../../constants/theme';
+import { fontSize, radius, spacing, weight } from '../../constants/theme';
 import { useTheme } from '../../hooks/useTheme';
 import { useData } from '../../context/DataContext';
+import { useDeleteWithUndo } from '../../hooks/useTransactionActions';
 import { Transaction, TransactionType, getHistoryPrefs, setHistoryPrefs } from '../../utils/storage';
-import { isoDay } from '../../utils/format';
-import { tPeriod } from '../../i18n/labels';
-import { useT, useLocale } from '../../i18n';
-import { DICTS } from '../../i18n/dicts';
-import { filterByPeriod, Period, totalsOf } from '../../utils/aggregate';
-import { formatDate, formatIDR } from '../../utils/format';
+import { useT } from '../../i18n';
+import { DateRange, Granularity, rangeFor, shiftRange } from '../../utils/period';
+import { isoDay } from '../../utils/date';
+import { adjustmentTotals, filterByRange, totalsOf } from '../../utils/aggregate';
+import { formatIDR } from '../../utils/format';
 
 type Filter = 'all' | TransactionType;
-
-const FILTER_IDS: Filter[] = ['all', 'income', 'expense', 'transfer'];
 
 export default function HistoryScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
-  const toast = useToast();
   const t = useT();
-  const { locale } = useLocale();
 
-  const { txs, accounts, deleteTx } = useData();
+  const { txs, accountsById, hydrated } = useData();
+  const deleteWithUndo = useDeleteWithUndo();
+
   const [filter, setFilter] = useState<Filter>('all');
+  const [range, setRange] = useState<DateRange>(() => rangeFor('month'));
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
-
-  const [period, setPeriod] = useState<Period>('month');
-  const [cursor, setCursor] = useState(new Date());
-  const [showDatePicker, setShowDatePicker] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const prefsLoaded = useRef(false);
 
@@ -51,7 +49,7 @@ export default function HistoryScreen() {
     getHistoryPrefs().then((p) => {
       if (p) {
         setFilter(p.filter);
-        setPeriod(p.period);
+        setRange(rangeFor(p.period));
       }
       prefsLoaded.current = true;
     });
@@ -60,206 +58,217 @@ export default function HistoryScreen() {
   // Persist after each change (skip the initial render before load completes).
   useEffect(() => {
     if (!prefsLoaded.current) return;
-    setHistoryPrefs({ filter, period });
-  }, [filter, period]);
+    setHistoryPrefs({ filter, period: range.granularity });
+  }, [filter, range.granularity]);
 
-  // If the user opened the app yesterday and is still on the day view,
-  // bump cursor to today on focus so the list reflects the new day.
+  // If the calendar day rolled over while the app sat in the background, a day
+  // view that was showing "today" follows along. A day the user deliberately
+  // navigated to is left alone.
+  const lastTodayKey = useRef(isoDay(new Date()));
   useFocusEffect(
     useCallback(() => {
-      if (period !== 'day') return;
-      const today = new Date();
-      if (isoDay(cursor) !== isoDay(today)) setCursor(today);
-    }, [period, cursor])
+      const todayKey = isoDay(new Date());
+      if (todayKey === lastTodayKey.current) return;
+      const wasOnToday = range.granularity === 'day' && range.startKey === lastTodayKey.current;
+      lastTodayKey.current = todayKey;
+      if (wasOnToday) setRange(rangeFor('day'));
+    }, [range]),
   );
 
-  const FILTERS = useMemo(
-    () => FILTER_IDS.map((id) => ({
-      id,
-      label: id === 'all' ? t('type.all') :
-             id === 'income' ? t('type.income') :
-             id === 'expense' ? t('type.expense') :
-             t('type.transfer'),
-    })),
-    [t]
+  const filterOptions = useMemo<FilterOption<Filter>[]>(
+    () => [
+      { id: 'all', label: t('common.all') },
+      { id: 'income', label: t('type.income'), activeColor: colors.income },
+      { id: 'expense', label: t('type.expense'), activeColor: colors.expense },
+      { id: 'transfer', label: t('type.transfer'), activeColor: colors.transfer },
+      { id: 'adjustment', label: t('type.adjustment'), activeColor: colors.adjustment },
+    ],
+    [t, colors],
   );
 
-  const shiftCursor = (dir: 1 | -1) =>
-    setCursor((prev) => {
-      const y = prev.getFullYear();
-      const m = prev.getMonth();
-      const d = prev.getDate();
-      if (period === 'day') return new Date(y, m, d + dir);
-      if (period === 'year') return new Date(y + dir, 0, 1);
-      return new Date(y, m + dir, 1);
-    });
-
-  const changePeriod = (p: Period) => {
-    setPeriod(p);
-    setCursor(new Date());
-  };
-
-  function onPickDate(_: DateTimePickerEvent, picked?: Date) {
-    setShowDatePicker(false);
-    if (picked) setCursor(picked);
-  }
-
-  const periodLabel = useMemo(() => {
-    if (period === 'day') return formatDate(cursor.toISOString());
-    if (period === 'year') return String(cursor.getFullYear());
-    return `${DICTS[locale].calendar.months[cursor.getMonth()]} ${cursor.getFullYear()}`;
-  }, [period, cursor, locale]);
-
-  const txsInPeriod = useMemo(
-    () => filterByPeriod(txs, period, cursor),
-    [txs, period, cursor]
+  const granularityOptions = useMemo<Segment<Granularity>[]>(
+    () => [
+      { id: 'day', label: t('period.day') },
+      { id: 'week', label: t('period.week') },
+      { id: 'month', label: t('period.month') },
+      { id: 'year', label: t('period.year') },
+    ],
+    [t],
   );
 
-  const periodTotals = useMemo(() => totalsOf(txsInPeriod), [txsInPeriod]);
+  const txsInRange = useMemo(() => filterByRange(txs, range), [txs, range]);
+  const periodTotals = useMemo(() => totalsOf(txsInRange), [txsInRange]);
+  const periodAdjustments = useMemo(() => adjustmentTotals(txsInRange), [txsInRange]);
 
-  const filtered = useMemo(() => {
-    if (filter === 'all') return txsInPeriod;
-    return txsInPeriod.filter((tx) => tx.type === filter);
-  }, [txsInPeriod, filter]);
-
-  const accountNameMap = useMemo(() => {
-    const m = new Map<string, string>();
-    for (const a of accounts) m.set(a.id, a.name);
-    return m;
-  }, [accounts]);
+  const filtered = useMemo(
+    () => (filter === 'all' ? txsInRange : txsInRange.filter((tx) => tx.type === filter)),
+    [txsInRange, filter],
+  );
 
   const keyExtractor = useCallback((tx: Transaction) => tx.id, []);
   const handleDelete = useCallback((id: string) => setPendingDeleteId(id), []);
   const handlePressItem = useCallback(
     (id: string) => router.push({ pathname: '/', params: { id, returnTo: 'history' } }),
-    [router]
+    [router],
   );
+
   const renderItem = useCallback(
     ({ item }: { item: Transaction }) => (
       <TransactionItem
         item={item}
-        accountName={accountNameMap.get(item.accountId)}
+        accountName={accountsById.get(item.accountId)?.name}
         onDelete={handleDelete}
         onPress={handlePressItem}
       />
     ),
-    [accountNameMap, handleDelete, handlePressItem]
+    [accountsById, handleDelete, handlePressItem],
+  );
+
+  // Rows are a fixed height, so FlatList can skip measuring them entirely.
+  const getItemLayout = useCallback(
+    (_: ArrayLike<Transaction> | null | undefined, index: number) => ({
+      length: TRANSACTION_ITEM_HEIGHT,
+      offset: TRANSACTION_ITEM_HEIGHT * index,
+      index,
+    }),
+    [],
   );
 
   const confirmDelete = useCallback(async () => {
     if (!pendingDeleteId) return;
     const id = pendingDeleteId;
     setPendingDeleteId(null);
-    try {
-      await deleteTx(id);
-      toast.show('success', t('history.deleted'));
-    } catch {
-      toast.show('error', t('history.deleteFailed'));
-    }
-  }, [pendingDeleteId, deleteTx, toast, t]);
+    await deleteWithUndo(id);
+  }, [pendingDeleteId, deleteWithUndo]);
 
-  const styles = useMemo(() => StyleSheet.create({
-    safe: { flex: 1, backgroundColor: colors.bg },
-    navBar: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: colors.card,
-      marginHorizontal: spacing.lg,
-      marginTop: spacing.md,
-      borderRadius: radius.md,
-      borderWidth: 1,
-      borderColor: colors.border,
-      paddingHorizontal: spacing.xs,
-    },
-    navBtn: { padding: spacing.sm },
-    navLabel: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: spacing.sm },
-    navLabelText: { fontSize: fontSize.md, fontWeight: '700', color: colors.textPrimary },
-    filterToggle: {
-      padding: spacing.sm,
-      marginLeft: spacing.xs,
-      borderLeftWidth: 1,
-      borderLeftColor: colors.border,
-    },
-    netLine: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginHorizontal: spacing.lg,
-      marginTop: spacing.sm,
-      marginBottom: spacing.sm,
-      paddingHorizontal: spacing.xs,
-    },
-    netLineLabel: { fontSize: fontSize.xs, color: colors.textSecondary, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
-    netLineValue: { fontSize: fontSize.md, fontWeight: '800', letterSpacing: -0.2 },
+  const addForRange = useCallback(() => {
+    // On a day view the add form opens on that day; on wider ranges it opens on
+    // today, which is what the user almost always means.
+    const params = range.granularity === 'day'
+      ? { date: range.startKey, returnTo: 'history' }
+      : { returnTo: 'history' };
+    router.push({ pathname: '/', params });
+  }, [router, range]);
 
-    modalOverlay: { flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' },
-    modalCard: { backgroundColor: colors.bg, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, padding: spacing.lg, gap: spacing.md },
-    modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    modalTitle: { fontSize: fontSize.lg, fontWeight: '700', color: colors.textPrimary },
-    modalLabel: { fontSize: fontSize.xs, color: colors.textSecondary, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
-    breakdown: { flexDirection: 'row', gap: spacing.md },
-    breakdownCell: { flex: 1, backgroundColor: colors.card, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, padding: spacing.md, gap: 2 },
-    breakdownLabel: { fontSize: fontSize.xs, color: colors.textSecondary, fontWeight: '600' },
-    breakdownValue: { fontSize: fontSize.md, fontWeight: '800' },
-
-    pickerCard: { backgroundColor: colors.card, paddingTop: spacing.md, paddingBottom: spacing.xl, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg },
-    pickerDone: { alignSelf: 'flex-end', paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
-    pickerDoneText: { fontSize: fontSize.md, color: colors.primary, fontWeight: '700' },
-
-    filters: {
-      flexDirection: 'row',
-      flexWrap: 'wrap', // Tambahkan flexWrap agar tombol filter yang banyak tidak terpotong
-      gap: spacing.sm,
-    },
-    filterBtn: {
-      flexBasis: '48%', // Membuat tiap tombol filter mengambil setengah lebar (2 baris x 2 kolom)
-      alignItems: 'center',
-      paddingVertical: spacing.sm,
-      borderRadius: radius.full,
-      backgroundColor: colors.bg,
-      borderWidth: 1,
-      borderColor: colors.border,
-    },
-    filterBtnActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-    filterLabel: { fontSize: fontSize.sm, fontWeight: '600', color: colors.textSecondary },
-    filterLabelActive: { color: colors.white },
-    list: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: contentBottomForFab(insets.bottom) },
-  }), [colors, insets.bottom]);
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        header: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, gap: spacing.sm },
+        navRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+        navMain: { flex: 1 },
+        filterBtn: {
+          width: 48,
+          height: 48,
+          borderRadius: radius.md,
+          borderWidth: 1,
+          borderColor: colors.border,
+          backgroundColor: colors.surface,
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+        filterBtnActive: { borderColor: colors.primary, backgroundColor: colors.primarySoft },
+        summary: { flexDirection: 'row', gap: spacing.md },
+        summaryCell: { flex: 1, gap: 2 },
+        summaryLabel: {
+          fontSize: fontSize.xs,
+          color: colors.textMuted,
+          fontWeight: weight.semibold,
+          textTransform: 'uppercase',
+          letterSpacing: 0.4,
+        },
+        summaryValue: { fontSize: fontSize.md, fontWeight: weight.heavy },
+        list: {
+          paddingHorizontal: spacing.lg,
+          paddingTop: spacing.md,
+          paddingBottom: contentBottomForFab(insets.bottom),
+        },
+        sheetLabel: {
+          fontSize: fontSize.xs,
+          color: colors.textSecondary,
+          fontWeight: weight.bold,
+          textTransform: 'uppercase',
+          letterSpacing: 0.5,
+        },
+        adjustNote: { fontSize: fontSize.xs, color: colors.textMuted, marginTop: spacing.xs },
+      }),
+    [colors, insets.bottom],
+  );
 
   return (
-    <SafeAreaView style={styles.safe} edges={['left', 'right']}>
+    <Screen>
       <TopBar title={t('history.title')} showLogo={false} />
 
-      <View style={styles.navBar}>
-        <Pressable onPress={() => shiftCursor(-1)} style={styles.navBtn} hitSlop={4}>
-          <ChevronLeft size={20} color={colors.textSecondary} />
-        </Pressable>
+      <View style={styles.header}>
+        <View style={styles.navRow}>
+          <View style={styles.navMain}>
+            <RangeNav
+              range={range}
+              onShift={(dir) => setRange((r) => shiftRange(r, dir))}
+              onPressLabel={() => setRange((r) => rangeFor(r.granularity))}
+            />
+          </View>
+          <Pressable
+            onPress={() => setFiltersOpen(true)}
+            style={[styles.filterBtn, filter !== 'all' && styles.filterBtnActive]}
+            accessibilityRole="button"
+            accessibilityLabel={t('history.filterTitle')}
+          >
+            <SlidersHorizontal size={18} color={filter === 'all' ? colors.textSecondary : colors.primary} />
+          </Pressable>
+        </View>
 
-        <Pressable style={styles.navLabel} onPress={() => setShowDatePicker(true)}>
-          <CalendarIcon size={16} color={colors.primary} />
-          <Text style={styles.navLabelText}>{periodLabel}</Text>
-        </Pressable>
-
-        <Pressable onPress={() => shiftCursor(1)} style={styles.navBtn} hitSlop={4}>
-          <ChevronRight size={20} color={colors.textSecondary} />
-        </Pressable>
-
-        <Pressable onPress={() => setFiltersOpen(true)} style={styles.filterToggle} hitSlop={4}>
-          <SlidersHorizontal size={18} color={filter === 'all' ? colors.textSecondary : colors.primary} />
-        </Pressable>
+        <Card padded={false} style={{ padding: spacing.md }}>
+          <View style={styles.summary}>
+            <View style={styles.summaryCell}>
+              <Text style={styles.summaryLabel}>{t('type.income')}</Text>
+              <Text style={[styles.summaryValue, { color: colors.income }]} numberOfLines={1} adjustsFontSizeToFit>
+                {formatIDR(periodTotals.income)}
+              </Text>
+            </View>
+            <View style={styles.summaryCell}>
+              <Text style={styles.summaryLabel}>{t('type.expense')}</Text>
+              <Text style={[styles.summaryValue, { color: colors.expense }]} numberOfLines={1} adjustsFontSizeToFit>
+                {formatIDR(periodTotals.expense)}
+              </Text>
+            </View>
+            <View style={styles.summaryCell}>
+              <Text style={styles.summaryLabel}>{t('dashboard.cashflow')}</Text>
+              <Text
+                style={[
+                  styles.summaryValue,
+                  { color: periodTotals.net >= 0 ? colors.income : colors.expense },
+                ]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+              >
+                {`${periodTotals.net >= 0 ? '+' : '-'}${formatIDR(Math.abs(periodTotals.net))}`}
+              </Text>
+            </View>
+          </View>
+          {periodAdjustments.count > 0 ? (
+            <Text style={styles.adjustNote}>
+              {`${t('report.adjustments')}: ${t('report.adjustmentsSummary', {
+                in: formatIDR(periodAdjustments.in),
+                out: formatIDR(periodAdjustments.out),
+              })} · ${t('common.notCounted')}`}
+            </Text>
+          ) : null}
+        </Card>
       </View>
 
-      <View style={styles.netLine}>
-        <Text style={styles.netLineLabel}>
-          {t('dashboard.netFlow', { period: tPeriod(t, period) })}
-        </Text>
-        <Text style={[styles.netLineValue, { color: periodTotals.net >= 0 ? colors.income : colors.expense }]}>
-          {periodTotals.net >= 0 ? '+' : ''}{formatIDR(periodTotals.net)}
-        </Text>
-      </View>
-
-      {filtered.length === 0 ? (
-        <EmptyState Icon={Inbox} title={t('history.empty')} subtitle={t('history.emptySub')} />
+      {!hydrated ? (
+        <View style={{ padding: spacing.lg, gap: spacing.sm }}>
+          <SkeletonCard lines={2} height={72} />
+          <SkeletonCard lines={2} height={72} />
+          <SkeletonCard lines={2} height={72} />
+        </View>
+      ) : filtered.length === 0 ? (
+        <EmptyState
+          Icon={Inbox}
+          title={t('history.empty')}
+          subtitle={t('history.emptySub')}
+          action={{ label: t('input.headingAdd'), onPress: addForRange }}
+        />
       ) : (
         <FlatList
           data={filtered}
@@ -267,11 +276,15 @@ export default function HistoryScreen() {
           showsVerticalScrollIndicator={false}
           renderItem={renderItem}
           contentContainerStyle={styles.list}
-          extraData={accountNameMap}
+          getItemLayout={getItemLayout}
+          initialNumToRender={12}
+          maxToRenderPerBatch={12}
+          windowSize={9}
+          removeClippedSubviews
         />
       )}
-      
-      <Fab Icon={Plus} bottom={fabBottomForTabScreen(insets.bottom)} onPress={() => router.push('/')} />
+
+      <Fab Icon={Plus} bottom={fabBottomForTabScreen(insets.bottom)} onPress={addForRange} />
 
       <ConfirmModal
         visible={!!pendingDeleteId}
@@ -284,86 +297,22 @@ export default function HistoryScreen() {
         onCancel={() => setPendingDeleteId(null)}
       />
 
-      {showDatePicker && Platform.OS === 'android' && (
-        <DateTimePicker value={cursor} mode="date" onChange={onPickDate} />
-      )}
-      <WebDateTrigger
-        open={showDatePicker}
-        value={cursor}
-        onChange={setCursor}
-        onClose={() => setShowDatePicker(false)}
-      />
-      {Platform.OS === 'ios' && (
-        <Modal visible={showDatePicker} transparent animationType="slide" onRequestClose={() => setShowDatePicker(false)}>
-          <Pressable style={styles.modalOverlay} onPress={() => setShowDatePicker(false)}>
-            <Pressable style={styles.pickerCard} onPress={(e) => e.stopPropagation()}>
-              <Pressable style={styles.pickerDone} onPress={() => setShowDatePicker(false)}>
-                <Text style={styles.pickerDoneText}>{t('common.done')}</Text>
-              </Pressable>
-              <DateTimePicker
-                value={cursor}
-                mode="date"
-                display="spinner"
-                onChange={(_, picked) => { if (picked) setCursor(picked); }}
-              />
-            </Pressable>
-          </Pressable>
-        </Modal>
-      )}
-
-      <Modal
-        visible={filtersOpen}
-        transparent
-        statusBarTranslucent
-        navigationBarTranslucent
-        animationType="slide"
-        onRequestClose={() => setFiltersOpen(false)}
-      >
-        <Pressable style={styles.modalOverlay} onPress={() => setFiltersOpen(false)}>
-          <Pressable style={styles.modalCard} onPress={(e) => e.stopPropagation()}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>{t('history.filterTitle')}</Text>
-              <Pressable onPress={() => setFiltersOpen(false)} hitSlop={8}>
-                <X size={20} color={colors.textSecondary} />
-              </Pressable>
-            </View>
-
-            <Text style={styles.modalLabel}>{t('history.rangeLabel')}</Text>
-            <PeriodSelector value={period} onChange={changePeriod} />
-
-            <Text style={styles.modalLabel}>{t('history.typeLabel')}</Text>
-            <View style={styles.filters}>
-              {FILTERS.map((f) => (
-                <Pressable
-                  key={f.id}
-                  style={[styles.filterBtn, filter === f.id && styles.filterBtnActive]}
-                  onPress={() => setFilter(f.id)}
-                >
-                  <Text style={[styles.filterLabel, filter === f.id && styles.filterLabelActive]}>
-                    {f.label}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-
-            <Text style={styles.modalLabel}>{t('history.totalsLabel')}</Text>
-            <View style={styles.breakdown}>
-              <View style={styles.breakdownCell}>
-                <Text style={styles.breakdownLabel}>{t('type.income')}</Text>
-                <Text style={[styles.breakdownValue, { color: colors.income }]} numberOfLines={1} adjustsFontSizeToFit>
-                  {formatIDR(periodTotals.income)}
-                </Text>
-              </View>
-              <View style={styles.breakdownCell}>
-                <Text style={styles.breakdownLabel}>{t('type.expense')}</Text>
-                <Text style={[styles.breakdownValue, { color: colors.expense }]} numberOfLines={1} adjustsFontSizeToFit>
-                  {formatIDR(periodTotals.expense)}
-                </Text>
-              </View>
-            </View>
-          </Pressable>
-        </Pressable>
-      </Modal>
-    </SafeAreaView>
+      <Sheet visible={filtersOpen} title={t('history.filterTitle')} onClose={() => setFiltersOpen(false)}>
+        <View style={{ gap: spacing.md }}>
+          <View style={{ gap: spacing.sm }}>
+            <Text style={styles.sheetLabel}>{t('history.rangeLabel')}</Text>
+            <SegmentedControl
+              options={granularityOptions}
+              value={range.granularity}
+              onChange={(g) => setRange(rangeFor(g))}
+            />
+          </View>
+          <View style={{ gap: spacing.sm }}>
+            <Text style={styles.sheetLabel}>{t('history.typeLabel')}</Text>
+            <FilterChips options={filterOptions} value={filter} onChange={setFilter} />
+          </View>
+        </View>
+      </Sheet>
+    </Screen>
   );
 }

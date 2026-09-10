@@ -9,11 +9,11 @@ import { ToastProvider } from '../context/ToastContext';
 import { PinProvider, usePin } from '../context/PinContext';
 import { CategoriesProvider } from '../context/CategoriesContext';
 import { DataProvider } from '../context/DataContext';
-import { CalculatorProvider } from '../components/CalculatorProvider';
+import { CalculatorProvider } from '../components/calculator/CalculatorProvider';
 import { LocaleProvider } from '../i18n';
-import PinLockScreen from '../components/PinLockScreen';
-import SplashIntro from '../components/SplashIntro';
-import ErrorBoundary from '../components/ErrorBoundary';
+import PinLockScreen from '../components/security/PinLockScreen';
+import SplashIntro from '../components/ui/SplashIntro';
+import ErrorBoundary from '../components/feedback/ErrorBoundary';
 import { useTheme } from '../hooks/useTheme';
 import { View } from 'react-native';
 
@@ -26,7 +26,9 @@ function ThemedStack() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      <StatusBar style={resolved === 'dark' ? 'light' : 'dark'} backgroundColor={colors.bg} />
+      {/* SDK 57 dropped `backgroundColor`: Android is always edge-to-edge, so the
+          bar is transparent and the View below paints behind it. */}
+      <StatusBar style={resolved === 'dark' ? 'light' : 'dark'} />
       {!introDone ? (
         <SplashIntro onDone={() => setIntroDone(true)} />
       ) : pin.locked && pin.enabled ? (

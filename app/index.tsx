@@ -1,7 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import DatePickerField from '../components/DatePickerField';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { fabBottomForFullScreen } from '../constants/layout';
 import {
   Keyboard,
   KeyboardAvoidingView,
@@ -14,28 +11,31 @@ import {
   View,
 } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import { useToast } from '../hooks/useToast';
-import { ChevronDown } from 'lucide-react-native';
-import TopBar from '../components/TopBar';
-import Fab from '../components/Fab';
-import TypeToggle from '../components/TypeToggle';
-import AmountInput from '../components/AmountInput';
-import CategoryChip from '../components/CategoryChip';
-import AccountPickerSheet from '../components/AccountPickerSheet';
-import ConfirmModal from '../components/ConfirmModal';
-import { radius, spacing, fontSize } from '../constants/theme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ChevronDown, Info, Minus, Plus } from 'lucide-react-native';
+import Screen from '../components/ui/Screen';
+import TopBar from '../components/ui/TopBar';
+import Fab from '../components/ui/Fab';
+import Button from '../components/ui/Button';
+import TypeToggle from '../components/transaction/TypeToggle';
+import AmountInput from '../components/transaction/AmountInput';
+import CategoryChip from '../components/transaction/CategoryChip';
+import DatePickerField from '../components/transaction/DatePickerField';
+import AccountPickerSheet from '../components/account/AccountPickerSheet';
+import ConfirmModal from '../components/feedback/ConfirmModal';
+import { fabBottomForFullScreen } from '../constants/layout';
+import { fontSize, radius, spacing, weight } from '../constants/theme';
 import { useTheme } from '../hooks/useTheme';
+import { useToast } from '../hooks/useToast';
 import { useCategories } from '../context/CategoriesContext';
+import { useData } from '../context/DataContext';
 import { useT } from '../i18n';
-import {
-  getLastAccount,
-  setLastAccount,
-  TransactionType,
-} from '../utils/storage';
-import { useData, useTransactions } from '../context/DataContext';
-import { accountBalance } from '../utils/aggregate';
+import { AdjustmentDirection, TransactionType, getLastAccount, setLastAccount } from '../utils/storage';
+import { isoDay, parseIsoDay } from '../utils/date';
+import { formatIDR } from '../utils/format';
 import { genId } from '../utils/id';
-import { isoDay } from '../utils/format';
+
+type ReturnTarget = '/calendar' | '/history' | '/dashboard' | '/report';
 
 export default function InputScreen() {
   const router = useRouter();
@@ -44,12 +44,12 @@ export default function InputScreen() {
   const { colors } = useTheme();
   const t = useT();
   const scrollRef = useRef<ScrollView>(null);
-  const { id: editId, returnTo } = useLocalSearchParams<{ id?: string; returnTo?: string }>();
+  const params = useLocalSearchParams<{ id?: string; returnTo?: string; date?: string }>();
+  const { id: editId, returnTo, date: dateParam } = params;
   const isEditing = !!editId;
   const { byType, refresh: refreshCategories } = useCategories();
 
-  const { accounts, findTx, addTx, updateTx } = useData();
-  const txs = useTransactions(); // needed for the transfer balance check
+  const { accounts, findTx, addTx, updateTx, balances } = useData();
 
   const [type, setType] = useState<TransactionType>('expense');
   const [amount, setAmount] = useState('');
@@ -57,11 +57,12 @@ export default function InputScreen() {
   const [note, setNote] = useState('');
   const [accountId, setAccountId] = useState<string | null>(null);
   const [toAccountId, setToAccountId] = useState<string | null>(null);
+  const [direction, setDirection] = useState<AdjustmentDirection>('out');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  
+
   const [fromPickerOpen, setFromPickerOpen] = useState(false);
   const [toPickerOpen, setToPickerOpen] = useState(false);
-  
+
   const [saving, setSaving] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [hydrated, setHydrated] = useState(!editId);
@@ -80,35 +81,45 @@ export default function InputScreen() {
             setNote(tx.note);
             setAccountId(tx.accountId);
             setToAccountId(tx.toAccountId ?? null);
+            setDirection(tx.direction ?? 'out');
             setSelectedDate(new Date(tx.date));
             setHydrated(true);
             return;
           }
         }
-        
+
+        // Opened from a specific day (calendar cell, or history on day view):
+        // start on that date instead of today.
+        if (dateParam) setSelectedDate(parseIsoDay(dateParam));
+
         const last = await getLastAccount();
         const id = last && accounts.find((a) => a.id === last) ? last : accounts[0]?.id ?? null;
         setAccountId(id);
-        
+
         if (accounts.length > 1) {
           const possibleTo = accounts.find((a) => a.id !== id);
           if (possibleTo) setToAccountId(possibleTo.id);
         }
-        
+
         setHydrated(true);
       })();
-    }, [editId, refreshCategories, findTx, accounts])
+    }, [editId, dateParam, refreshCategories, findTx, accounts])
   );
 
-  const categories = useMemo(() => {
-    if (type === 'transfer') return [];
-    return byType(type);
-  }, [byType, type]);
+  const hasCategories = type === 'income' || type === 'expense';
+  const categories = useMemo(
+    () => (hasCategories ? byType(type) : []),
+    [byType, type, hasCategories]
+  );
 
   useEffect(() => {
     if (isEditing) return;
     if (type === 'transfer') {
       setCategoryId('transfer');
+      return;
+    }
+    if (type === 'adjustment') {
+      setCategoryId('adjustment');
       return;
     }
     if (categories.length === 0) return;
@@ -117,16 +128,29 @@ export default function InputScreen() {
 
   const selectedAccount = accounts.find((a) => a.id === accountId);
   const selectedToAccount = accounts.find((a) => a.id === toAccountId);
+  const currentBalance = accountId
+    ? balances.get(accountId) ?? selectedAccount?.startingBalance ?? 0
+    : 0;
+
+  const accent =
+    type === 'income'
+      ? colors.income
+      : type === 'expense'
+        ? colors.expense
+        : type === 'transfer'
+          ? colors.transfer
+          : colors.adjustment;
 
   function resetForm() {
     setAmount('');
     setNote('');
-    setSelectedDate(new Date());
+    setSelectedDate(dateParam ? parseIsoDay(dateParam) : new Date());
   }
 
-  function resolveReturnTarget(): '/calendar' | '/history' | '/dashboard' {
+  function resolveReturnTarget(): ReturnTarget {
     if (returnTo === 'calendar') return '/calendar';
     if (returnTo === 'history') return '/history';
+    if (returnTo === 'report') return '/report';
     return '/dashboard';
   }
 
@@ -134,20 +158,18 @@ export default function InputScreen() {
     const num = parseFloat(amount);
     if (!num || num <= 0) { toast.show('error', t('input.errInvalidAmount')); return; }
     if (!accountId) { toast.show('error', t('input.errNoAccount')); return; }
-    
+
     if (type === 'transfer') {
       if (!toAccountId) { toast.show('error', t('input.errNoDestination')); return; }
       if (accountId === toAccountId) { toast.show('error', t('input.errSameAccount')); return; }
-      if (!selectedAccount) { toast.show('error', t('input.errNoAccount')); return; }
 
-      // Available balance via the shared helper. When editing this transfer,
+      // Available balance from the shared cache. When editing this transfer,
       // add the old amount back so the source still counts as having it.
-      let available = accountBalance(selectedAccount, txs);
+      let available = currentBalance;
       if (isEditing && editId) {
         const oldTx = findTx(editId);
         if (oldTx && oldTx.accountId === accountId) available += oldTx.amount;
       }
-
       if (num > available) {
         toast.show('error', t('input.errInsufficientBalance'));
         return;
@@ -155,17 +177,16 @@ export default function InputScreen() {
     }
 
     setSaving(true);
-    const dayKey = isoDay(selectedDate);
-    
     const txData = {
       type,
       amount: num,
-      categoryId: type === 'transfer' ? 'transfer' : categoryId,
+      categoryId: type === 'transfer' ? 'transfer' : type === 'adjustment' ? 'adjustment' : categoryId,
       accountId,
       toAccountId: type === 'transfer' ? (toAccountId as string) : undefined,
+      direction: type === 'adjustment' ? direction : undefined,
       note: note.trim(),
       date: selectedDate.toISOString(),
-      dayKey,
+      dayKey: isoDay(selectedDate),
     };
 
     try {
@@ -178,9 +199,14 @@ export default function InputScreen() {
         await setLastAccount(accountId);
         resetForm();
 
-        const successMsg = type === 'transfer'
-          ? t('input.transferRecorded')
-          : (type === 'income' ? t('input.incomeRecorded') : t('input.expenseRecorded'));
+        const successMsg =
+          type === 'transfer'
+            ? t('input.transferRecorded')
+            : type === 'adjustment'
+              ? t('input.adjustmentRecorded')
+              : type === 'income'
+                ? t('input.incomeRecorded')
+                : t('input.expenseRecorded');
 
         toast.show('success', successMsg);
       }
@@ -191,90 +217,88 @@ export default function InputScreen() {
     }
   }
 
-  function handleCancelEdit() {
-    setConfirmCancel(true);
-  }
-
-  function doCancelEdit() {
-    setConfirmCancel(false);
-    router.replace(resolveReturnTarget());
-  }
-
   const styles = useMemo(() => StyleSheet.create({
-    safe: { flex: 1, backgroundColor: colors.bg },
     flex: { flex: 1 },
-    content: { padding: spacing.lg, paddingBottom: 160 },
-    heading: { fontSize: fontSize.xxl, fontWeight: '800', color: colors.textPrimary },
+    content: { padding: spacing.lg, paddingBottom: 160, gap: spacing.md },
+    heading: { fontSize: fontSize.xxl, fontWeight: weight.heavy, color: colors.textPrimary },
     subheading: { fontSize: fontSize.sm, color: colors.textMuted, marginTop: 4 },
     label: {
       fontSize: fontSize.xs,
-      fontWeight: '700',
+      fontWeight: weight.bold,
       color: colors.textSecondary,
       textTransform: 'uppercase',
       letterSpacing: 0.5,
       marginBottom: spacing.sm,
-      marginTop: spacing.md,
+      marginTop: spacing.sm,
     },
-    cats: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.md },
+    cats: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
     accountPill: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      backgroundColor: colors.card,
+      backgroundColor: colors.surface,
       borderRadius: radius.md,
       paddingHorizontal: spacing.md,
-      paddingVertical: spacing.md,
+      minHeight: 52,
       borderWidth: 1,
       borderColor: colors.border,
     },
-    accountText: { fontSize: fontSize.md, color: colors.textPrimary, fontWeight: '500' },
+    accountText: { fontSize: fontSize.md, color: colors.textPrimary, fontWeight: weight.medium },
+    accountMeta: { fontSize: fontSize.xs, color: colors.textMuted, marginTop: 2 },
+    dirRow: { flexDirection: 'row', gap: spacing.sm },
+    dirBtn: {
+      flex: 1,
+      minHeight: 52,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.sm,
+      borderRadius: radius.md,
+      borderWidth: 1.5,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+    },
+    dirLabel: { fontSize: fontSize.md, fontWeight: weight.bold, color: colors.textSecondary },
     noteInput: {
-      backgroundColor: colors.card,
+      backgroundColor: colors.surface,
       borderRadius: radius.md,
       padding: spacing.md,
+      minHeight: 52,
       fontSize: fontSize.md,
       color: colors.textPrimary,
       borderWidth: 1,
       borderColor: colors.border,
     },
-    actions: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xl },
-    saveBtn: {
-      flex: 1,
-      backgroundColor: colors.primary,
-      borderRadius: radius.full,
-      paddingVertical: spacing.md + 2,
-      alignItems: 'center',
+    hint: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+      alignItems: 'flex-start',
+      backgroundColor: colors.adjustmentLight,
+      borderRadius: radius.md,
+      padding: spacing.md,
     },
-    saveBtnDisabled: { opacity: 0.6 },
-    saveBtnText: { fontSize: fontSize.md, fontWeight: '700', color: colors.white },
-    cancelBtn: {
-      paddingVertical: spacing.md + 2,
-      paddingHorizontal: spacing.xl,
-      borderRadius: radius.full,
-      borderWidth: 1,
-      borderColor: colors.border,
-      backgroundColor: colors.card,
-      alignItems: 'center',
-    },
-    cancelBtnText: { fontSize: fontSize.md, fontWeight: '600', color: colors.textSecondary },
+    hintText: { flex: 1, fontSize: fontSize.xs, color: colors.adjustment, lineHeight: 17 },
+    actions: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.lg },
   }), [colors]);
 
   if (!hydrated) {
     return (
-      <SafeAreaView style={styles.safe} edges={['left', 'right']}>
+      <Screen>
         <TopBar />
-      </SafeAreaView>
+      </Screen>
     );
   }
 
+  const decreaseActive = direction === 'out';
+
   return (
-    <SafeAreaView style={styles.safe} edges={['left', 'right']}>
+    <Screen>
       <TopBar />
       <KeyboardAvoidingView
         style={styles.flex}
-        // Android runs edge-to-edge (window does not resize for the keyboard),
-        // so KeyboardAvoidingView must pad on both platforms or the last field
-        // (note) ends up hidden behind the keyboard.
+        // Android runs edge-to-edge (the window does not resize for the
+        // keyboard), so padding behavior is needed on both platforms or the
+        // note field ends up hidden behind the keyboard.
         behavior="padding"
         keyboardVerticalOffset={0}
       >
@@ -282,23 +306,60 @@ export default function InputScreen() {
           ref={scrollRef}
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          <Text style={styles.heading}>{isEditing ? t('input.headingEdit') : t('input.headingAdd')}</Text>
-          <Text style={styles.subheading}>
-            {isEditing ? t('input.subEdit') : t('input.subAdd')}
-          </Text>
-
-          <View style={{ marginTop: spacing.lg }}>
-            <TypeToggle value={type} onChange={setType} />
+          <View>
+            <Text style={styles.heading} accessibilityRole="header">
+              {isEditing ? t('input.headingEdit') : t('input.headingAdd')}
+            </Text>
+            <Text style={styles.subheading}>{isEditing ? t('input.subEdit') : t('input.subAdd')}</Text>
           </View>
 
-          <View style={{ marginTop: spacing.xl }}>
+          <TypeToggle value={type} onChange={setType} />
+
+          <View>
             <Text style={styles.label}>{t('input.amount')}</Text>
-            <AmountInput value={amount} onChange={setAmount} autoFocus={!isEditing && Platform.OS !== 'web'} />
+            <AmountInput
+              value={amount}
+              onChange={setAmount}
+              accent={accent}
+              label={t('input.amount')}
+              autoFocus={!isEditing && Platform.OS !== 'web'}
+            />
           </View>
 
-          {type !== 'transfer' && (
-            <>
+          {type === 'adjustment' ? (
+            <View>
+              <Text style={styles.label}>{t('input.adjustDirection')}</Text>
+              <View style={styles.dirRow}>
+                <Pressable
+                  onPress={() => setDirection('out')}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: decreaseActive }}
+                  style={[styles.dirBtn, decreaseActive && { borderColor: colors.expense, backgroundColor: colors.expenseLight }]}
+                >
+                  <Minus size={18} color={decreaseActive ? colors.expense : colors.textSecondary} />
+                  <Text style={[styles.dirLabel, decreaseActive && { color: colors.expense }]}>
+                    {t('adjust.decrease')}
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => setDirection('in')}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: !decreaseActive }}
+                  style={[styles.dirBtn, !decreaseActive && { borderColor: colors.income, backgroundColor: colors.incomeLight }]}
+                >
+                  <Plus size={18} color={!decreaseActive ? colors.income : colors.textSecondary} />
+                  <Text style={[styles.dirLabel, !decreaseActive && { color: colors.income }]}>
+                    {t('adjust.increase')}
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+          ) : null}
+
+          {hasCategories ? (
+            <View>
               <Text style={styles.label}>{t('input.category')}</Text>
               <View style={styles.cats}>
                 {categories.map((c) => (
@@ -311,79 +372,105 @@ export default function InputScreen() {
                   />
                 ))}
               </View>
-            </>
-          )}
+            </View>
+          ) : null}
 
-          {type === 'transfer' ? (
-            <>
-              <Text style={styles.label}>{t('input.fromAccount')}</Text>
-              <Pressable style={styles.accountPill} onPress={() => setFromPickerOpen(true)}>
+          <View>
+            <Text style={styles.label}>
+              {type === 'transfer' ? t('input.fromAccount') : t('input.account')}
+            </Text>
+            <Pressable
+              style={styles.accountPill}
+              onPress={() => setFromPickerOpen(true)}
+              accessibilityRole="button"
+              accessibilityLabel={selectedAccount ? selectedAccount.name : t('input.selectAccount')}
+            >
+              <View>
                 <Text style={styles.accountText}>
                   {selectedAccount ? selectedAccount.name : t('input.selectAccount')}
                 </Text>
-                <ChevronDown size={16} color={colors.textSecondary} />
-              </Pressable>
+                {selectedAccount ? (
+                  <Text style={styles.accountMeta}>
+                    {`${t('adjust.currentBalance')}: ${formatIDR(currentBalance)}`}
+                  </Text>
+                ) : null}
+              </View>
+              <ChevronDown size={18} color={colors.textSecondary} />
+            </Pressable>
+          </View>
 
+          {type === 'transfer' ? (
+            <View>
               <Text style={styles.label}>{t('input.toAccount')}</Text>
-              <Pressable style={styles.accountPill} onPress={() => setToPickerOpen(true)}>
+              <Pressable
+                style={styles.accountPill}
+                onPress={() => setToPickerOpen(true)}
+                accessibilityRole="button"
+                accessibilityLabel={selectedToAccount ? selectedToAccount.name : t('input.selectAccount')}
+              >
                 <Text style={styles.accountText}>
                   {selectedToAccount ? selectedToAccount.name : t('input.selectAccount')}
                 </Text>
-                <ChevronDown size={16} color={colors.textSecondary} />
+                <ChevronDown size={18} color={colors.textSecondary} />
               </Pressable>
-            </>
-          ) : (
-            <>
-              <Text style={styles.label}>{t('input.account')}</Text>
-              <Pressable style={styles.accountPill} onPress={() => setFromPickerOpen(true)}>
-                <Text style={styles.accountText}>
-                  {selectedAccount ? selectedAccount.name : t('input.selectAccount')}
-                </Text>
-                <ChevronDown size={16} color={colors.textSecondary} />
-              </Pressable>
-            </>
-          )}
+            </View>
+          ) : null}
 
-          <Text style={styles.label}>{t('input.date')}</Text>
-          <DatePickerField value={selectedDate} onChange={setSelectedDate} />
+          {type === 'adjustment' ? (
+            <View style={styles.hint}>
+              <Info size={16} color={colors.adjustment} />
+              <Text style={styles.hintText}>{t('adjust.excludedHint')}</Text>
+            </View>
+          ) : null}
 
-          <Text style={styles.label}>{t('input.note')}</Text>
-          <TextInput
-            style={styles.noteInput}
-            placeholder={t('input.notePlaceholder')}
-            placeholderTextColor={colors.textMuted}
-            value={note}
-            onChangeText={setNote}
-            maxLength={80}
-            onFocus={() => {
-              // Wait for keyboard up before scrolling, instead of a brittle 100ms timer.
-              const sub = Keyboard.addListener('keyboardDidShow', () => {
-                scrollRef.current?.scrollToEnd({ animated: true });
-                sub.remove();
-              });
-            }}
-          />
+          <View>
+            <Text style={styles.label}>{t('input.date')}</Text>
+            <DatePickerField value={selectedDate} onChange={setSelectedDate} />
+          </View>
+
+          <View>
+            <Text style={styles.label}>{t('input.note')}</Text>
+            <TextInput
+              style={styles.noteInput}
+              placeholder={t('input.notePlaceholder')}
+              placeholderTextColor={colors.textMuted}
+              value={note}
+              onChangeText={setNote}
+              maxLength={80}
+              accessibilityLabel={t('input.note')}
+              onFocus={() => {
+                // Wait for the keyboard to actually show before scrolling,
+                // instead of guessing with a timer.
+                const sub = Keyboard.addListener('keyboardDidShow', () => {
+                  scrollRef.current?.scrollToEnd({ animated: true });
+                  sub.remove();
+                });
+              }}
+            />
+          </View>
 
           <View style={styles.actions}>
-            {isEditing && (
-              <Pressable style={styles.cancelBtn} onPress={handleCancelEdit}>
-                <Text style={styles.cancelBtnText}>{t('common.cancel')}</Text>
-              </Pressable>
-            )}
-            <Pressable
-              style={[styles.saveBtn, saving && styles.saveBtnDisabled, isEditing && styles.flex]}
+            {isEditing ? (
+              <Button
+                label={t('common.cancel')}
+                onPress={() => setConfirmCancel(true)}
+                variant="secondary"
+              />
+            ) : null}
+            <Button
+              label={saving ? t('input.saving') : isEditing ? t('input.update') : t('input.saveTransaction')}
               onPress={handleSave}
-              disabled={saving}
-            >
-              <Text style={styles.saveBtnText}>
-                {saving ? t('input.saving') : isEditing ? t('input.update') : t('input.saveTransaction')}
-              </Text>
-            </Pressable>
+              loading={saving}
+              size="lg"
+              fullWidth
+            />
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {!isEditing && <Fab bottom={fabBottomForFullScreen(insets.bottom)} onPress={() => router.push('/dashboard')} />}
+      {!isEditing && (
+        <Fab bottom={fabBottomForFullScreen(insets.bottom)} onPress={() => router.push('/dashboard')} />
+      )}
 
       <AccountPickerSheet
         visible={fromPickerOpen}
@@ -408,9 +495,12 @@ export default function InputScreen() {
         confirmLabel={t('input.discard')}
         cancelLabel={t('input.keepEditing')}
         tone="danger"
-        onConfirm={doCancelEdit}
+        onConfirm={() => {
+          setConfirmCancel(false);
+          router.replace(resolveReturnTarget());
+        }}
         onCancel={() => setConfirmCancel(false)}
       />
-    </SafeAreaView>
+    </Screen>
   );
 }

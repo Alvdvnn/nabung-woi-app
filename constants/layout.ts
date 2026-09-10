@@ -1,4 +1,3 @@
-export const TAB_BAR_HEIGHT = 62;
 export const FAB_SIZE = 56;
 export const FAB_BOTTOM_OFFSET = 16;
 

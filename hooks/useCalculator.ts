@@ -1,1 +1,1 @@
-export { useCalculatorContext as useCalculator } from '../components/CalculatorProvider';
+export { useCalculatorContext as useCalculator } from '../components/calculator/CalculatorProvider';
