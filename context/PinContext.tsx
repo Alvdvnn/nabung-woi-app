@@ -10,8 +10,7 @@ import {
 } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
 import { hasPin } from '../utils/pin';
-
-const BG_LOCK_AFTER_MS = 60_000;
+import { usePrefs } from './PrefsContext';
 
 interface PinContextValue {
   hydrated: boolean;
@@ -29,6 +28,10 @@ export function PinProvider({ children }: { children: ReactNode }) {
   const [enabled, setEnabled] = useState(false);
   const [locked, setLocked] = useState(false);
   const lastBackgroundedAt = useRef<number | null>(null);
+  const { prefs } = usePrefs();
+  // Read through a ref so the AppState listener never goes stale.
+  const autoLockRef = useRef(prefs.autoLockSec);
+  useEffect(() => { autoLockRef.current = prefs.autoLockSec; }, [prefs.autoLockSec]);
 
   const refresh = useCallback(async () => {
     const on = await hasPin();
@@ -51,8 +54,10 @@ export function PinProvider({ children }: { children: ReactNode }) {
         lastBackgroundedAt.current = Date.now();
       } else if (next === 'active') {
         if (!enabled) return;
+        const timeout = autoLockRef.current;
+        if (timeout === -1) return; // never
         const at = lastBackgroundedAt.current;
-        if (at !== null && Date.now() - at >= BG_LOCK_AFTER_MS) {
+        if (at !== null && Date.now() - at >= timeout * 1000) {
           setLocked(true);
         }
       }

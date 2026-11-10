@@ -301,6 +301,12 @@ export const en = {
     noQ: 'No recovery question set.',
     errEnterAns: 'Enter your answer',
     errAnsWrong: 'Answer did not match',
+    greetMorning: 'Good morning',
+    greetAfternoon: 'Good afternoon',
+    greetEvening: 'Good evening',
+    greetNight: 'Good night',
+    enterSub: 'Enter your PIN to open Nabung Woi.',
+    backspace: 'Delete digit',
   },
 
   pie: {
@@ -706,6 +712,12 @@ export const id: typeof en = {
     noQ: 'Tidak ada pertanyaan pemulihan.',
     errEnterAns: 'Masukkan jawabanmu',
     errAnsWrong: 'Jawaban tidak cocok',
+    greetMorning: 'Selamat pagi',
+    greetAfternoon: 'Selamat siang',
+    greetEvening: 'Selamat sore',
+    greetNight: 'Selamat malam',
+    enterSub: 'Masukkan PIN untuk membuka Nabung Woi.',
+    backspace: 'Hapus angka',
   },
 
   pie: {

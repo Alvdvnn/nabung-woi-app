@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -9,10 +9,15 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Lock, ShieldQuestion } from 'lucide-react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming, runOnJS } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ShieldQuestion } from 'lucide-react-native';
+import Logo from '../brand/Logo';
+import Keypad from './Keypad';
+import PinDots from './PinDots';
+import Button from '../ui/Button';
 import { useTheme } from '../../hooks/useTheme';
-import { fontSize, radius, spacing } from '../../constants/theme';
+import { fontSize, motion, radius, spacing, weight } from '../../constants/theme';
 import {
   clearPin,
   getRecoveryQuestion,
@@ -24,6 +29,7 @@ import {
 import { clearAll } from '../../utils/storage';
 import { useData } from '../../context/DataContext';
 import { useCategories } from '../../context/CategoriesContext';
+import { hapticError, hapticSuccess } from '../../utils/haptics';
 import { useT } from '../../i18n';
 
 interface Props {
@@ -33,120 +39,140 @@ interface Props {
 
 type Mode = 'pin' | 'recover';
 
+function greetingKey(hour: number): 'greetMorning' | 'greetAfternoon' | 'greetEvening' | 'greetNight' {
+  if (hour >= 4 && hour < 11) return 'greetMorning';
+  if (hour >= 11 && hour < 15) return 'greetAfternoon';
+  if (hour >= 15 && hour < 19) return 'greetEvening';
+  return 'greetNight';
+}
+
+/**
+ * Lock screen: branded header, animated dots, big keypad. No TextInput on the
+ * PIN path, so iOS never zooms and the keypad is identical on every platform.
+ */
 export default function PinLockScreen({ onUnlock, onRecovered }: Props) {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const t = useT();
   const { resetCache } = useData();
   const { refresh: refreshCategories } = useCategories();
+
   const [mode, setMode] = useState<Mode>('pin');
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
+  const [shakeKey, setShakeKey] = useState(0);
   const [busy, setBusy] = useState(false);
 
   const [question, setQuestion] = useState<string | null>(null);
   const [answer, setAnswer] = useState('');
   const [confirmWipe, setConfirmWipe] = useState(false);
 
+  const exit = useSharedValue(1);
+  const exitStyle = useAnimatedStyle(() => ({
+    opacity: exit.value,
+    transform: [{ scale: 0.96 + exit.value * 0.04 }],
+  }));
+
+  const greeting = t(`pinLock.${greetingKey(new Date().getHours())}`);
+
   const styles = useMemo(
     () =>
       StyleSheet.create({
-        safe: { flex: 1, backgroundColor: colors.bg },
+        root: { flex: 1, backgroundColor: colors.bg },
         content: {
           flexGrow: 1,
+          paddingHorizontal: spacing.xl,
+          paddingTop: insets.top + spacing.xxl,
+          paddingBottom: insets.bottom + spacing.xl,
+          justifyContent: 'space-between',
+          gap: spacing.xl,
+        },
+        header: { alignItems: 'center', gap: spacing.md },
+        greeting: { fontSize: fontSize.xxl, fontWeight: weight.heavy, color: colors.textPrimary, textAlign: 'center' },
+        sub: { fontSize: fontSize.md, color: colors.textMuted, textAlign: 'center' },
+        error: { color: colors.expense, textAlign: 'center', fontSize: fontSize.sm, fontWeight: weight.semibold, minHeight: 18 },
+        link: { alignSelf: 'center', paddingVertical: spacing.md, paddingHorizontal: spacing.lg, minHeight: 44, justifyContent: 'center' },
+        linkText: { color: colors.primary, fontWeight: weight.semibold, fontSize: fontSize.sm },
+        card: {
+          backgroundColor: colors.surface,
+          borderRadius: radius.lg,
+          borderWidth: 1,
+          borderColor: colors.border,
           padding: spacing.lg,
-          gap: spacing.lg,
-          justifyContent: 'center',
-          paddingBottom: spacing.xxl * 3,
+          gap: spacing.md,
         },
         iconWrap: {
           alignSelf: 'center',
-          width: 72,
-          height: 72,
-          borderRadius: 36,
+          width: 64,
+          height: 64,
+          borderRadius: radius.full,
           backgroundColor: colors.primarySoft,
           alignItems: 'center',
           justifyContent: 'center',
-          marginBottom: spacing.sm,
         },
-        title: {
-          fontSize: fontSize.xxl,
-          fontWeight: '800',
-          color: colors.textPrimary,
-          textAlign: 'center',
-        },
-        sub: {
-          fontSize: fontSize.sm,
-          color: colors.textMuted,
-          textAlign: 'center',
-          maxWidth: 280,
-          alignSelf: 'center',
-        },
+        title: { fontSize: fontSize.xl, fontWeight: weight.heavy, color: colors.textPrimary, textAlign: 'center' },
+        label: { fontSize: fontSize.xs, color: colors.textSecondary, fontWeight: weight.bold, textTransform: 'uppercase', letterSpacing: 0.5 },
+        questionText: { fontSize: fontSize.md, color: colors.textPrimary, fontWeight: weight.semibold },
         input: {
-          backgroundColor: colors.card,
+          backgroundColor: colors.bg,
           borderRadius: radius.md,
           padding: spacing.md,
-          fontSize: fontSize.lg,
-          color: colors.textPrimary,
-          borderWidth: 1,
-          borderColor: colors.border,
-          textAlign: 'center',
-          letterSpacing: 6,
-        },
-        textInput: {
-          backgroundColor: colors.card,
-          borderRadius: radius.md,
-          padding: spacing.md,
-          fontSize: fontSize.md,
+          fontSize: fontSize.input,
           color: colors.textPrimary,
           borderWidth: 1,
           borderColor: colors.border,
         },
-        error: { color: colors.expense, textAlign: 'center', fontSize: fontSize.sm },
-        primaryBtn: {
-          backgroundColor: colors.primary,
-          paddingVertical: spacing.md + 2,
-          borderRadius: radius.full,
-          alignItems: 'center',
-        },
-        primaryText: { color: colors.white, fontWeight: '700', fontSize: fontSize.md },
-        linkBtn: { alignItems: 'center', paddingVertical: spacing.md },
-        linkText: { color: colors.primary, fontWeight: '600', fontSize: fontSize.sm },
-        warn: {
-          backgroundColor: colors.expenseLight,
-          padding: spacing.md,
-          borderRadius: radius.md,
-          gap: 6,
-        },
-        warnTitle: { color: colors.expense, fontWeight: '700', fontSize: fontSize.sm },
-        warnBody: { color: colors.expense, fontSize: fontSize.xs },
-        danger: { backgroundColor: colors.expense },
-        questionLabel: {
-          fontSize: fontSize.xs,
-          color: colors.textSecondary,
-          fontWeight: '700',
-          textTransform: 'uppercase',
-          letterSpacing: 0.5,
-        },
-        questionText: { fontSize: fontSize.md, color: colors.textPrimary, fontWeight: '600' },
+        warn: { backgroundColor: colors.expenseLight, padding: spacing.md, borderRadius: radius.md, gap: 6 },
+        warnTitle: { color: colors.expense, fontWeight: weight.bold, fontSize: fontSize.sm },
+        warnBody: { color: colors.expense, fontSize: fontSize.xs, lineHeight: 17 },
       }),
-    [colors],
+    [colors, insets.top, insets.bottom],
   );
 
-  async function submitPin() {
-    if (pin.length < PIN_MIN) {
-      setError(t('pinLock.errMin', { min: PIN_MIN }));
-      return;
-    }
-    setBusy(true);
-    const ok = await verifyPin(pin);
-    setBusy(false);
-    if (!ok) {
-      setError(t('pinLock.errWrong'));
-      setPin('');
-      return;
-    }
-    onUnlock();
-  }
+  const finishUnlock = useCallback(() => {
+    exit.value = withTiming(0, { duration: motion.base }, (done) => {
+      if (done) runOnJS(onUnlock)();
+    });
+  }, [exit, onUnlock]);
+
+  const submitPin = useCallback(
+    async (candidate: string) => {
+      if (candidate.length < PIN_MIN || busy) return;
+      setBusy(true);
+      const ok = await verifyPin(candidate);
+      setBusy(false);
+      if (!ok) {
+        hapticError();
+        setError(t('pinLock.errWrong'));
+        setShakeKey((k) => k + 1);
+        setTimeout(() => setPin(''), 260);
+        return;
+      }
+      hapticSuccess();
+      finishUnlock();
+    },
+    [busy, finishUnlock, t],
+  );
+
+  const onDigit = useCallback(
+    (d: string) => {
+      if (busy) return;
+      setError('');
+      setPin((p) => {
+        if (p.length >= PIN_MAX) return p;
+        const next = p + d;
+        // Longest allowed PIN typed: nothing more can come, verify now.
+        if (next.length === PIN_MAX) setTimeout(() => submitPin(next), 0);
+        return next;
+      });
+    },
+    [busy, submitPin],
+  );
+
+  // Clear the error as soon as the user starts over.
+  useEffect(() => {
+    if (pin.length > 0 && error) setError('');
+  }, [pin.length, error]);
 
   async function startRecover() {
     const q = await getRecoveryQuestion();
@@ -164,6 +190,7 @@ export default function PinLockScreen({ onUnlock, onRecovered }: Props) {
     const ok = await verifyAnswer(answer);
     setBusy(false);
     if (!ok) {
+      hapticError();
       setError(t('pinLock.errAnsWrong'));
       return;
     }
@@ -182,120 +209,96 @@ export default function PinLockScreen({ onUnlock, onRecovered }: Props) {
     onRecovered();
   }
 
-  return (
-    <SafeAreaView style={styles.safe}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        <ScrollView
-          contentContainerStyle={styles.content}
-          keyboardShouldPersistTaps="handled"
-        >
-          <View style={styles.iconWrap}>
-            {mode === 'pin' ? (
-              <Lock size={32} color={colors.primary} />
-            ) : (
-              <ShieldQuestion size={32} color={colors.primary} />
-            )}
-          </View>
+  function backToPin() {
+    setMode('pin');
+    setConfirmWipe(false);
+    setAnswer('');
+    setError('');
+  }
 
+  return (
+    <Animated.View style={[styles.root, exitStyle]}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" bounces={false}>
           {mode === 'pin' ? (
             <>
-              <Text style={styles.title}>{t('pinLock.enter')}</Text>
-              <Text style={styles.sub}>{t('pinLock.sub')}</Text>
-              <TextInput
-                style={styles.input}
-                value={pin}
-                onChangeText={(v) => {
-                  setPin(v.replace(/[^0-9]/g, '').slice(0, PIN_MAX));
-                  setError('');
-                }}
-                keyboardType="number-pad"
-                secureTextEntry
-                maxLength={PIN_MAX}
-                placeholder="••••"
-                placeholderTextColor={colors.textMuted}
-                autoFocus
-              />
-              {!!error && <Text style={styles.error}>{error}</Text>}
-              <Pressable
-                style={[styles.primaryBtn, busy && { opacity: 0.6 }]}
-                onPress={submitPin}
-                disabled={busy}
-              >
-                <Text style={styles.primaryText}>{t('pinLock.unlock')}</Text>
-              </Pressable>
-              <Pressable style={styles.linkBtn} onPress={startRecover}>
-                <Text style={styles.linkText}>{t('pinLock.forgot')}</Text>
-              </Pressable>
-            </>
-          ) : !confirmWipe ? (
-            <>
-              <Text style={styles.title}>{t('pinLock.secQ')}</Text>
-              <Text style={styles.questionLabel}>{t('pinLock.question')}</Text>
-              <Text style={styles.questionText}>{question ?? t('pinLock.noQ')}</Text>
-              <TextInput
-                style={styles.textInput}
-                value={answer}
-                onChangeText={(v) => {
-                  setAnswer(v);
-                  setError('');
-                }}
-                placeholder={t('pinLock.yourAnswer')}
-                placeholderTextColor={colors.textMuted}
-                autoCapitalize="none"
-              />
-              {!!error && <Text style={styles.error}>{error}</Text>}
-              <Pressable
-                style={[styles.primaryBtn, busy && { opacity: 0.6 }]}
-                onPress={submitAnswer}
-                disabled={busy || !question}
-              >
-                <Text style={styles.primaryText}>{t('pinLock.verify')}</Text>
-              </Pressable>
-              <Pressable
-                style={styles.linkBtn}
-                onPress={() => {
-                  setMode('pin');
-                  setError('');
-                  setAnswer('');
-                }}
-              >
-                <Text style={styles.linkText}>{t('pinLock.back')}</Text>
-              </Pressable>
+              <View style={styles.header}>
+                <Logo size={88} />
+                <Text style={styles.greeting} accessibilityRole="header">
+                  {greeting}
+                </Text>
+                <Text style={styles.sub}>{t('pinLock.enterSub')}</Text>
+              </View>
+
+              <View style={{ gap: spacing.md }}>
+                <PinDots length={pin.length} minSlots={PIN_MIN} shakeKey={shakeKey} error={!!error} />
+                <Text style={styles.error} accessibilityLiveRegion="polite">
+                  {error}
+                </Text>
+              </View>
+
+              <View style={{ gap: spacing.sm }}>
+                <Keypad
+                  onDigit={onDigit}
+                  onBackspace={() => setPin((p) => p.slice(0, -1))}
+                  onSubmit={() => submitPin(pin)}
+                  submitEnabled={pin.length >= PIN_MIN}
+                  disabled={busy}
+                />
+                <Pressable style={styles.link} onPress={startRecover} accessibilityRole="button">
+                  <Text style={styles.linkText}>{t('pinLock.forgot')}</Text>
+                </Pressable>
+              </View>
             </>
           ) : (
             <>
-              <Text style={styles.title}>{t('pinLock.resetTitle')}</Text>
-              <View style={styles.warn}>
-                <Text style={styles.warnTitle}>{t('pinLock.eraseWarn')}</Text>
-                <Text style={styles.warnBody}>
-                  {t('pinLock.eraseBody')}
+              <View style={styles.header}>
+                <View style={styles.iconWrap}>
+                  <ShieldQuestion size={30} color={colors.primary} />
+                </View>
+                <Text style={styles.title} accessibilityRole="header">
+                  {confirmWipe ? t('pinLock.resetTitle') : t('pinLock.secQ')}
                 </Text>
               </View>
-              <Pressable
-                style={[styles.primaryBtn, styles.danger, busy && { opacity: 0.6 }]}
-                onPress={doWipe}
-                disabled={busy}
-              >
-                <Text style={styles.primaryText}>{t('pinLock.erase')}</Text>
-              </Pressable>
-              <Pressable
-                style={styles.linkBtn}
-                onPress={() => {
-                  setConfirmWipe(false);
-                  setMode('pin');
-                  setAnswer('');
-                  setError('');
-                }}
-              >
-                <Text style={styles.linkText}>{t('common.cancel')}</Text>
+
+              <View style={styles.card}>
+                {!confirmWipe ? (
+                  <>
+                    <Text style={styles.label}>{t('pinLock.question')}</Text>
+                    <Text style={styles.questionText}>{question ?? t('pinLock.noQ')}</Text>
+                    <TextInput
+                      style={styles.input}
+                      value={answer}
+                      onChangeText={(v) => {
+                        setAnswer(v);
+                        setError('');
+                      }}
+                      placeholder={t('pinLock.yourAnswer')}
+                      placeholderTextColor={colors.textMuted}
+                      autoCapitalize="none"
+                      accessibilityLabel={t('pinLock.yourAnswer')}
+                    />
+                    {!!error && <Text style={styles.error}>{error}</Text>}
+                    <Button label={t('pinLock.verify')} onPress={submitAnswer} loading={busy} disabled={!question} size="lg" />
+                  </>
+                ) : (
+                  <>
+                    <View style={styles.warn}>
+                      <Text style={styles.warnTitle}>{t('pinLock.eraseWarn')}</Text>
+                      <Text style={styles.warnBody}>{t('pinLock.eraseBody')}</Text>
+                    </View>
+                    <Button label={t('pinLock.erase')} onPress={doWipe} loading={busy} variant="danger" size="lg" />
+                  </>
+                )}
+              </View>
+
+              <Pressable style={styles.link} onPress={backToPin} accessibilityRole="button">
+                <Text style={styles.linkText}>{confirmWipe ? t('common.cancel') : t('pinLock.back')}</Text>
               </Pressable>
             </>
           )}
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </Animated.View>
   );
 }
