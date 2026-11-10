@@ -4,6 +4,7 @@ import {
   ArrowDownRight,
   ArrowRightLeft,
   ArrowUpRight,
+  CalendarClock,
   CircleDollarSign,
   Pencil,
   Scale,
@@ -27,9 +28,11 @@ interface Props {
   accountName?: string;
   onDelete?: (id: string) => void;
   onPress?: (id: string) => void;
+  /** Opens "Move to date" for this row. */
+  onMove?: (id: string) => void;
 }
 
-function TransactionItemImpl({ item, accountName, onDelete, onPress }: Props) {
+function TransactionItemImpl({ item, accountName, onDelete, onPress, onMove }: Props) {
   const { colors, resolved } = useTheme();
   const { find } = useCategories();
   const { accountsById } = useData();
@@ -147,7 +150,7 @@ function TransactionItemImpl({ item, accountName, onDelete, onPress }: Props) {
         <Text style={styles.amount} numberOfLines={1}>
           {amountText}
         </Text>
-        {onPress || onDelete ? (
+        {onPress || onDelete || onMove ? (
           <View style={styles.actionsRow}>
             {onPress ? (
               <Pressable
@@ -158,6 +161,17 @@ function TransactionItemImpl({ item, accountName, onDelete, onPress }: Props) {
                 accessibilityLabel={`${t('input.headingEdit')}: ${title}`}
               >
                 <Pencil size={16} color={colors.textMuted} />
+              </Pressable>
+            ) : null}
+            {onMove ? (
+              <Pressable
+                onPress={() => onMove(item.id)}
+                hitSlop={6}
+                style={styles.iconBtn}
+                accessibilityRole="button"
+                accessibilityLabel={`${t('date.moveTo')}: ${title}`}
+              >
+                <CalendarClock size={16} color={colors.textMuted} />
               </Pressable>
             ) : null}
             {onDelete ? (

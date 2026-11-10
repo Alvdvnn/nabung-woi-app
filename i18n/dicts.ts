@@ -137,6 +137,8 @@ export const en = {
       'January', 'February', 'March', 'April', 'May', 'June',
       'July', 'August', 'September', 'October', 'November', 'December',
     ],
+    daysLogged: '{n} of {total} days logged',
+    heatLegend: 'Darker days spent more',
   },
 
   settings: {
@@ -723,6 +725,8 @@ export const id: typeof en = {
       'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
       'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
     ],
+    daysLogged: '{n} dari {total} hari tercatat',
+    heatLegend: 'Makin gelap makin banyak pengeluaran',
   },
 
   settings: {

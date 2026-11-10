@@ -3,6 +3,8 @@ import { useData } from '../context/DataContext';
 import { useToast } from './useToast';
 import { useT } from '../i18n';
 import { Transaction } from '../utils/storage';
+import { isoDay, moveToDay } from '../utils/date';
+import { formatDate } from '../utils/format';
 
 /**
  * Delete-with-undo, shared by every screen that lists transactions.
@@ -40,5 +42,39 @@ export function useDeleteWithUndo() {
       });
     },
     [deleteTx, addTx, findTx, toast, t],
+  );
+}
+
+/**
+ * Move a transaction to another calendar day, keeping its wall-clock time.
+ * The replacement for drag-and-drop: explicit target, instant Undo.
+ */
+export function useMoveToDate() {
+  const { updateTx, findTx } = useData();
+  const toast = useToast();
+  const t = useT();
+
+  return useCallback(
+    async (id: string, day: Date) => {
+      const before = findTx(id);
+      if (!before) return;
+      const next: Transaction = { ...before, date: moveToDay(new Date(before.date), day).toISOString(), dayKey: isoDay(day) };
+      if (next.dayKey === before.dayKey) return;
+      try {
+        await updateTx(next);
+      } catch {
+        toast.show('error', t('input.saveFailed'));
+        return;
+      }
+      toast.show('success', t('date.moved', { date: formatDate(next.date) }), {
+        action: {
+          label: t('common.undo'),
+          onPress: () => {
+            updateTx(before).catch(() => toast.show('error', t('input.saveFailed')));
+          },
+        },
+      });
+    },
+    [updateTx, findTx, toast, t],
   );
 }
