@@ -15,11 +15,15 @@ export { isoDay };
 let numberFmt: Intl.NumberFormat | null = null;
 let dateFmt: Intl.DateTimeFormat | null = null;
 let dayMonthFmt: Intl.DateTimeFormat | null = null;
+let dateLongFmt: Intl.DateTimeFormat | null = null;
+let timeFmt: Intl.DateTimeFormat | null = null;
 
 subscribeLocale(() => {
   numberFmt = null;
   dateFmt = null;
   dayMonthFmt = null;
+  dateLongFmt = null;
+  timeFmt = null;
 });
 
 function dateLocale(): string {
@@ -71,6 +75,27 @@ export function formatDayMonth(iso: string): string {
     dayMonthFmt = new Intl.DateTimeFormat(dateLocale(), { day: 'numeric', month: 'short' });
   }
   return dayMonthFmt.format(new Date(iso));
+}
+
+/** "Mon, 10 Nov 2025" / "Sen, 10 Nov 2025". */
+export function formatDateLong(iso: string): string {
+  if (!dateLongFmt) {
+    dateLongFmt = new Intl.DateTimeFormat(dateLocale(), {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+  }
+  return dateLongFmt.format(new Date(iso));
+}
+
+/** 24-hour "14:05". */
+export function formatTime(iso: string): string {
+  if (!timeFmt) {
+    timeFmt = new Intl.DateTimeFormat(dateLocale(), { hour: '2-digit', minute: '2-digit', hour12: false });
+  }
+  return timeFmt.format(new Date(iso));
 }
 
 export function formatPercent(value: number, fractionDigits = 0): string {

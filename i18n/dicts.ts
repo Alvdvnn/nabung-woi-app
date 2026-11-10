@@ -15,6 +15,16 @@ export const en = {
     all: 'All',
     close: 'Close',
     notCounted: 'Not counted',
+    search: 'Search',
+    clear: 'Clear',
+    apply: 'Apply',
+    reset: 'Reset',
+    edit: 'Edit',
+    add: 'Add',
+    more: 'More',
+    less: 'Less',
+    on: 'On',
+    off: 'Off',
   },
 
   tabs: {
@@ -359,6 +369,18 @@ export const en = {
     ofIncome: 'of income',
   },
 
+  date: {
+    pick: 'Pick a date',
+    yesterday: 'Yesterday',
+    setTime: 'Set time',
+    hourUp: 'Hour up',
+    hourDown: 'Hour down',
+    minuteUp: 'Minutes up',
+    minuteDown: 'Minutes down',
+    moveTo: 'Move to date',
+    moved: 'Moved to {date}',
+  },
+
   categories: {
     food: 'Food',
     transport: 'Transport',
@@ -398,6 +420,16 @@ export const id: typeof en = {
     all: 'Semua',
     close: 'Tutup',
     notCounted: 'Tidak dihitung',
+    search: 'Cari',
+    clear: 'Bersihkan',
+    apply: 'Terapkan',
+    reset: 'Atur ulang',
+    edit: 'Ubah',
+    add: 'Tambah',
+    more: 'Lainnya',
+    less: 'Lebih sedikit',
+    on: 'Aktif',
+    off: 'Nonaktif',
   },
 
   tabs: {
@@ -740,6 +772,18 @@ export const id: typeof en = {
     noIncome: 'Tidak ada pemasukan di periode ini',
     ofExpenses: 'dari pengeluaran',
     ofIncome: 'dari pemasukan',
+  },
+
+  date: {
+    pick: 'Pilih tanggal',
+    yesterday: 'Kemarin',
+    setTime: 'Atur jam',
+    hourUp: 'Jam naik',
+    hourDown: 'Jam turun',
+    minuteUp: 'Menit naik',
+    minuteDown: 'Menit turun',
+    moveTo: 'Pindah ke tanggal',
+    moved: 'Dipindah ke {date}',
   },
 
   categories: {
