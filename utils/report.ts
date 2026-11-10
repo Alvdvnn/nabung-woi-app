@@ -5,12 +5,14 @@ import {
   Totals,
   balanceDelta,
 } from './aggregate';
-import { Bucket, DateRange, bucketsFor, previousRange, rangeLength } from './period';
+import { Bucket, DateRange, bucketsFor, isCurrentRange, previousRange, rangeLength, shiftRange } from './period';
+import { isoDay, parseIsoDay } from './date';
 
 export interface ReportBucket extends Bucket {
   income: number;
   expense: number;
   net: number;
+  count: number;
 }
 
 export interface AccountReport {
@@ -20,7 +22,7 @@ export interface AccountReport {
   income: number;
   expense: number;
   net: number;
-  /** Balance as of now, across all time — not just the report range. */
+  /** Balance as of now, across all time, not just the report range. */
   balance: number;
 }
 
@@ -30,12 +32,42 @@ export interface Delta {
   absolute: number;
 }
 
+/** Progress against a monthly budget for one expense category. */
+export interface BudgetProgress {
+  categoryId: string;
+  budget: number;
+  spent: number;
+  /** spent / budget, may exceed 1. */
+  ratio: number;
+}
+
+/** Spending pace for the current period: how far along it is and where it lands at this rate. */
+export interface Pace {
+  daysElapsed: number;
+  daysInRange: number;
+  spent: number;
+  perDay: number;
+  projected: number;
+}
+
+/** One earlier period of the same granularity, oldest first. */
+export interface TrendPoint {
+  startKey: string;
+  label: string;
+  income: number;
+  expense: number;
+  net: number;
+  /** 0..100 or null when there was no income. */
+  savingsRate: number | null;
+  current: boolean;
+}
+
 export interface ReportData {
   range: DateRange;
   totals: Totals;
   previousTotals: Totals;
   deltas: { income: Delta; expense: Delta; net: Delta };
-  /** Share of income kept, 0–100. Null when there was no income. */
+  /** Share of income kept, 0..100. Null when there was no income. */
   savingsRate: number | null;
   avgIncomePerDay: number;
   avgExpensePerDay: number;
@@ -50,6 +82,12 @@ export interface ReportData {
   byAccount: AccountReport[];
   topExpenses: Transaction[];
   adjustments: AdjustmentTotals;
+  /** Only for month ranges (budgets are monthly). Sorted by ratio desc. */
+  budgets: BudgetProgress[];
+  /** Only when the range contains today and spans more than one day. */
+  pace: Pace | null;
+  /** The last `trendPeriods` ranges including this one, oldest first. */
+  trend: TrendPoint[];
   isEmpty: boolean;
 }
 
@@ -69,28 +107,48 @@ function sortedSums(map: Map<string, number>): CategorySum[] {
     .sort((a, b) => b.total - a.total);
 }
 
+function trendLabel(range: DateRange, monthNames: readonly string[]): string {
+  switch (range.granularity) {
+    case 'day':
+      return String(range.start.getDate());
+    case 'week':
+      return `${range.start.getDate()}/${range.start.getMonth() + 1}`;
+    case 'year':
+      return String(range.start.getFullYear());
+    case 'month':
+    default:
+      return (monthNames[range.start.getMonth()] ?? '').slice(0, 3);
+  }
+}
+
 /**
- * Everything the Report screen renders, computed in a single pass over the
- * transaction list.
+ * Everything the Report and Dashboard render, computed in a single pass over
+ * the transaction list (plus one short pass for the trend windows).
  *
- * The naive shape of this screen is ~8 independent `filter(...)` calls over the
- * same array plus one balance pass per account. This walks the list once and
- * fills every accumulator as it goes, so cost is O(transactions + accounts)
- * regardless of how many sections the screen grows.
+ * Rules shared with the rest of the app: transfers and adjustments never count
+ * as income or expense; they only move balances.
  */
 export function buildReport(opts: {
   txs: Transaction[];
   accounts: Account[];
   range: DateRange;
   monthNames: readonly string[];
+  /** categoryId -> monthly budget. */
+  budgets?: Map<string, number>;
+  /** How many periods (including this one) to include in `trend`. 0 = none. */
+  trendPeriods?: number;
+  today?: Date;
 }): ReportData {
   const { txs, accounts, range, monthNames } = opts;
+  const today = opts.today ?? new Date();
   const prev = previousRange(range);
+
   const buckets: ReportBucket[] = bucketsFor(range, monthNames).map((b) => ({
     ...b,
     income: 0,
     expense: 0,
     net: 0,
+    count: 0,
   }));
   const bucketIndex = new Map<string, number>();
   buckets.forEach((b, i) => bucketIndex.set(b.key, i));
@@ -149,6 +207,10 @@ export function buildReport(opts: {
     txCount += 1;
     loggedDays.add(key);
 
+    const bucketKey = byMonth ? key.slice(0, 7) : key;
+    const bi = bucketIndex.get(bucketKey);
+    if (bi !== undefined) buckets[bi].count += 1;
+
     const row = accountRows.get(tx.accountId);
 
     if (tx.type === 'adjustment') {
@@ -179,8 +241,6 @@ export function buildReport(opts: {
       topExpenses.push(tx);
     }
 
-    const bucketKey = byMonth ? key.slice(0, 7) : key;
-    const bi = bucketIndex.get(bucketKey);
     if (bi !== undefined) {
       const bucket = buckets[bi];
       if (tx.type === 'income') bucket.income += tx.amount;
@@ -208,6 +268,62 @@ export function buildReport(opts: {
     net: prevIncome - prevExpense,
   };
 
+  // Budgets are monthly, so progress is only meaningful on a month range.
+  const budgets: BudgetProgress[] = [];
+  if (opts.budgets && opts.budgets.size > 0 && range.granularity === 'month') {
+    for (const [categoryId, budget] of opts.budgets) {
+      if (budget <= 0) continue;
+      const spent = expenseCats.get(categoryId) ?? 0;
+      budgets.push({ categoryId, budget, spent, ratio: spent / budget });
+    }
+    budgets.sort((a, b) => b.ratio - a.ratio);
+  }
+
+  let pace: Pace | null = null;
+  if (daysInRange > 1 && isCurrentRange(range, today)) {
+    const daysElapsed = Math.max(
+      1,
+      Math.round((parseIsoDay(isoDay(today)).getTime() - parseIsoDay(range.startKey).getTime()) / 86_400_000) + 1,
+    );
+    const perDay = expense / daysElapsed;
+    pace = { daysElapsed, daysInRange, spent: expense, perDay, projected: perDay * daysInRange };
+  }
+
+  // Trend windows: this range and the N-1 before it. Short second pass.
+  const trend: TrendPoint[] = [];
+  const n = opts.trendPeriods ?? 0;
+  if (n > 0) {
+    const windows: DateRange[] = [range];
+    for (let i = 1; i < n; i++) windows.unshift(shiftRange(windows[0], -1));
+    const inc = new Array<number>(windows.length).fill(0);
+    const exp = new Array<number>(windows.length).fill(0);
+    const first = windows[0].startKey;
+    const last = windows[windows.length - 1].endKey;
+    for (const tx of txs) {
+      if (tx.type !== 'income' && tx.type !== 'expense') continue;
+      const key = tx.dayKey;
+      if (key < first || key > last) continue;
+      for (let i = 0; i < windows.length; i++) {
+        if (key >= windows[i].startKey && key <= windows[i].endKey) {
+          if (tx.type === 'income') inc[i] += tx.amount;
+          else exp[i] += tx.amount;
+          break;
+        }
+      }
+    }
+    windows.forEach((w, i) => {
+      trend.push({
+        startKey: w.startKey,
+        label: trendLabel(w, monthNames),
+        income: inc[i],
+        expense: exp[i],
+        net: inc[i] - exp[i],
+        savingsRate: inc[i] > 0 ? ((inc[i] - exp[i]) / inc[i]) * 100 : null,
+        current: i === windows.length - 1,
+      });
+    });
+  }
+
   return {
     range,
     totals,
@@ -231,6 +347,9 @@ export function buildReport(opts: {
     byAccount: Array.from(accountRows.values()).sort((a, b) => b.expense - a.expense),
     topExpenses: topExpenses.slice(0, TOP_EXPENSE_COUNT),
     adjustments: { in: adjIn, out: adjOut, net: adjIn - adjOut, count: adjCount },
+    budgets,
+    pace,
+    trend,
     isEmpty: txCount === 0,
   };
 }

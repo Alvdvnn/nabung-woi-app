@@ -68,6 +68,8 @@ export const en = {
     topCategories: 'Top Categories',
     hideBalance: 'Hide balance',
     showBalance: 'Show balance',
+    netFlowShort: 'Net flow',
+    seeAll: 'See all',
   },
 
   input: {
@@ -524,6 +526,42 @@ export const en = {
     wnSettingsBody: 'Accounts, categories, budgets, security, and data each have their own page.',
   },
 
+  range: {
+    last30: 'Last 30 days',
+    custom: 'Custom',
+    customTitle: 'Pick a range',
+    from: 'From',
+    to: 'To',
+  },
+
+  compare: {
+    noPrevious: 'Nothing recorded in the previous period.',
+    betterBy: '{n} better than the previous period',
+    worseBy: '{n} worse than the previous period',
+  },
+
+  pace: {
+    title: 'Spending pace',
+    projected: 'About {n} by the end',
+    body: 'You spent {spent} in {days} days, about {perDay} a day.',
+    abovePrev: 'That lands {n} above last time.',
+    belowPrev: 'That lands {n} below last time.',
+    dayOf: 'Day {d} of {n}',
+    daysLeft: '{n} days left',
+  },
+
+  quickAdd: {
+    title: 'Add again',
+    sub: 'Things you recorded recently. Tap to prefill the form.',
+    a11y: 'Add {name} {amount} again',
+  },
+
+  backup: {
+    nudgeNever: 'No backup yet. Export one to keep your data safe.',
+    nudgeOld: 'Last backup was {n} days ago. Export a fresh one.',
+    dismiss: 'Remind me later',
+  },
+
   categories: {
     food: 'Food',
     transport: 'Transport',
@@ -616,6 +654,8 @@ export const id: typeof en = {
     topCategories: 'Kategori Teratas',
     hideBalance: 'Sembunyikan saldo',
     showBalance: 'Tampilkan saldo',
+    netFlowShort: 'Arus bersih',
+    seeAll: 'Lihat semua',
   },
 
   input: {
@@ -1070,6 +1110,42 @@ export const id: typeof en = {
     wnPinBody: 'Keypad yang layak, dengan pilihan seberapa cepat aplikasi terkunci lagi.',
     wnSettings: 'Pengaturan lebih rapi',
     wnSettingsBody: 'Akun, kategori, anggaran, keamanan, dan data punya halaman masing-masing.',
+  },
+
+  range: {
+    last30: '30 hari terakhir',
+    custom: 'Kustom',
+    customTitle: 'Pilih rentang',
+    from: 'Dari',
+    to: 'Sampai',
+  },
+
+  compare: {
+    noPrevious: 'Tidak ada catatan di periode sebelumnya.',
+    betterBy: '{n} lebih baik dari periode sebelumnya',
+    worseBy: '{n} lebih buruk dari periode sebelumnya',
+  },
+
+  pace: {
+    title: 'Laju pengeluaran',
+    projected: 'Sekitar {n} sampai akhir',
+    body: 'Kamu memakai {spent} dalam {days} hari, sekitar {perDay} per hari.',
+    abovePrev: 'Itu {n} lebih tinggi dari periode lalu.',
+    belowPrev: 'Itu {n} lebih rendah dari periode lalu.',
+    dayOf: 'Hari {d} dari {n}',
+    daysLeft: 'Sisa {n} hari',
+  },
+
+  quickAdd: {
+    title: 'Catat lagi',
+    sub: 'Yang baru-baru ini kamu catat. Ketuk untuk mengisi form.',
+    a11y: 'Catat lagi {name} {amount}',
+  },
+
+  backup: {
+    nudgeNever: 'Belum ada cadangan. Ekspor agar data aman.',
+    nudgeOld: 'Cadangan terakhir {n} hari lalu. Ekspor yang baru.',
+    dismiss: 'Ingatkan nanti',
   },
 
   categories: {
