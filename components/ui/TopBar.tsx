@@ -1,9 +1,10 @@
 import { useMemo } from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Calculator, ChevronLeft, Dices } from 'lucide-react-native';
 import { useCalculator } from '../../hooks/useCalculator';
+import Logo from '../brand/Logo';
 import { fontSize, radius, spacing, weight } from '../../constants/theme';
 import { useTheme } from '../../hooks/useTheme';
 import { useT } from '../../i18n';
@@ -38,8 +39,6 @@ export default function TopBar({ title, showBack, showLogo = true, showActions =
         left: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flex: 1 },
         right: { flexDirection: 'row', alignItems: 'center' },
         logoWrap: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingLeft: spacing.xs },
-        logoBadge: { width: 28, height: 28, borderRadius: radius.sm, overflow: 'hidden' },
-        logoImg: { width: 28, height: 28, resizeMode: 'contain' },
         brand: { fontSize: fontSize.md, fontWeight: weight.bold, color: colors.textPrimary },
         title: {
           fontSize: fontSize.lg,
@@ -68,9 +67,7 @@ export default function TopBar({ title, showBack, showLogo = true, showActions =
           </Pressable>
         ) : showLogo ? (
           <View style={styles.logoWrap}>
-            <View style={styles.logoBadge}>
-              <Image source={require('../../assets/icon.png')} style={styles.logoImg} />
-            </View>
+            <Logo size={28} />
             {/* Brand name is not translated. */}
             <Text style={styles.brand}>Nabung Woi</Text>
           </View>

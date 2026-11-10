@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react';
-import { Animated, Easing, Image, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
 import Constants from 'expo-constants';
+import Logo from '../brand/Logo';
 import { useTheme } from '../../hooks/useTheme';
 import { fontSize, spacing } from '../../constants/theme';
 
@@ -60,7 +61,6 @@ export default function SplashIntro({ onDone }: Props) {
           padding: spacing.xl,
         },
         center: { alignItems: 'center', gap: spacing.md },
-        logo: { width: 112, height: 112, borderRadius: 24 },
         brand: {
           fontSize: fontSize.xxl,
           fontWeight: '900',
@@ -80,7 +80,7 @@ export default function SplashIntro({ onDone }: Props) {
   return (
     <Animated.View style={[styles.root, { opacity: exit }]}>
       <Animated.View style={[styles.center, { opacity: fade, transform: [{ scale }] }]}>
-        <Image source={require('../../assets/icon.png')} style={styles.logo} />
+        <Logo size={112} />
         <Text style={styles.brand}>Nabung Woi</Text>
         {version ? <Text style={styles.version}>v{version}</Text> : null}
       </Animated.View>

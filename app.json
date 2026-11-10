@@ -13,7 +13,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#10B981"
+        "backgroundColor": "#10a394"
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.vinnyvv.nabungwoi"
@@ -37,7 +37,8 @@
         {
           "image": "./assets/splash-icon.png",
           "resizeMode": "contain",
-          "backgroundColor": "#10B981"
+          "backgroundColor": "#10a394",
+          "imageWidth": 200
         }
       ]
     ],
