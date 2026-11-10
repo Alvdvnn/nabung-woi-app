@@ -90,7 +90,7 @@ export default function TopBar({ title, showBack, showLogo = true, showActions =
             <Dices size={20} color={colors.primary} />
           </Pressable>
           <Pressable
-            onPress={calc.open}
+            onPress={() => calc.open()}
             style={({ pressed }) => [styles.iconBtn, pressed && { backgroundColor: colors.surfaceSunken }]}
             accessibilityRole="button"
             accessibilityLabel="Calculator"

@@ -1,8 +1,13 @@
 import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Calculator as CalculatorIcon, X } from 'lucide-react-native';
+import Chip from '../ui/Chip';
 import { fontSize, radius, spacing, weight } from '../../constants/theme';
 import { useTheme } from '../../hooks/useTheme';
-import { groupDigits } from '../../utils/format';
+import { useCalculator } from '../../hooks/useCalculator';
+import { formatIDRCompact, groupDigits } from '../../utils/format';
+import { hapticSelection } from '../../utils/haptics';
+import { useT } from '../../i18n';
 
 interface Props {
   value: string;
@@ -13,50 +18,41 @@ interface Props {
   label?: string;
 }
 
-// Denominations that cover most day-to-day Indonesian cash amounts.
-const QUICK_AMOUNTS = [10_000, 50_000, 100_000];
+// Each chip ADDS to the amount. Denominations that cover day-to-day cash.
+const QUICK_AMOUNTS = [10_000, 20_000, 50_000, 100_000];
 
+/** The hero of the form: a big type-colored amount with quick-add chips. */
 export default function AmountInput({ value, onChange, autoFocus = true, accent, label }: Props) {
   const { colors } = useTheme();
+  const calc = useCalculator();
+  const t = useT();
   const tint = accent ?? colors.primary;
 
   const styles = useMemo(
     () =>
       StyleSheet.create({
-        wrap: {
-          flexDirection: 'row',
-          alignItems: 'center',
-          borderBottomWidth: 2,
-          borderBottomColor: tint,
-          paddingVertical: spacing.sm,
-        },
-        currency: {
-          fontSize: fontSize.xxl,
-          fontWeight: weight.bold,
-          color: tint,
-          marginRight: spacing.sm,
-        },
-        input: {
-          flex: 1,
-          fontSize: fontSize.display,
-          fontWeight: weight.heavy,
-          color: colors.textPrimary,
-          padding: 0,
-        },
-        quickRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
-        chip: {
-          flex: 1,
-          minHeight: 40,
-          alignItems: 'center',
-          justifyContent: 'center',
-          borderRadius: radius.full,
+        card: {
+          backgroundColor: colors.surface,
+          borderRadius: radius.lg,
           borderWidth: 1,
           borderColor: colors.border,
-          backgroundColor: colors.surface,
+          padding: spacing.lg,
+          gap: spacing.md,
         },
-        chipText: { fontSize: fontSize.sm, fontWeight: weight.semibold, color: colors.textSecondary },
-        clear: { paddingHorizontal: spacing.sm, minHeight: 40, justifyContent: 'center' },
-        clearText: { fontSize: fontSize.sm, fontWeight: weight.semibold, color: colors.textMuted },
+        wrap: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+        currency: { fontSize: fontSize.xl, fontWeight: weight.bold, color: tint },
+        input: {
+          flex: 1,
+          fontSize: fontSize.hero,
+          lineHeight: 50,
+          fontWeight: weight.black,
+          color: colors.textPrimary,
+          padding: 0,
+          letterSpacing: -1,
+          minWidth: 0,
+        },
+        iconBtn: { width: 44, height: 44, borderRadius: radius.full, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surfaceSunken },
+        quickRow: { flexDirection: 'row', gap: spacing.sm, flexWrap: 'wrap' },
       }),
     [colors, tint],
   );
@@ -64,7 +60,7 @@ export default function AmountInput({ value, onChange, autoFocus = true, accent,
   const current = Number(value) || 0;
 
   return (
-    <View>
+    <View style={styles.card}>
       <View style={styles.wrap}>
         <Text style={styles.currency}>Rp</Text>
         <TextInput
@@ -72,31 +68,45 @@ export default function AmountInput({ value, onChange, autoFocus = true, accent,
           placeholder="0"
           placeholderTextColor={colors.textMuted}
           keyboardType="numeric"
+          inputMode="numeric"
           value={groupDigits(value)}
-          onChangeText={(v) => onChange(v.replace(/[^0-9]/g, ''))}
+          onChangeText={(v) => onChange(v.replace(/[^0-9]/g, '').slice(0, 15))}
           autoFocus={autoFocus}
           accessibilityLabel={label}
+          numberOfLines={1}
         />
-      </View>
-
-      {/* Stepper chips: fastest path to the amounts people actually type. */}
-      <View style={styles.quickRow}>
-        {QUICK_AMOUNTS.map((q) => (
-          <Pressable
-            key={q}
-            style={styles.chip}
-            accessibilityRole="button"
-            accessibilityLabel={`+${groupDigits(q)}`}
-            onPress={() => onChange(String(current + q))}
-          >
-            <Text style={styles.chipText}>{`+${groupDigits(q)}`}</Text>
-          </Pressable>
-        ))}
         {current > 0 ? (
-          <Pressable style={styles.clear} accessibilityRole="button" onPress={() => onChange('')}>
-            <Text style={styles.clearText}>C</Text>
+          <Pressable
+            style={styles.iconBtn}
+            onPress={() => onChange('')}
+            accessibilityRole="button"
+            accessibilityLabel={t('input.clearAmount')}
+          >
+            <X size={18} color={colors.textSecondary} />
           </Pressable>
         ) : null}
+        <Pressable
+          style={styles.iconBtn}
+          onPress={() => calc.open({ onApply: (n) => onChange(String(n)) })}
+          accessibilityRole="button"
+          accessibilityLabel={t('calc.title')}
+        >
+          <CalculatorIcon size={18} color={tint} />
+        </Pressable>
+      </View>
+
+      <View style={styles.quickRow}>
+        {QUICK_AMOUNTS.map((q) => (
+          <Chip
+            key={q}
+            label={`+${formatIDRCompact(q).replace('Rp ', '')}`}
+            size="sm"
+            onPress={() => {
+              hapticSelection();
+              onChange(String(current + q));
+            }}
+          />
+        ))}
       </View>
     </View>
   );

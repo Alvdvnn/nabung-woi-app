@@ -103,6 +103,11 @@ export const en = {
     discardMsg: 'Your edits to this transaction will not be saved.',
     discard: 'Discard',
     keepEditing: 'Keep editing',
+    clearAmount: 'Clear amount',
+    moreCategories: '{n} more',
+    accounts: 'Accounts',
+    from: 'From',
+    to: 'To',
   },
 
   history: {
@@ -387,6 +392,15 @@ export const en = {
     moved: 'Moved to {date}',
   },
 
+  calc: {
+    title: 'Calculator',
+    history: 'History',
+    clearHistory: 'Clear',
+    noHistory: 'No calculations yet.',
+    useAmount: 'Use as amount',
+    error: 'Error',
+  },
+
   categories: {
     food: 'Food',
     transport: 'Transport',
@@ -514,6 +528,11 @@ export const id: typeof en = {
     discardMsg: 'Perubahan pada transaksi ini tidak akan disimpan.',
     discard: 'Buang',
     keepEditing: 'Lanjut edit',
+    clearAmount: 'Kosongkan jumlah',
+    moreCategories: '{n} lainnya',
+    accounts: 'Akun',
+    from: 'Dari',
+    to: 'Ke',
   },
 
   history: {
@@ -796,6 +815,15 @@ export const id: typeof en = {
     minuteDown: 'Menit turun',
     moveTo: 'Pindah ke tanggal',
     moved: 'Dipindah ke {date}',
+  },
+
+  calc: {
+    title: 'Kalkulator',
+    history: 'Riwayat',
+    clearHistory: 'Hapus',
+    noHistory: 'Belum ada perhitungan.',
+    useAmount: 'Pakai sebagai jumlah',
+    error: 'Error',
   },
 
   categories: {

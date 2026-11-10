@@ -1,292 +1,304 @@
-import { forwardRef, useMemo, useState, useImperativeHandle, useRef } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { BottomSheetModal, BottomSheetBackdrop, BottomSheetView } from '@gorhom/bottom-sheet';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Delete, History, Trash2 } from 'lucide-react-native';
+import Sheet from '../ui/Sheet';
+import Button from '../ui/Button';
 import { useTheme } from '../../hooks/useTheme';
-import { spacing, radius, fontSize } from '../../constants/theme';
+import { fontSize, radius, spacing, weight } from '../../constants/theme';
 import { groupDigits } from '../../utils/format';
+import { hapticLight } from '../../utils/haptics';
+import { useT } from '../../i18n';
+import {
+  CalcKey,
+  CalcState,
+  INITIAL_CALC,
+  expressionText,
+  preview as previewOf,
+  reduce,
+} from '../../utils/calc';
+import { CALC_HISTORY_MAX, CalcHistoryEntry, getCalcHistory, setCalcHistory } from '../../utils/storage';
 
-type Kind = 'num' | 'op' | 'action';
-interface Key { label: string; kind: Kind; value: string; flex?: number }
+interface Props {
+  visible: boolean;
+  onClose: () => void;
+  onApply?: (value: number) => void;
+}
 
-const ROWS: Key[][] = [
+type Kind = 'num' | 'op' | 'fn' | 'eq';
+interface KeyDef { label: string; key: CalcKey; kind: Kind }
+
+const ROWS: KeyDef[][] = [
   [
-    { label: 'C', kind: 'action', value: 'C' },
-    { label: '⌫', kind: 'action', value: 'BACK' },
-    { label: '%', kind: 'op', value: '%' },
-    { label: '÷', kind: 'op', value: '/' },
+    { label: 'AC', key: 'clear', kind: 'fn' },
+    { label: '±', key: 'neg', kind: 'fn' },
+    { label: '%', key: '%', kind: 'fn' },
+    { label: '÷', key: '/', kind: 'op' },
   ],
   [
-    { label: '7', kind: 'num', value: '7' },
-    { label: '8', kind: 'num', value: '8' },
-    { label: '9', kind: 'num', value: '9' },
-    { label: '×', kind: 'op', value: '*' },
+    { label: '7', key: '7', kind: 'num' },
+    { label: '8', key: '8', kind: 'num' },
+    { label: '9', key: '9', kind: 'num' },
+    { label: '×', key: '*', kind: 'op' },
   ],
   [
-    { label: '4', kind: 'num', value: '4' },
-    { label: '5', kind: 'num', value: '5' },
-    { label: '6', kind: 'num', value: '6' },
-    { label: '−', kind: 'op', value: '-' },
+    { label: '4', key: '4', kind: 'num' },
+    { label: '5', key: '5', kind: 'num' },
+    { label: '6', key: '6', kind: 'num' },
+    { label: '−', key: '-', kind: 'op' },
   ],
   [
-    { label: '1', kind: 'num', value: '1' },
-    { label: '2', kind: 'num', value: '2' },
-    { label: '3', kind: 'num', value: '3' },
-    { label: '+', kind: 'op', value: '+' },
+    { label: '1', key: '1', kind: 'num' },
+    { label: '2', key: '2', kind: 'num' },
+    { label: '3', key: '3', kind: 'num' },
+    { label: '+', key: '+', kind: 'op' },
   ],
   [
-    { label: '0', kind: 'num', value: '0', flex: 2 },
-    { label: '.', kind: 'num', value: '.' },
-    { label: '=', kind: 'action', value: '=' },
+    { label: '0', key: '0', kind: 'num' },
+    { label: '.', key: '.', kind: 'num' },
+    { label: '⌫', key: 'back', kind: 'fn' },
+    { label: '=', key: '=', kind: 'eq' },
   ],
 ];
 
-type Token = { kind: 'num'; value: number } | { kind: 'op'; value: string };
-
-const PREC: Record<string, number> = { '+': 1, '-': 1, '*': 2, '/': 2 };
-
-function tokenize(expr: string): Token[] | null {
-  const tokens: Token[] = [];
-  let i = 0;
-  while (i < expr.length) {
-    const c = expr[i];
-    if (c === ' ') { i++; continue; }
-    if (c >= '0' && c <= '9' || c === '.') {
-      let j = i;
-      while (j < expr.length && ((expr[j] >= '0' && expr[j] <= '9') || expr[j] === '.')) j++;
-      const numStr = expr.slice(i, j);
-      // Handle trailing % (percent of preceding number)
-      if (expr[j] === '%') {
-        const n = Number(numStr);
-        if (!Number.isFinite(n)) return null;
-        tokens.push({ kind: 'num', value: n / 100 });
-        i = j + 1;
-      } else {
-        const n = Number(numStr);
-        if (!Number.isFinite(n)) return null;
-        tokens.push({ kind: 'num', value: n });
-        i = j;
-      }
-      continue;
-    }
-    if (c === '+' || c === '*' || c === '/') {
-      tokens.push({ kind: 'op', value: c });
-      i++;
-      continue;
-    }
-    if (c === '-') {
-      // Unary if first token or follows an operator
-      const prev = tokens[tokens.length - 1];
-      if (!prev || prev.kind === 'op') {
-        // Read following number as negative
-        let j = i + 1;
-        while (j < expr.length && ((expr[j] >= '0' && expr[j] <= '9') || expr[j] === '.')) j++;
-        if (j === i + 1) return null;
-        const numStr = expr.slice(i + 1, j);
-        const n = Number(numStr);
-        if (!Number.isFinite(n)) return null;
-        if (expr[j] === '%') {
-          tokens.push({ kind: 'num', value: -n / 100 });
-          i = j + 1;
-        } else {
-          tokens.push({ kind: 'num', value: -n });
-          i = j;
-        }
-        continue;
-      }
-      tokens.push({ kind: 'op', value: '-' });
-      i++;
-      continue;
-    }
-    return null;
-  }
-  return tokens;
+/** Formats a typed number: thousands grouping, decimal comma, keeps a trailing dot. */
+function fmtNum(text: string): string {
+  const neg = text.startsWith('-');
+  const body = neg ? text.slice(1) : text;
+  const [i, d] = body.split('.');
+  const int = i ? groupDigits(i) : '0';
+  const dec = d !== undefined ? ',' + d : body.endsWith('.') ? ',' : '';
+  return (neg ? '-' : '') + int + dec;
 }
 
-function safeEval(expr: string): number | null {
-  if (!expr) return null;
-  const tokens = tokenize(expr);
-  if (!tokens || tokens.length === 0) return null;
-
-  // Shunting-yard to RPN
-  const output: Token[] = [];
-  const ops: Token[] = [];
-  for (const t of tokens) {
-    if (t.kind === 'num') {
-      output.push(t);
-    } else {
-      while (
-        ops.length > 0 &&
-        ops[ops.length - 1].kind === 'op' &&
-        PREC[(ops[ops.length - 1] as { value: string }).value] >= PREC[t.value]
-      ) {
-        output.push(ops.pop()!);
-      }
-      ops.push(t);
-    }
-  }
-  while (ops.length > 0) output.push(ops.pop()!);
-
-  // Evaluate RPN
-  const stack: number[] = [];
-  for (const t of output) {
-    if (t.kind === 'num') {
-      stack.push(t.value);
-    } else {
-      const b = stack.pop();
-      const a = stack.pop();
-      if (a === undefined || b === undefined) return null;
-      let r: number;
-      switch (t.value) {
-        case '+': r = a + b; break;
-        case '-': r = a - b; break;
-        case '*': r = a * b; break;
-        case '/': r = b === 0 ? NaN : a / b; break;
-        default: return null;
-      }
-      stack.push(r);
-    }
-  }
-  if (stack.length !== 1) return null;
-  const result = stack[0];
-  return Number.isFinite(result) ? result : null;
+function fmtResult(n: number): string {
+  return fmtNum(String(n));
 }
 
-function formatNum(n: number): string {
-  if (Number.isInteger(n)) return groupDigits(n);
-  const [intPart, decPart] = n.toString().split('.');
-  return groupDigits(intPart) + ',' + decPart;
-}
-
-function formatExpr(expr: string): string {
-  if (!expr) return ' ';
-  // Replace operator chars w/ display chars, format each numeric chunk w/ thousand sep.
-  return expr
-    .replace(/(\d+(?:\.\d+)?)/g, (m) => {
-      const [i, d] = m.split('.');
-      return groupDigits(i) + (d !== undefined ? ',' + d : '');
-    })
-    .replace(/\*/g, ' × ')
-    .replace(/\//g, ' ÷ ')
-    .replace(/-/g, ' − ')
-    .replace(/\+/g, ' + ');
-}
-
-export interface CalculatorRef {
-  open: () => void;
-}
-
-export default forwardRef<CalculatorRef>(function Calculator(_, ref) {
+/**
+ * Phone-style calculator in a sheet. The expression shows as typed, the result
+ * appears only after '=' (a faint live preview sits above it), history is
+ * persisted and tappable, and the result can be applied to the amount field.
+ */
+export default function Calculator({ visible, onClose, onApply }: Props) {
   const { colors } = useTheme();
-  const sheetRef = useRef<BottomSheetModal>(null);
-  const [expr, setExpr] = useState('');
-  const [result, setResult] = useState<string>('');
+  const t = useT();
+  const [state, setState] = useState<CalcState>(INITIAL_CALC);
+  const [history, setHistory] = useState<CalcHistoryEntry[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
 
-  useImperativeHandle(ref, () => ({ open: () => sheetRef.current?.present() }), []);
+  useEffect(() => {
+    if (visible) getCalcHistory().then(setHistory);
+  }, [visible]);
 
-  const styles = useMemo(() => StyleSheet.create({
-    container: { padding: spacing.lg, gap: spacing.md },
-    handle: { backgroundColor: colors.borderStrong },
-    bg: { backgroundColor: colors.card },
-    display: {
-      backgroundColor: colors.bg,
-      borderRadius: radius.md,
-      paddingHorizontal: spacing.lg,
-      paddingVertical: spacing.lg,
-      alignItems: 'flex-end',
-      justifyContent: 'center',
-      gap: 6,
-      minHeight: 110,
-    },
-    expr: { fontSize: fontSize.md, color: colors.textSecondary, fontWeight: '500' },
-    result: { fontSize: fontSize.display, fontWeight: '800', color: colors.textPrimary },
-    grid: { gap: spacing.sm },
-    row: { flexDirection: 'row', gap: spacing.sm },
-    key: {
-      flex: 1,
-      height: 60,
-      borderRadius: radius.md,
-      backgroundColor: colors.bg,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    keyOp: { backgroundColor: colors.primarySoft },
-    keyAction: { backgroundColor: colors.primary },
-    keyLabel: { fontSize: fontSize.xl, fontWeight: '700', color: colors.textPrimary },
-    keyLabelOp: { color: colors.primary },
-    keyLabelAction: { color: colors.white },
-  }), [colors]);
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        display: {
+          backgroundColor: colors.surface,
+          borderWidth: 1,
+          borderColor: colors.border,
+          borderRadius: radius.lg,
+          paddingHorizontal: spacing.lg,
+          paddingVertical: spacing.md,
+          alignItems: 'flex-end',
+          justifyContent: 'flex-end',
+          gap: 4,
+          minHeight: 104,
+        },
+        expr: { fontSize: fontSize.lg, color: colors.textPrimary, fontWeight: weight.semibold, textAlign: 'right' },
+        exprMuted: { color: colors.textSecondary },
+        previewText: { fontSize: fontSize.sm, color: colors.textMuted, textAlign: 'right' },
+        result: { fontSize: fontSize.display, lineHeight: 40, fontWeight: weight.black, color: colors.textPrimary, textAlign: 'right', letterSpacing: -0.5 },
+        errorText: { color: colors.expense },
+        toolbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+        toolBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 40, paddingHorizontal: spacing.sm, borderRadius: radius.full },
+        toolText: { fontSize: fontSize.sm, fontWeight: weight.semibold, color: colors.primary },
+        grid: { gap: spacing.sm },
+        row: { flexDirection: 'row', gap: spacing.sm },
+        key: {
+          flex: 1,
+          height: 56,
+          borderRadius: radius.md,
+          backgroundColor: colors.surface,
+          borderWidth: 1,
+          borderColor: colors.border,
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+        keyFn: { backgroundColor: colors.surfaceSunken },
+        keyOp: { backgroundColor: colors.primarySoft, borderColor: colors.primarySoft },
+        keyEq: { backgroundColor: colors.primary, borderColor: colors.primary },
+        keyLabel: { fontSize: fontSize.xl, fontWeight: weight.bold, color: colors.textPrimary },
+        keyLabelOp: { color: colors.primary },
+        keyLabelEq: { color: colors.onPrimary },
+        histList: { maxHeight: 220, gap: spacing.xs },
+        histRow: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: spacing.md,
+          minHeight: 48,
+          paddingHorizontal: spacing.md,
+          borderRadius: radius.md,
+          backgroundColor: colors.surface,
+          borderWidth: 1,
+          borderColor: colors.border,
+        },
+        histExpr: { flex: 1, fontSize: fontSize.sm, color: colors.textMuted },
+        histResult: { fontSize: fontSize.md, fontWeight: weight.bold, color: colors.textPrimary },
+        histEmpty: { fontSize: fontSize.sm, color: colors.textMuted, textAlign: 'center', paddingVertical: spacing.lg },
+      }),
+    [colors],
+  );
 
-  function press(k: Key) {
-    if (k.value === 'C') { setExpr(''); setResult(''); return; }
-    if (k.value === 'BACK') {
-      setExpr((e) => {
-        const next = e.slice(0, -1);
-        const r = safeEval(next);
-        setResult(r === null ? '' : formatNum(r));
+  const press = useCallback(
+    (key: CalcKey) => {
+      hapticLight();
+      setState((prev) => {
+        const next = reduce(prev, key);
+        if (key === '=' && !prev.evaluated && next.evaluated && next.result !== null) {
+          const entry: CalcHistoryEntry = {
+            expr: expressionText(next, fmtNum),
+            result: next.result,
+            at: new Date().toISOString(),
+          };
+          setHistory((h) => {
+            const list = [entry, ...h].slice(0, CALC_HISTORY_MAX);
+            setCalcHistory(list).catch(() => {});
+            return list;
+          });
+        }
         return next;
       });
-      return;
-    }
-    if (k.value === '=') {
-      const r = safeEval(expr);
-      setResult(r === null ? 'Error' : formatNum(r));
-      return;
-    }
-    setExpr((e) => {
-      const next = e + k.value;
-      const r = safeEval(next);
-      if (r !== null) setResult(formatNum(r));
-      return next;
-    });
-  }
-
-  const renderBackdrop = (props: any) => (
-    <BottomSheetBackdrop {...props} appearsOnIndex={0} disappearsOnIndex={-1} />
+    },
+    [],
   );
 
-  const snapPoints = useMemo(() => ['70%'], []);
+  const reuse = (entry: CalcHistoryEntry) => {
+    setState({ ...INITIAL_CALC, current: String(entry.result) });
+    setShowHistory(false);
+  };
+
+  const clearHistory = () => {
+    setHistory([]);
+    setCalcHistory([]).catch(() => {});
+  };
+
+  const expr = expressionText(state, fmtNum);
+  const live = previewOf(state);
+  const applyValue = state.evaluated && state.result !== null ? state.result : (live ?? (state.current ? Number(state.current) : null));
+  const clearLabel = state.current || state.tokens.length ? 'C' : 'AC';
 
   return (
-    <BottomSheetModal
-      ref={sheetRef}
-      snapPoints={snapPoints}
-      enableDynamicSizing={false}
-      index={0}
-      handleStyle={{ backgroundColor: colors.card }}
-      handleIndicatorStyle={styles.handle}
-      backgroundStyle={styles.bg}
-      backdropComponent={renderBackdrop}
+    <Sheet
+      visible={visible}
+      title={t('calc.title')}
+      onClose={onClose}
+      footer={
+        onApply ? (
+          <Button
+            label={t('calc.useAmount')}
+            onPress={() => applyValue !== null && onApply(Math.round(Math.abs(applyValue)))}
+            disabled={applyValue === null || !Number.isFinite(applyValue)}
+            size="lg"
+          />
+        ) : undefined
+      }
     >
-      <BottomSheetView style={styles.container}>
-        <View style={styles.display}>
-          <Text style={styles.expr} numberOfLines={1}>{formatExpr(expr)}</Text>
-          <Text style={styles.result} numberOfLines={1}>{result || '0'}</Text>
+      <View style={{ gap: spacing.md }}>
+        <View style={styles.display} accessibilityLiveRegion="polite">
+          {state.error ? (
+            <Text style={[styles.result, styles.errorText]}>{t('calc.error')}</Text>
+          ) : state.evaluated && state.result !== null ? (
+            <>
+              <Text style={[styles.expr, styles.exprMuted]} numberOfLines={1}>
+                {expr || ' '}
+              </Text>
+              <Text style={styles.result} numberOfLines={1} adjustsFontSizeToFit>
+                {`= ${fmtResult(state.result)}`}
+              </Text>
+            </>
+          ) : (
+            <>
+              <Text style={styles.previewText} numberOfLines={1}>
+                {live !== null ? `= ${fmtResult(live)}` : ' '}
+              </Text>
+              <Text style={styles.result} numberOfLines={1} adjustsFontSizeToFit>
+                {expr || '0'}
+              </Text>
+            </>
+          )}
         </View>
-        <View style={styles.grid}>
-          {ROWS.map((row, i) => (
-            <View key={i} style={styles.row}>
-              {row.map((k) => (
+
+        <View style={styles.toolbar}>
+          <Pressable
+            style={styles.toolBtn}
+            onPress={() => setShowHistory((v) => !v)}
+            accessibilityRole="button"
+            accessibilityState={{ expanded: showHistory }}
+          >
+            <History size={16} color={colors.primary} />
+            <Text style={styles.toolText}>{t('calc.history')}</Text>
+          </Pressable>
+          {showHistory && history.length > 0 ? (
+            <Pressable style={styles.toolBtn} onPress={clearHistory} accessibilityRole="button">
+              <Trash2 size={16} color={colors.textMuted} />
+              <Text style={[styles.toolText, { color: colors.textMuted }]}>{t('calc.clearHistory')}</Text>
+            </Pressable>
+          ) : null}
+        </View>
+
+        {showHistory ? (
+          history.length === 0 ? (
+            <Text style={styles.histEmpty}>{t('calc.noHistory')}</Text>
+          ) : (
+            <ScrollView style={styles.histList} contentContainerStyle={{ gap: spacing.xs }} showsVerticalScrollIndicator={false}>
+              {history.map((h, i) => (
                 <Pressable
-                  key={k.label}
-                  style={[
-                    styles.key,
-                    { flex: k.flex ?? 1 },
-                    k.kind === 'op' && styles.keyOp,
-                    k.kind === 'action' && styles.keyAction,
-                  ]}
-                  onPress={() => press(k)}
+                  key={`${h.at}-${i}`}
+                  style={({ pressed }) => [styles.histRow, pressed && { backgroundColor: colors.surfaceSunken }]}
+                  onPress={() => reuse(h)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${h.expr} = ${fmtResult(h.result)}`}
                 >
-                  <Text style={[
-                    styles.keyLabel,
-                    k.kind === 'op' && styles.keyLabelOp,
-                    k.kind === 'action' && styles.keyLabelAction,
-                  ]}>{k.label}</Text>
+                  <Text style={styles.histExpr} numberOfLines={1}>{h.expr}</Text>
+                  <Text style={styles.histResult}>{fmtResult(h.result)}</Text>
                 </Pressable>
               ))}
-            </View>
-          ))}
-        </View>
-      </BottomSheetView>
-    </BottomSheetModal>
+            </ScrollView>
+          )
+        ) : (
+          <View style={styles.grid}>
+            {ROWS.map((row, i) => (
+              <View key={i} style={styles.row}>
+                {row.map((k) => (
+                  <Pressable
+                    key={k.key}
+                    style={({ pressed }) => [
+                      styles.key,
+                      k.kind === 'fn' && styles.keyFn,
+                      k.kind === 'op' && styles.keyOp,
+                      k.kind === 'eq' && styles.keyEq,
+                      pressed && { opacity: 0.7, transform: [{ scale: 0.97 }] },
+                    ]}
+                    onPress={() => press(k.key)}
+                    accessibilityRole="button"
+                    accessibilityLabel={k.key === 'back' ? t('pinLock.backspace') : k.key === 'clear' ? clearLabel : k.label}
+                  >
+                    {k.key === 'back' ? (
+                      <Delete size={22} color={colors.textPrimary} />
+                    ) : (
+                      <Text style={[styles.keyLabel, k.kind === 'op' && styles.keyLabelOp, k.kind === 'eq' && styles.keyLabelEq]}>
+                        {k.key === 'clear' ? clearLabel : k.label}
+                      </Text>
+                    )}
+                  </Pressable>
+                ))}
+              </View>
+            ))}
+          </View>
+        )}
+      </View>
+    </Sheet>
   );
-});
+}

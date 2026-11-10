@@ -3,7 +3,6 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { ThemeProvider } from '../context/ThemeContext';
 import { ToastProvider } from '../context/ToastContext';
 import { PinProvider, usePin } from '../context/PinContext';
@@ -55,7 +54,6 @@ export default function RootLayout() {
           <LocaleProvider>
             <ThemeProvider>
               <PrefsProvider>
-                <BottomSheetModalProvider>
                   <ToastProvider>
                     <CalculatorProvider>
                       <PinProvider>
@@ -67,7 +65,6 @@ export default function RootLayout() {
                       </PinProvider>
                     </CalculatorProvider>
                   </ToastProvider>
-                </BottomSheetModalProvider>
               </PrefsProvider>
             </ThemeProvider>
           </LocaleProvider>
