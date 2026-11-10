@@ -92,7 +92,7 @@ export default function PinManager({ onChange }: Props) {
           backgroundColor: colors.bg,
           borderRadius: radius.sm,
           padding: spacing.md,
-          fontSize: fontSize.md,
+          fontSize: fontSize.input,
           color: colors.textPrimary,
           borderWidth: 1,
           borderColor: colors.border,

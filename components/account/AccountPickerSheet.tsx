@@ -116,7 +116,7 @@ export default function AccountPickerSheet({ visible, accounts, selectedId, onSe
           accessibilityRole="button"
           onPress={() => {
             onClose();
-            router.push('/settings');
+            router.push('/settings/accounts');
           }}
         >
           <Plus size={16} color={colors.primary} />
