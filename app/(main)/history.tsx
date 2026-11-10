@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Inbox, Plus, SlidersHorizontal } from 'lucide-react-native';
 import Screen from '../../components/ui/Screen';
@@ -22,7 +22,7 @@ import { useData } from '../../context/DataContext';
 import { useDeleteWithUndo } from '../../hooks/useTransactionActions';
 import { Transaction, TransactionType, getHistoryPrefs, setHistoryPrefs } from '../../utils/storage';
 import { useT } from '../../i18n';
-import { DateRange, Granularity, rangeFor, shiftRange } from '../../utils/period';
+import { DateRange, PresetGranularity, rangeFor, rangeFromParams, shiftRange } from '../../utils/period';
 import { isoDay } from '../../utils/date';
 import { adjustmentTotals, filterByRange, totalsOf } from '../../utils/aggregate';
 import { formatIDR } from '../../utils/format';
@@ -44,6 +44,15 @@ export default function HistoryScreen() {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const prefsLoaded = useRef(false);
 
+  // Report (and other screens) can open History scoped to a range.
+  const incoming = useLocalSearchParams<{ granularity?: string; start?: string; end?: string }>();
+  const incomingKey = `${incoming.granularity ?? ''}|${incoming.start ?? ''}|${incoming.end ?? ''}`;
+  useEffect(() => {
+    const r = rangeFromParams(incoming);
+    if (r) setRange(r);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [incomingKey]);
+
   // Load persisted filter + period on mount.
   useEffect(() => {
     getHistoryPrefs().then((p) => {
@@ -58,7 +67,7 @@ export default function HistoryScreen() {
   // Persist after each change (skip the initial render before load completes).
   useEffect(() => {
     if (!prefsLoaded.current) return;
-    setHistoryPrefs({ filter, period: range.granularity });
+    setHistoryPrefs({ filter, period: range.granularity === 'custom' ? 'month' : range.granularity });
   }, [filter, range.granularity]);
 
   // If the calendar day rolled over while the app sat in the background, a day
@@ -86,7 +95,7 @@ export default function HistoryScreen() {
     [t, colors],
   );
 
-  const granularityOptions = useMemo<Segment<Granularity>[]>(
+  const granularityOptions = useMemo<Segment<PresetGranularity>[]>(
     () => [
       { id: 'day', label: t('period.day') },
       { id: 'week', label: t('period.week') },
@@ -303,7 +312,7 @@ export default function HistoryScreen() {
             <Text style={styles.sheetLabel}>{t('history.rangeLabel')}</Text>
             <SegmentedControl
               options={granularityOptions}
-              value={range.granularity}
+              value={range.granularity as PresetGranularity}
               onChange={(g) => setRange(rangeFor(g))}
             />
           </View>

@@ -5,7 +5,7 @@ import { fontSize, radius, spacing, weight } from '../../constants/theme';
 import { useTheme } from '../../hooks/useTheme';
 import { useLocale, useT } from '../../i18n';
 import { DICTS } from '../../i18n/dicts';
-import { DateRange, isCurrentRange } from '../../utils/period';
+import { DateRange, reachesToday } from '../../utils/period';
 import { formatDate, formatDayMonth } from '../../utils/format';
 
 interface Props {
@@ -24,6 +24,7 @@ export function useRangeLabel(range: DateRange): string {
       case 'day':
         return formatDate(range.start.toISOString());
       case 'week':
+      case 'custom':
         return `${formatDayMonth(range.start.toISOString())} - ${formatDate(range.end.toISOString())}`;
       case 'year':
         return String(range.start.getFullYear());
@@ -38,9 +39,9 @@ export default function RangeNav({ range, onShift, onPressLabel }: Props) {
   const { colors } = useTheme();
   const t = useT();
   const label = useRangeLabel(range);
-  // Nothing is recorded in the future, so stepping past the current period is
-  // disabled rather than silently showing an empty screen.
-  const atLatest = isCurrentRange(range);
+  // Nothing is recorded in the future, so stepping past today is disabled
+  // rather than silently showing an empty screen.
+  const atLatest = reachesToday(range);
 
   const styles = useMemo(
     () =>
@@ -72,7 +73,13 @@ export default function RangeNav({ range, onShift, onPressLabel }: Props) {
         <ChevronLeft size={20} color={colors.textSecondary} />
       </Pressable>
 
-      <Pressable style={styles.label} onPress={onPressLabel} disabled={!onPressLabel}>
+      <Pressable
+        style={styles.label}
+        onPress={onPressLabel}
+        disabled={!onPressLabel}
+        accessibilityRole={onPressLabel ? 'button' : undefined}
+        accessibilityLabel={label}
+      >
         <Text style={styles.labelText} numberOfLines={1}>
           {label}
         </Text>

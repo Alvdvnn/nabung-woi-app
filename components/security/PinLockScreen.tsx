@@ -22,6 +22,8 @@ import {
   verifyPin,
 } from '../../utils/pin';
 import { clearAll } from '../../utils/storage';
+import { useData } from '../../context/DataContext';
+import { useCategories } from '../../context/CategoriesContext';
 import { useT } from '../../i18n';
 
 interface Props {
@@ -34,6 +36,8 @@ type Mode = 'pin' | 'recover';
 export default function PinLockScreen({ onUnlock, onRecovered }: Props) {
   const { colors } = useTheme();
   const t = useT();
+  const { resetCache } = useData();
+  const { refresh: refreshCategories } = useCategories();
   const [mode, setMode] = useState<Mode>('pin');
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
@@ -170,6 +174,10 @@ export default function PinLockScreen({ onUnlock, onRecovered }: Props) {
     setBusy(true);
     await clearPin();
     await clearAll();
+    // The in-memory cache was hydrated before the lock screen; drop it so the
+    // wiped data does not linger on screen until the next launch.
+    resetCache();
+    await refreshCategories();
     setBusy(false);
     onRecovered();
   }

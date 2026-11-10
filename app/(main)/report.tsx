@@ -34,7 +34,7 @@ import { useStreak } from '../../hooks/useStreak';
 import { useCategories } from '../../context/CategoriesContext';
 import { useLocale, useT } from '../../i18n';
 import { DICTS } from '../../i18n/dicts';
-import { Granularity, DateRange, rangeFor, shiftRange } from '../../utils/period';
+import { PresetGranularity, DateRange, rangeFor, rangeToParams, shiftRange } from '../../utils/period';
 import { buildReport } from '../../utils/report';
 import { findAccountType } from '../../constants/accountTypes';
 import { formatDate, formatIDR, formatIDRCompact } from '../../utils/format';
@@ -62,7 +62,7 @@ export default function ReportScreen() {
     [txs, accounts, range, monthNames],
   );
 
-  const granularityOptions = useMemo<Segment<Granularity>[]>(
+  const granularityOptions = useMemo<Segment<PresetGranularity>[]>(
     () => [
       { id: 'day', label: t('period.day') },
       { id: 'week', label: t('period.week') },
@@ -80,17 +80,17 @@ export default function ReportScreen() {
     [t, colors],
   );
 
-  const changeGranularity = useCallback((g: Granularity) => setRange(rangeFor(g)), []);
+  const changeGranularity = useCallback((g: PresetGranularity) => setRange(rangeFor(g)), []);
   const shift = useCallback((dir: 1 | -1) => setRange((r) => shiftRange(r, dir)), []);
   const jumpToNow = useCallback(() => setRange((r) => rangeFor(r.granularity)), []);
 
+  // Detail screens receive the exact range on screen, so the list they show
+  // adds up to the row that was tapped.
   const openCategory = useCallback(
     (categoryId: string) => {
-      // Detail screens speak in day/month/year; a week maps closest to a month.
-      const period = range.granularity === 'week' ? 'month' : range.granularity;
-      router.push({ pathname: '/category-detail', params: { categoryId, period } });
+      router.push({ pathname: '/category-detail', params: { categoryId, ...rangeToParams(range) } });
     },
-    [router, range.granularity],
+    [router, range],
   );
 
   const styles = useMemo(
@@ -208,7 +208,7 @@ export default function ReportScreen() {
         <View style={styles.controls}>
           <SegmentedControl
             options={granularityOptions}
-            value={range.granularity}
+            value={range.granularity as PresetGranularity}
             onChange={changeGranularity}
           />
           <RangeNav range={range} onShift={shift} onPressLabel={jumpToNow} />
@@ -311,10 +311,7 @@ export default function ReportScreen() {
                         onPress={() =>
                           router.push({
                             pathname: '/account-detail',
-                            params: {
-                              accountId: acc.accountId,
-                              period: range.granularity === 'week' ? 'month' : range.granularity,
-                            },
+                            params: { accountId: acc.accountId, ...rangeToParams(range) },
                           })
                         }
                       >

@@ -32,6 +32,7 @@ import { useData } from '../context/DataContext';
 import { useT } from '../i18n';
 import { AdjustmentDirection, TransactionType, getLastAccount, setLastAccount } from '../utils/storage';
 import { isoDay, parseIsoDay } from '../utils/date';
+import { balanceDelta } from '../utils/aggregate';
 import { formatIDR } from '../utils/format';
 import { genId } from '../utils/id';
 
@@ -50,6 +51,13 @@ export default function InputScreen() {
   const { byType, refresh: refreshCategories } = useCategories();
 
   const { accounts, findTx, addTx, updateTx, balances } = useData();
+  // Read through a ref inside the focus effect so an account edit elsewhere
+  // does not re-run hydration and wipe what the user typed.
+  const accountsRef = useRef(accounts);
+  useEffect(() => { accountsRef.current = accounts; }, [accounts]);
+  // The type the edited row had when it was loaded. Switching away from it is
+  // what invalidates the stored category (bug: edit mode kept the old one).
+  const originalTypeRef = useRef<TransactionType | null>(null);
 
   const [type, setType] = useState<TransactionType>('expense');
   const [amount, setAmount] = useState('');
@@ -75,6 +83,7 @@ export default function InputScreen() {
         if (editId) {
           const tx = findTx(editId);
           if (tx) {
+            originalTypeRef.current = tx.type;
             setType(tx.type);
             setAmount(String(tx.amount));
             setCategoryId(tx.categoryId);
@@ -92,18 +101,19 @@ export default function InputScreen() {
         // start on that date instead of today.
         if (dateParam) setSelectedDate(parseIsoDay(dateParam));
 
+        const accs = accountsRef.current;
         const last = await getLastAccount();
-        const id = last && accounts.find((a) => a.id === last) ? last : accounts[0]?.id ?? null;
+        const id = last && accs.find((a) => a.id === last) ? last : accs[0]?.id ?? null;
         setAccountId(id);
 
-        if (accounts.length > 1) {
-          const possibleTo = accounts.find((a) => a.id !== id);
+        if (accs.length > 1) {
+          const possibleTo = accs.find((a) => a.id !== id);
           if (possibleTo) setToAccountId(possibleTo.id);
         }
 
         setHydrated(true);
       })();
-    }, [editId, dateParam, refreshCategories, findTx, accounts])
+    }, [editId, dateParam, refreshCategories, findTx])
   );
 
   const hasCategories = type === 'income' || type === 'expense';
@@ -113,7 +123,6 @@ export default function InputScreen() {
   );
 
   useEffect(() => {
-    if (isEditing) return;
     if (type === 'transfer') {
       setCategoryId('transfer');
       return;
@@ -123,7 +132,12 @@ export default function InputScreen() {
       return;
     }
     if (categories.length === 0) return;
-    if (!categories.find((c) => c.id === categoryId)) setCategoryId(categories[0].id);
+    if (categories.find((c) => c.id === categoryId)) return;
+    // Editing a row whose custom category was deleted: keep the stored id so
+    // saving a note edit does not silently re-categorise it. Any type switch
+    // (or a fresh entry) picks the first category of the new type.
+    if (isEditing && originalTypeRef.current === type) return;
+    setCategoryId(categories[0].id);
   }, [categoryId, isEditing, categories, type]);
 
   const selectedAccount = accounts.find((a) => a.id === accountId);
@@ -163,12 +177,13 @@ export default function InputScreen() {
       if (!toAccountId) { toast.show('error', t('input.errNoDestination')); return; }
       if (accountId === toAccountId) { toast.show('error', t('input.errSameAccount')); return; }
 
-      // Available balance from the shared cache. When editing this transfer,
-      // add the old amount back so the source still counts as having it.
+      // Available balance from the shared cache. When editing, undo the old
+      // row's effect on the source account first: a transfer out adds its
+      // amount back, an income that becomes a transfer takes its amount away.
       let available = currentBalance;
       if (isEditing && editId) {
         const oldTx = findTx(editId);
-        if (oldTx && oldTx.accountId === accountId) available += oldTx.amount;
+        if (oldTx) available -= balanceDelta(oldTx, accountId);
       }
       if (num > available) {
         toast.show('error', t('input.errInsufficientBalance'));

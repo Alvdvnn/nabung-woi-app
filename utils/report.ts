@@ -86,8 +86,6 @@ export function buildReport(opts: {
 }): ReportData {
   const { txs, accounts, range, monthNames } = opts;
   const prev = previousRange(range);
-  const byMonth = range.granularity === 'year';
-
   const buckets: ReportBucket[] = bucketsFor(range, monthNames).map((b) => ({
     ...b,
     income: 0,
@@ -96,6 +94,7 @@ export function buildReport(opts: {
   }));
   const bucketIndex = new Map<string, number>();
   buckets.forEach((b, i) => bucketIndex.set(b.key, i));
+  const byMonth = buckets.length > 0 && buckets[0].monthly;
 
   const balances = new Map<string, number>();
   const accountRows = new Map<string, AccountReport>();

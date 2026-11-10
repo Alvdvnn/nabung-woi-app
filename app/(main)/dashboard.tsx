@@ -33,6 +33,7 @@ import { useData } from '../../context/DataContext';
 import { Account, getBalanceHidden, setBalanceHidden } from '../../utils/storage';
 import { filterByPeriod, Period, sumByCategory, totalsOf } from '../../utils/aggregate';
 import { formatIDR } from '../../utils/format';
+import { rangeFor, rangeToParams } from '../../utils/period';
 import { findAccountType } from '../../constants/accountTypes';
 import { useT } from '../../i18n';
 import { tBuiltin, tPeriod } from '../../i18n/labels';
@@ -280,7 +281,7 @@ export default function DashboardScreen() {
                       key={item.id}
                       style={({ pressed }) => [styles.accountCard, pressed && { transform: [{ scale: 0.97 }] }]}
                       onPress={() =>
-                        router.push({ pathname: '/account-detail', params: { accountId: item.id, period } })
+                        router.push({ pathname: '/account-detail', params: { accountId: item.id, ...rangeToParams(rangeFor(period)) } })
                       }
                       // Long-press is the two-tap path to a balance correction.
                       onLongPress={() => openAdjust(item)}
@@ -371,7 +372,7 @@ export default function DashboardScreen() {
                   data={byCategory}
                   total={totals.expense}
                   onPress={(categoryId) =>
-                    router.push({ pathname: '/category-detail', params: { categoryId, period } })
+                    router.push({ pathname: '/category-detail', params: { categoryId, ...rangeToParams(rangeFor(period)) } })
                   }
                 />
                 <PieChartCard data={byCategory} total={totals.expense} />

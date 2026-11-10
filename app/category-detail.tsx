@@ -1,10 +1,11 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { CircleDollarSign, Inbox } from 'lucide-react-native';
 import Screen from '../components/ui/Screen';
 import TopBar from '../components/ui/TopBar';
 import EmptyState from '../components/feedback/EmptyState';
+import RangeNav, { useRangeLabel } from '../components/report/RangeNav';
 import TransactionItem, { TRANSACTION_ITEM_HEIGHT } from '../components/transaction/TransactionItem';
 import { useTheme } from '../hooks/useTheme';
 import { useCategories } from '../context/CategoriesContext';
@@ -12,17 +13,38 @@ import { useData } from '../context/DataContext';
 import { useT } from '../i18n';
 import { fontSize, radius, spacing, weight } from '../constants/theme';
 import { Transaction } from '../utils/storage';
-import { filterByPeriod, Period, totalsOf } from '../utils/aggregate';
+import { filterByRange, totalsOf } from '../utils/aggregate';
+import { DateRange, rangeFor, rangeFromParams, shiftRange, isGranularity } from '../utils/period';
 import { formatIDR } from '../utils/format';
 
+/**
+ * Category drilldown. The range arrives from the caller (Report, Dashboard)
+ * so the list and total here equal the row that was tapped; prev/next then
+ * step the same granularity from inside this screen.
+ */
 export default function CategoryDetailScreen() {
+  const router = useRouter();
   const { colors } = useTheme();
   const { find } = useCategories();
   const t = useT();
 
-  const params = useLocalSearchParams<{ categoryId?: string; period?: Period }>();
+  const params = useLocalSearchParams<{
+    categoryId?: string;
+    granularity?: string;
+    start?: string;
+    end?: string;
+    /** v1 param, kept so old links still open on the current period. */
+    period?: string;
+  }>();
   const categoryId = params.categoryId ?? '';
-  const period: Period = (params.period as Period) ?? 'month';
+
+  const [range, setRange] = useState<DateRange>(() => {
+    const fromParams = rangeFromParams(params);
+    if (fromParams) return fromParams;
+    const legacy = params.period;
+    return rangeFor(isGranularity(legacy) ? legacy : 'month');
+  });
+  const rangeLabel = useRangeLabel(range);
 
   const { txs, accountsById } = useData();
 
@@ -30,12 +52,9 @@ export default function CategoryDetailScreen() {
   const Icon = cat?.icon ?? CircleDollarSign;
   const isIncome = cat?.type === 'income';
 
-  const periodLabel =
-    period === 'day' ? t('period.today') : period === 'year' ? t('period.thisYear') : t('period.thisMonth');
-
   const entries = useMemo(
-    () => filterByPeriod(txs, period).filter((tx) => tx.categoryId === categoryId),
-    [txs, categoryId, period],
+    () => filterByRange(txs, range).filter((tx) => tx.categoryId === categoryId),
+    [txs, categoryId, range],
   );
 
   const totals = useMemo(() => totalsOf(entries), [entries]);
@@ -60,21 +79,24 @@ export default function CategoryDetailScreen() {
           alignItems: 'center',
           justifyContent: 'center',
         },
-        heroName: { fontSize: fontSize.xl, fontWeight: weight.heavy, color: colors.white },
-        heroMeta: { fontSize: fontSize.xs, color: colors.primarySoft, marginTop: 2 },
+        heroName: { fontSize: fontSize.xl, fontWeight: weight.heavy, color: colors.onPrimary },
+        heroMeta: { fontSize: fontSize.xs, color: colors.onPrimary, opacity: 0.8, marginTop: 2 },
         totalLabel: {
           fontSize: fontSize.xs,
-          color: colors.primarySoft,
+          color: colors.onPrimary,
+          opacity: 0.8,
           fontWeight: weight.bold,
           textTransform: 'uppercase',
           letterSpacing: 0.6,
         },
         totalValue: {
           fontSize: fontSize.display,
+          lineHeight: 40,
           fontWeight: weight.black,
-          color: colors.white,
+          color: colors.onPrimary,
           letterSpacing: -0.8,
         },
+        nav: { paddingHorizontal: spacing.lg, paddingTop: spacing.md },
         section: {
           paddingHorizontal: spacing.lg,
           paddingTop: spacing.lg,
@@ -97,11 +119,15 @@ export default function CategoryDetailScreen() {
   );
 
   const keyExtractor = useCallback((tx: Transaction) => tx.id, []);
+  const openTx = useCallback(
+    (id: string) => router.push({ pathname: '/', params: { id, returnTo: 'report' } }),
+    [router],
+  );
   const renderItem = useCallback(
     ({ item }: { item: Transaction }) => (
-      <TransactionItem item={item} accountName={accountsById.get(item.accountId)?.name} />
+      <TransactionItem item={item} accountName={accountsById.get(item.accountId)?.name} onPress={openTx} />
     ),
-    [accountsById],
+    [accountsById, openTx],
   );
   const getItemLayout = useCallback(
     (_: ArrayLike<Transaction> | null | undefined, index: number) => ({
@@ -119,26 +145,28 @@ export default function CategoryDetailScreen() {
       <View style={styles.hero}>
         <View style={styles.heroRow}>
           <View style={styles.heroIcon}>
-            <Icon size={22} color={colors.white} />
+            <Icon size={22} color={colors.onPrimary} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.heroName} numberOfLines={1}>
               {cat?.name ?? t('common.unknown')}
             </Text>
-            <Text style={styles.heroMeta}>
-              {isIncome ? t('type.income') : t('type.expense')}
-            </Text>
+            <Text style={styles.heroMeta}>{isIncome ? t('type.income') : t('type.expense')}</Text>
           </View>
         </View>
 
         <View>
           <Text style={styles.totalLabel}>
-            {`${isIncome ? t('categoryDetail.totalReceived') : t('categoryDetail.totalSpent')} · ${periodLabel}`}
+            {`${isIncome ? t('categoryDetail.totalReceived') : t('categoryDetail.totalSpent')} · ${rangeLabel}`}
           </Text>
           <Text style={styles.totalValue} numberOfLines={1} adjustsFontSizeToFit>
             {formatIDR(categoryTotal)}
           </Text>
         </View>
+      </View>
+
+      <View style={styles.nav}>
+        <RangeNav range={range} onShift={(dir) => setRange((r) => shiftRange(r, dir))} />
       </View>
 
       <View style={styles.section}>
