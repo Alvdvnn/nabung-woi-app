@@ -126,6 +126,14 @@ export const en = {
     rangeLabel: 'Range',
     typeLabel: 'Type',
     totalsLabel: 'Totals',
+    filterCount: '{n} transactions',
+    showResults: 'Show {n}',
+    amountLabel: 'Amount',
+    min: 'Min',
+    max: 'Max',
+    searchPlaceholder: 'Search note, category, account',
+    noMatch: 'Nothing matches',
+    noMatchSub: 'Try a wider range or clear some filters.',
   },
 
   calendar: {
@@ -727,6 +735,14 @@ export const id: typeof en = {
     rangeLabel: 'Rentang',
     typeLabel: 'Tipe',
     totalsLabel: 'Total',
+    filterCount: '{n} transaksi',
+    showResults: 'Tampilkan {n}',
+    amountLabel: 'Jumlah',
+    min: 'Min',
+    max: 'Maks',
+    searchPlaceholder: 'Cari catatan, kategori, akun',
+    noMatch: 'Tidak ada yang cocok',
+    noMatchSub: 'Coba rentang lebih lebar atau hapus beberapa filter.',
   },
 
   calendar: {
