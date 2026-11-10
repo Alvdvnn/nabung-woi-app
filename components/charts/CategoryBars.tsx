@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { CircleDollarSign } from 'lucide-react-native';
-import { chartPalette, fontSize, radius, spacing, weight } from '../../constants/theme';
+import { fontSize, radius, spacing, weight } from '../../constants/theme';
 import { useTheme } from '../../hooks/useTheme';
 import { useCategories } from '../../context/CategoriesContext';
 import { CategorySum } from '../../utils/aggregate';
@@ -22,10 +22,9 @@ interface Props {
  * comparing more than a few categories, and it stays legible at any list length.
  */
 export default function CategoryBars({ data, total, max = 8, onPress, emptyLabel }: Props) {
-  const { colors, resolved } = useTheme();
+  const { colors, resolved, chart: palette } = useTheme();
   const { find } = useCategories();
   const t = useT();
-  const palette = chartPalette(resolved);
 
   const rows = useMemo(() => {
     if (data.length <= max) return data;

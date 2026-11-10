@@ -257,7 +257,7 @@ export default function ReportScreen() {
                 <View style={styles.metaCell}>
                   <Text style={styles.metaLabel}>{t('report.savingsRate')}</Text>
                   <Text style={styles.metaValue}>
-                    {report.savingsRate === null ? '—' : `${Math.round(report.savingsRate)}%`}
+                    {report.savingsRate === null ? '-' : `${Math.round(report.savingsRate)}%`}
                   </Text>
                 </View>
                 <View style={styles.metaCell}>
@@ -391,7 +391,7 @@ export default function ReportScreen() {
                   <Text style={styles.metaValue}>
                     {report.busiestDay
                       ? `${formatDate(parseIsoDay(report.busiestDay.dayKey).toISOString())} · ${formatIDRCompact(report.busiestDay.total)}`
-                      : '—'}
+                      : '-'}
                   </Text>
                 </View>
                 <View style={styles.metaCell}>

@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { PieChart } from 'react-native-gifted-charts';
 import Card from '../ui/Card';
-import { chartMuted, chartPalette, fontSize, spacing, weight } from '../../constants/theme';
+import { chartMuted, fontSize, spacing, weight } from '../../constants/theme';
 import { useTheme } from '../../hooks/useTheme';
 import { CategorySum } from '../../utils/aggregate';
 import { useCategories } from '../../context/CategoriesContext';
@@ -17,13 +17,12 @@ interface Props {
 const MAX_SLICES = 6;
 
 export default function PieChartCard({ data, total }: Props) {
-  const { colors, resolved } = useTheme();
+  const { colors, resolved, chart: palette } = useTheme();
   const { find } = useCategories();
   const t = useT();
 
   // Slice colors follow the theme instead of being fixed hexes, so the donut
   // keeps its contrast in dark mode.
-  const palette = chartPalette(resolved);
   const otherColor = chartMuted(resolved);
 
   const styles = useMemo(

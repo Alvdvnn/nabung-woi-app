@@ -7,6 +7,7 @@ import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { ThemeProvider } from '../context/ThemeContext';
 import { ToastProvider } from '../context/ToastContext';
 import { PinProvider, usePin } from '../context/PinContext';
+import { PrefsProvider } from '../context/PrefsContext';
 import { CategoriesProvider } from '../context/CategoriesContext';
 import { DataProvider } from '../context/DataContext';
 import { CalculatorProvider } from '../components/calculator/CalculatorProvider';
@@ -53,19 +54,21 @@ export default function RootLayout() {
         <SafeAreaProvider>
           <LocaleProvider>
             <ThemeProvider>
-              <BottomSheetModalProvider>
-                <ToastProvider>
-                  <CalculatorProvider>
-                    <PinProvider>
-                      <CategoriesProvider>
-                        <DataProvider>
-                          <ThemedStack />
-                        </DataProvider>
-                      </CategoriesProvider>
-                    </PinProvider>
-                  </CalculatorProvider>
-                </ToastProvider>
-              </BottomSheetModalProvider>
+              <PrefsProvider>
+                <BottomSheetModalProvider>
+                  <ToastProvider>
+                    <CalculatorProvider>
+                      <PinProvider>
+                        <CategoriesProvider>
+                          <DataProvider>
+                            <ThemedStack />
+                          </DataProvider>
+                        </CategoriesProvider>
+                      </PinProvider>
+                    </CalculatorProvider>
+                  </ToastProvider>
+                </BottomSheetModalProvider>
+              </PrefsProvider>
             </ThemeProvider>
           </LocaleProvider>
         </SafeAreaProvider>

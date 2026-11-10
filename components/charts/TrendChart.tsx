@@ -57,7 +57,7 @@ export default function TrendChart({ buckets, incomeLabel, expenseLabel }: Props
   );
 
   if (max === 0) {
-    return <Text style={styles.empty}>—</Text>;
+    return <Text style={styles.empty}>-</Text>;
   }
 
   const plotHeight = CHART_HEIGHT - 18;

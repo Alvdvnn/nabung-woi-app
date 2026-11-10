@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { CircleDollarSign } from 'lucide-react-native';
 import { useTheme } from '../../hooks/useTheme';
-import { chartPalette, fontSize, radius, spacing, weight } from '../../constants/theme';
+import { fontSize, radius, spacing, weight } from '../../constants/theme';
 import { CategorySum } from '../../utils/aggregate';
 import { useCategories } from '../../context/CategoriesContext';
 import { formatIDRCompact } from '../../utils/format';
@@ -18,10 +18,9 @@ interface Props {
 const MAX_CARDS = 8;
 
 export default function TopCategoriesRow({ data, total, onPress }: Props) {
-  const { colors, resolved } = useTheme();
+  const { colors, resolved, chart: palette } = useTheme();
   const { find } = useCategories();
   const t = useT();
-  const palette = chartPalette(resolved);
 
   const styles = useMemo(
     () =>

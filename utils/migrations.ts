@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { isoDay } from './date';
 
 // Bump this whenever the on-disk shape changes. Add a matching entry in `migrations`.
-export const CURRENT_SCHEMA_VERSION = 2;
+export const CURRENT_SCHEMA_VERSION = 3;
 
 const VERSION_KEY = 'nw.schemaVersion';
 
@@ -33,7 +33,7 @@ const migrations: Migration[] = [
         });
         if (changed) await AsyncStorage.setItem('nw.transactions', JSON.stringify(next));
       } catch {
-        // Corrupt JSON — leave it; storage layer will treat as empty on next read.
+        // Corrupt JSON: leave it; storage layer will treat as empty on next read.
       }
     },
   },
@@ -58,8 +58,23 @@ const migrations: Migration[] = [
           .sort((a: any, b: any) => new Date(b?.date ?? 0).getTime() - new Date(a?.date ?? 0).getTime());
         await AsyncStorage.setItem('nw.transactions', JSON.stringify(next));
       } catch {
-        // Corrupt JSON — leave it; storage layer will treat as empty on next read.
+        // Corrupt JSON: leave it; storage layer will treat as empty on next read.
       }
+    },
+  },
+  {
+    version: 3,
+    name: 'v2.0: initialise budgets and preferences keys',
+    up: async () => {
+      // New keys only. Transaction/account/category shapes are untouched, so a
+      // v1 backup still imports and a downgrade still reads its data.
+      const [budgets, prefs] = await AsyncStorage.multiGet(['nw.budgets', 'nw.prefs']);
+      const writes: [string, string][] = [];
+      if (budgets[1] == null) writes.push(['nw.budgets', '[]']);
+      if (prefs[1] == null) {
+        writes.push(['nw.prefs', JSON.stringify({ weekStart: 'mon', haptics: true, autoLockSec: 60 })]);
+      }
+      if (writes.length) await AsyncStorage.multiSet(writes);
     },
   },
 ];

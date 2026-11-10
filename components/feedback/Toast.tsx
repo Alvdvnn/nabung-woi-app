@@ -3,7 +3,7 @@ import { StyleSheet, Text, View, Pressable } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, runOnJS } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CheckCircle2, XCircle, Info, X } from 'lucide-react-native';
-import * as Haptics from 'expo-haptics';
+import { hapticError, hapticSuccess } from '../../utils/haptics';
 import { useTheme } from '../../hooks/useTheme';
 import { spacing, radius, fontSize, weight, elevation, motion } from '../../constants/theme';
 import type { ToastAction } from '../../context/ToastContext';
@@ -71,8 +71,8 @@ export default function Toast({ variant, message, duration, action, onDismiss }:
   useEffect(() => {
     translateY.value = withTiming(0, { duration: motion.base });
     opacity.value = withTiming(1, { duration: motion.base });
-    if (variant === 'success') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-    else if (variant === 'error') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
+    if (variant === 'success') hapticSuccess();
+    else if (variant === 'error') hapticError();
     const timer = setTimeout(() => {
       translateY.value = withTiming(-120, { duration: motion.fast });
       opacity.value = withTiming(0, { duration: motion.fast }, (finished) => {

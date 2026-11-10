@@ -1,12 +1,15 @@
 {
   "name": "nabung-woi",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "main": "expo-router/entry",
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "typecheck": "node --stack-size=8000 ./node_modules/typescript/lib/_tsc.js --noEmit",
+    "check:contrast": "node scripts/check-contrast.mjs",
+    "icons": "node scripts/gen-icons.mjs"
   },
   "dependencies": {
     "@expo/metro-runtime": "~57.0.15",

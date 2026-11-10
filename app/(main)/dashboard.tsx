@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as Haptics from 'expo-haptics';
 import {
   ArrowRightLeft,
   Eye,
@@ -26,6 +25,7 @@ import StreakCard from '../../components/dashboard/StreakCard';
 import TopCategoriesRow from '../../components/dashboard/TopCategoriesRow';
 import AdjustBalanceSheet from '../../components/account/AdjustBalanceSheet';
 import { useStreak } from '../../hooks/useStreak';
+import { hapticMedium } from '../../utils/haptics';
 import { contentBottomForFab, fabBottomForTabScreen } from '../../constants/layout';
 import { fontSize, radius, spacing, weight } from '../../constants/theme';
 import { useTheme } from '../../hooks/useTheme';
@@ -80,7 +80,7 @@ export default function DashboardScreen() {
   );
 
   const openAdjust = useCallback((account: Account) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    hapticMedium();
     setAdjustTarget(account);
   }, []);
 

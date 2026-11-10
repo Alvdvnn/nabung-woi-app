@@ -3,7 +3,7 @@ import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-nativ
 import { useRouter } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { fabBottomForTabScreen } from '../../constants/layout';
-import * as Haptics from 'expo-haptics';
+import { hapticError, hapticLight, hapticMedium, hapticSuccess } from '../../utils/haptics';
 import {
   Plus,
   Coins,
@@ -279,7 +279,7 @@ export default function GachaScreen() {
     setResult(null);
     setSpinning(true);
 
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    hapticMedium();
 
     // Decide outcome
     const isBuy = Math.random() < 0.5;
@@ -311,7 +311,7 @@ export default function GachaScreen() {
     // Tick haptic when each reel lands.
     reelTimings.forEach((ms) => {
       setTimeout(() => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+        hapticLight();
       }, ms);
     });
 
@@ -339,9 +339,9 @@ export default function GachaScreen() {
       setSpinning(false);
 
       if (isBuy) {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+        hapticSuccess();
       } else {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
+        hapticError();
       }
 
       Animated.sequence([
@@ -425,7 +425,7 @@ export default function GachaScreen() {
             <View style={styles.creditBox}>
               <Text style={styles.creditLabel}>{t('gacha.result')}</Text>
               <Text style={styles.creditValue}>
-                {result === 'buy' ? t('gacha.buyUp') : result === 'skip' ? t('gacha.skipUp') : '— — —'}
+                {result === 'buy' ? t('gacha.buyUp') : result === 'skip' ? t('gacha.skipUp') : '· · ·'}
               </Text>
             </View>
             <View style={styles.leverWrap}>
