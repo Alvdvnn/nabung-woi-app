@@ -6,6 +6,9 @@ import Screen from '../components/ui/Screen';
 import TopBar from '../components/ui/TopBar';
 import EmptyState from '../components/feedback/EmptyState';
 import RangeNav, { useRangeLabel } from '../components/report/RangeNav';
+import TrendMini from '../components/report/TrendMini';
+import Card from '../components/ui/Card';
+import SectionHeader from '../components/ui/SectionHeader';
 import TransactionItem, { TRANSACTION_ITEM_HEIGHT } from '../components/transaction/TransactionItem';
 import { useTheme } from '../hooks/useTheme';
 import { useCategories } from '../context/CategoriesContext';
@@ -15,6 +18,9 @@ import { fontSize, radius, spacing, weight } from '../constants/theme';
 import { Transaction } from '../utils/storage';
 import { filterByRange, totalsOf } from '../utils/aggregate';
 import { DateRange, rangeFor, rangeFromParams, shiftRange, isGranularity } from '../utils/period';
+import type { TrendPoint } from '../utils/report';
+import { useLocale } from '../i18n';
+import { DICTS } from '../i18n/dicts';
 import { formatIDR } from '../utils/format';
 
 /**
@@ -27,6 +33,7 @@ export default function CategoryDetailScreen() {
   const { colors } = useTheme();
   const { find } = useCategories();
   const t = useT();
+  const { locale } = useLocale();
 
   const params = useLocalSearchParams<{
     categoryId?: string;
@@ -59,6 +66,40 @@ export default function CategoryDetailScreen() {
 
   const totals = useMemo(() => totalsOf(entries), [entries]);
   const categoryTotal = isIncome ? totals.income : totals.expense;
+
+  // This category over the last six periods of the same granularity.
+  const TREND_PERIODS = 6;
+  const trend = useMemo<TrendPoint[]>(() => {
+    if (range.granularity === 'custom') return [];
+    const months = DICTS[locale].calendar.months;
+    const windows: DateRange[] = [range];
+    for (let i = 1; i < TREND_PERIODS; i++) windows.unshift(shiftRange(windows[0], -1));
+    return windows.map((w, i) => {
+      let sum = 0;
+      for (const tx of txs) {
+        if (tx.categoryId !== categoryId || tx.dayKey < w.startKey || tx.dayKey > w.endKey) continue;
+        if (tx.type !== 'income' && tx.type !== 'expense') continue;
+        sum += tx.amount;
+      }
+      const label =
+        w.granularity === 'day'
+          ? String(w.start.getDate())
+          : w.granularity === 'week'
+            ? `${w.start.getDate()}/${w.start.getMonth() + 1}`
+            : w.granularity === 'year'
+              ? String(w.start.getFullYear())
+              : (months[w.start.getMonth()] ?? '').slice(0, 3);
+      return {
+        startKey: w.startKey,
+        label,
+        income: isIncome ? sum : 0,
+        expense: isIncome ? 0 : sum,
+        net: isIncome ? sum : -sum,
+        savingsRate: null,
+        current: i === windows.length - 1,
+      };
+    });
+  }, [txs, categoryId, range, locale, isIncome]);
 
   const styles = useMemo(
     () =>
@@ -168,6 +209,15 @@ export default function CategoryDetailScreen() {
       <View style={styles.nav}>
         <RangeNav range={range} onShift={(dir) => setRange((r) => shiftRange(r, dir))} />
       </View>
+
+      {trend.length > 0 ? (
+        <View style={styles.nav}>
+          <SectionHeader title={t('report.overTime', { n: TREND_PERIODS })} />
+          <Card style={{ marginTop: spacing.sm }}>
+            <TrendMini points={trend} metric={isIncome ? 'net' : 'expense'} emptyLabel={t('report.noActivity')} />
+          </Card>
+        </View>
+      ) : null}
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>{t('categoryDetail.entriesLabel')}</Text>

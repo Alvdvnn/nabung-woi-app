@@ -3,9 +3,13 @@ import { Platform } from 'react-native';
 // Web-only helpers for export/import. Native code paths use Share + paste UI.
 
 export function downloadJsonOnWeb(filename: string, json: string): boolean {
+  return downloadTextOnWeb(filename, json, 'application/json');
+}
+
+export function downloadTextOnWeb(filename: string, text: string, mime: string): boolean {
   if (Platform.OS !== 'web') return false;
   try {
-    const blob = new Blob([json], { type: 'application/json' });
+    const blob = new Blob([text], { type: mime });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;

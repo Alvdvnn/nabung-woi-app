@@ -6,7 +6,9 @@ import {
   Activity,
   BarChart3,
   CalendarRange,
+  FileDown,
   Flame,
+  LineChart,
   Plus,
   Receipt,
   Scale,
@@ -18,6 +20,7 @@ import Screen from '../../components/ui/Screen';
 import TopBar from '../../components/ui/TopBar';
 import Fab from '../../components/ui/Fab';
 import Card from '../../components/ui/Card';
+import Button from '../../components/ui/Button';
 import StatTile from '../../components/ui/StatTile';
 import SectionHeader from '../../components/ui/SectionHeader';
 import SegmentedControl, { Segment } from '../../components/ui/SegmentedControl';
@@ -25,41 +28,55 @@ import { SkeletonCard } from '../../components/ui/Skeleton';
 import EmptyState from '../../components/feedback/EmptyState';
 import TrendChart from '../../components/charts/TrendChart';
 import CategoryBars from '../../components/charts/CategoryBars';
-import RangeNav from '../../components/report/RangeNav';
+import RangeNav, { useRangeLabel } from '../../components/report/RangeNav';
+import TrendMini from '../../components/report/TrendMini';
+import BucketDetail from '../../components/report/BucketDetail';
 import { contentBottomForFab, fabBottomForTabScreen } from '../../constants/layout';
 import { fontSize, radius, spacing, weight } from '../../constants/theme';
 import { useTheme } from '../../hooks/useTheme';
+import { useToast } from '../../hooks/useToast';
 import { useData } from '../../context/DataContext';
+import { usePrefs } from '../../context/PrefsContext';
 import { useStreak } from '../../hooks/useStreak';
 import { useCategories } from '../../context/CategoriesContext';
 import { useLocale, useT } from '../../i18n';
 import { DICTS } from '../../i18n/dicts';
-import { PresetGranularity, DateRange, rangeFor, rangeToParams, shiftRange } from '../../utils/period';
+import { PresetGranularity, DateRange, bucketRange, rangeFor, rangeToParams, shiftRange } from '../../utils/period';
 import { buildReport } from '../../utils/report';
+import { filterByRange } from '../../utils/aggregate';
+import { buildCsv, shareCsv } from '../../utils/csv';
 import { findAccountType } from '../../constants/accountTypes';
 import { formatDate, formatIDR, formatIDRCompact } from '../../utils/format';
 import { parseIsoDay } from '../../utils/date';
 
 type CategoryMode = 'expense' | 'income';
+type TrendMetric = 'savingsRate' | 'net' | 'expense';
+const TREND_PERIODS = 6;
 
 export default function ReportScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
+  const toast = useToast();
   const t = useT();
   const { locale } = useLocale();
   const { txs, accounts, hydrated } = useData();
+  const { budgetsByCategory } = usePrefs();
   const { find } = useCategories();
 
   const [range, setRange] = useState<DateRange>(() => rangeFor('month'));
   const [categoryMode, setCategoryMode] = useState<CategoryMode>('expense');
+  const [trendMetric, setTrendMetric] = useState<TrendMetric>('savingsRate');
+  const [selectedBucket, setSelectedBucket] = useState<number | null>(null);
+  const [exporting, setExporting] = useState(false);
   const streak = useStreak(txs);
+  const rangeLabel = useRangeLabel(range);
 
   const monthNames = DICTS[locale].calendar.months;
 
   const report = useMemo(
-    () => buildReport({ txs, accounts, range, monthNames }),
-    [txs, accounts, range, monthNames],
+    () => buildReport({ txs, accounts, range, monthNames, budgets: budgetsByCategory, trendPeriods: TREND_PERIODS }),
+    [txs, accounts, range, monthNames, budgetsByCategory],
   );
 
   const granularityOptions = useMemo<Segment<PresetGranularity>[]>(
@@ -80,9 +97,22 @@ export default function ReportScreen() {
     [t, colors],
   );
 
-  const changeGranularity = useCallback((g: PresetGranularity) => setRange(rangeFor(g)), []);
-  const shift = useCallback((dir: 1 | -1) => setRange((r) => shiftRange(r, dir)), []);
-  const jumpToNow = useCallback(() => setRange((r) => rangeFor(r.granularity)), []);
+  const trendOptions = useMemo<Segment<TrendMetric>[]>(
+    () => [
+      { id: 'savingsRate', label: t('report.savingsRate') },
+      { id: 'net', label: t('dashboard.cashflow') },
+      { id: 'expense', label: t('type.expense') },
+    ],
+    [t],
+  );
+
+  const changeRange = useCallback((next: DateRange) => {
+    setSelectedBucket(null);
+    setRange(next);
+  }, []);
+  const changeGranularity = useCallback((g: PresetGranularity) => changeRange(rangeFor(g)), [changeRange]);
+  const shift = useCallback((dir: 1 | -1) => changeRange(shiftRange(range, dir)), [changeRange, range]);
+  const jumpToNow = useCallback(() => changeRange(rangeFor(range.granularity)), [changeRange, range.granularity]);
 
   // Detail screens receive the exact range on screen, so the list they show
   // adds up to the row that was tapped.
@@ -93,86 +123,81 @@ export default function ReportScreen() {
     [router, range],
   );
 
+  const viewBucket = useCallback(
+    (index: number) => {
+      const b = report.buckets[index];
+      if (!b) return;
+      router.push({ pathname: '/history', params: { ...rangeToParams(bucketRange(b)) } });
+    },
+    [report.buckets, router],
+  );
+
+  const exportCsv = useCallback(async () => {
+    setExporting(true);
+    try {
+      const rows = filterByRange(txs, range);
+      const csv = buildCsv(
+        rows,
+        accounts,
+        (id) => find(id)?.name ?? id,
+        (type) => t(`type.${type}`),
+        {
+          date: t('csv.date'),
+          time: t('csv.time'),
+          type: t('csv.type'),
+          category: t('input.category'),
+          account: t('input.account'),
+          toAccount: t('input.toAccount'),
+          amount: t('input.amount'),
+          note: t('csv.note'),
+        },
+      );
+      const ok = await shareCsv(`nabung-woi-${range.startKey}-${range.endKey}.csv`, csv, t('report.exportCsv'));
+      if (ok) toast.show('success', t('report.csvReady', { n: rows.length }));
+    } catch {
+      toast.show('error', t('settings.exportFailed'));
+    } finally {
+      setExporting(false);
+    }
+  }, [txs, range, accounts, find, t, toast]);
+
   const styles = useMemo(
     () =>
       StyleSheet.create({
-        scroll: {
-          padding: spacing.lg,
-          gap: spacing.md,
-          paddingBottom: contentBottomForFab(insets.bottom),
-        },
+        scroll: { padding: spacing.lg, gap: spacing.md, paddingBottom: contentBottomForFab(insets.bottom) },
         controls: { gap: spacing.sm },
         tiles: { flexDirection: 'row', gap: spacing.md },
-        verdict: {
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: spacing.sm,
-          paddingVertical: spacing.sm,
-        },
+        verdict: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.sm },
         verdictText: { flex: 1, fontSize: fontSize.sm, color: colors.textSecondary },
-        netValue: { fontSize: fontSize.xxl, fontWeight: weight.black, letterSpacing: -0.6 },
-        netLabel: {
-          fontSize: fontSize.xs,
-          fontWeight: weight.bold,
-          color: colors.textSecondary,
-          textTransform: 'uppercase',
-          letterSpacing: 0.6,
-        },
+        netValue: { fontSize: fontSize.display, lineHeight: 40, fontWeight: weight.black, letterSpacing: -0.6 },
+        netLabel: { fontSize: fontSize.xs, fontWeight: weight.bold, color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.6 },
         metaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, marginTop: spacing.sm },
         metaCell: { minWidth: 96, gap: 2 },
         metaLabel: { fontSize: fontSize.xs, color: colors.textMuted },
         metaValue: { fontSize: fontSize.md, fontWeight: weight.bold, color: colors.textPrimary },
-        accountRow: {
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: spacing.md,
-          paddingVertical: spacing.sm,
-        },
-        accountIcon: {
-          width: 34,
-          height: 34,
-          borderRadius: radius.full,
-          backgroundColor: colors.primarySoft,
-          alignItems: 'center',
-          justifyContent: 'center',
-        },
+        accountRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.sm },
+        accountIcon: { width: 34, height: 34, borderRadius: radius.full, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' },
         accountMain: { flex: 1 },
         accountName: { fontSize: fontSize.sm, fontWeight: weight.bold, color: colors.textPrimary },
         accountMeta: { fontSize: fontSize.xs, color: colors.textMuted, marginTop: 2 },
         accountRight: { alignItems: 'flex-end' },
         accountBalance: { fontSize: fontSize.sm, fontWeight: weight.heavy, color: colors.textPrimary },
-        txRow: {
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: spacing.md,
-          paddingVertical: spacing.sm,
-        },
-        rank: {
-          width: 22,
-          height: 22,
-          borderRadius: radius.full,
-          backgroundColor: colors.surfaceSunken,
-          alignItems: 'center',
-          justifyContent: 'center',
-        },
+        txRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.sm, minHeight: 44 },
+        rank: { width: 22, height: 22, borderRadius: radius.full, backgroundColor: colors.surfaceSunken, alignItems: 'center', justifyContent: 'center' },
         rankText: { fontSize: 10, fontWeight: weight.heavy, color: colors.textSecondary },
         txMain: { flex: 1 },
         txTitle: { fontSize: fontSize.sm, fontWeight: weight.semibold, color: colors.textPrimary },
         txMeta: { fontSize: fontSize.xs, color: colors.textMuted, marginTop: 2 },
         txAmount: { fontSize: fontSize.sm, fontWeight: weight.heavy, color: colors.expense },
         adjustRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-        adjustIcon: {
-          width: 36,
-          height: 36,
-          borderRadius: radius.full,
-          backgroundColor: colors.adjustmentLight,
-          alignItems: 'center',
-          justifyContent: 'center',
-        },
+        adjustIcon: { width: 36, height: 36, borderRadius: radius.full, backgroundColor: colors.adjustmentLight, alignItems: 'center', justifyContent: 'center' },
         adjustMain: { flex: 1 },
         adjustTitle: { fontSize: fontSize.sm, fontWeight: weight.bold, color: colors.textPrimary },
         adjustHint: { fontSize: fontSize.xs, color: colors.textMuted, marginTop: 2 },
         adjustValue: { fontSize: fontSize.md, fontWeight: weight.heavy, color: colors.adjustment },
+        budgetRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing.xs, minHeight: 44 },
+        budgetName: { flex: 1, fontSize: fontSize.sm, color: colors.textPrimary, fontWeight: weight.semibold },
+        budgetValue: { fontSize: fontSize.sm, fontWeight: weight.bold },
       }),
     [colors, insets.bottom],
   );
@@ -192,25 +217,18 @@ export default function ReportScreen() {
 
   const netTone = report.totals.net > 0 ? colors.income : report.totals.net < 0 ? colors.expense : colors.textSecondary;
   const verdict =
-    report.totals.net > 0
-      ? t('report.netPositive')
-      : report.totals.net < 0
-        ? t('report.netNegative')
-        : t('report.netFlat');
+    report.totals.net > 0 ? t('report.netPositive') : report.totals.net < 0 ? t('report.netNegative') : t('report.netFlat');
 
   const categoryData = categoryMode === 'expense' ? report.expenseByCategory : report.incomeByCategory;
   const categoryTotal = categoryMode === 'expense' ? report.totals.expense : report.totals.income;
+  const bucket = selectedBucket !== null ? report.buckets[selectedBucket] : undefined;
 
   return (
     <Screen>
       <TopBar title={t('report.title')} showLogo={false} />
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <View style={styles.controls}>
-          <SegmentedControl
-            options={granularityOptions}
-            value={range.granularity as PresetGranularity}
-            onChange={changeGranularity}
-          />
+          <SegmentedControl options={granularityOptions} value={range.granularity as PresetGranularity} onChange={changeGranularity} />
           <RangeNav range={range} onShift={shift} onPressLabel={jumpToNow} />
         </View>
 
@@ -256,9 +274,7 @@ export default function ReportScreen() {
               <View style={styles.metaRow}>
                 <View style={styles.metaCell}>
                   <Text style={styles.metaLabel}>{t('report.savingsRate')}</Text>
-                  <Text style={styles.metaValue}>
-                    {report.savingsRate === null ? '-' : `${Math.round(report.savingsRate)}%`}
-                  </Text>
+                  <Text style={styles.metaValue}>{report.savingsRate === null ? '-' : `${Math.round(report.savingsRate)}%`}</Text>
                 </View>
                 <View style={styles.metaCell}>
                   <Text style={styles.metaLabel}>{`${t('report.perDay')} · ${t('type.expense')}`}</Text>
@@ -271,23 +287,39 @@ export default function ReportScreen() {
               </View>
             </Card>
 
-            <SectionHeader title={t('report.trend')} Icon={BarChart3} />
+            <SectionHeader title={t('report.trend')} subtitle={t('report.trendHint')} Icon={BarChart3} />
             <Card>
               <TrendChart
                 buckets={report.buckets}
                 incomeLabel={t('type.income')}
                 expenseLabel={t('type.expense')}
+                onPressBucket={(i) => setSelectedBucket((cur) => (cur === i ? null : i))}
+                selectedIndex={selectedBucket}
+                emptyLabel={t('report.noActivity')}
               />
+              {bucket ? (
+                <BucketDetail
+                  bucket={bucket}
+                  title={bucket.monthly ? `${monthNames[bucket.date.getMonth()]} ${bucket.date.getFullYear()}` : formatDate(bucket.date.toISOString())}
+                  onView={() => viewBucket(selectedBucket as number)}
+                  onClose={() => setSelectedBucket(null)}
+                />
+              ) : null}
             </Card>
+
+            {range.granularity !== 'day' ? (
+              <>
+                <SectionHeader title={t('report.overTime', { n: TREND_PERIODS })} Icon={LineChart} />
+                <Card>
+                  <SegmentedControl options={trendOptions} value={trendMetric} onChange={setTrendMetric} compact style={{ marginBottom: spacing.md }} />
+                  <TrendMini points={report.trend} metric={trendMetric} emptyLabel={t('report.noActivity')} />
+                </Card>
+              </>
+            ) : null}
 
             <SectionHeader title={t('report.byCategory')} Icon={Receipt} />
             <Card>
-              <SegmentedControl
-                options={categoryOptions}
-                value={categoryMode}
-                onChange={setCategoryMode}
-                style={{ marginBottom: spacing.sm }}
-              />
+              <SegmentedControl options={categoryOptions} value={categoryMode} onChange={setCategoryMode} style={{ marginBottom: spacing.sm }} />
               <CategoryBars
                 data={categoryData}
                 total={categoryTotal}
@@ -295,6 +327,25 @@ export default function ReportScreen() {
                 emptyLabel={categoryMode === 'expense' ? t('report.noExpenses') : t('report.noIncome')}
               />
             </Card>
+
+            {report.budgets.length > 0 ? (
+              <>
+                <SectionHeader title={t('settings.budgets')} subtitle={rangeLabel} Icon={Scale} action={{ label: t('dashboard.seeAll'), onPress: () => router.push('/settings/budgets') }} />
+                <Card>
+                  {report.budgets.map((b) => {
+                    const over = b.ratio > 1;
+                    return (
+                      <Pressable key={b.categoryId} style={styles.budgetRow} onPress={() => openCategory(b.categoryId)} accessibilityRole="button">
+                        <Text style={styles.budgetName} numberOfLines={1}>{find(b.categoryId)?.name ?? t('common.other')}</Text>
+                        <Text style={[styles.budgetValue, { color: over ? colors.expense : colors.textSecondary }]}>
+                          {`${formatIDRCompact(b.spent)} / ${formatIDRCompact(b.budget)} · ${Math.round(b.ratio * 100)}%`}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </Card>
+              </>
+            ) : null}
 
             {report.byAccount.length > 0 ? (
               <>
@@ -308,20 +359,13 @@ export default function ReportScreen() {
                         style={styles.accountRow}
                         accessibilityRole="button"
                         accessibilityLabel={acc.name}
-                        onPress={() =>
-                          router.push({
-                            pathname: '/account-detail',
-                            params: { accountId: acc.accountId, ...rangeToParams(range) },
-                          })
-                        }
+                        onPress={() => router.push({ pathname: '/account-detail', params: { accountId: acc.accountId, ...rangeToParams(range) } })}
                       >
                         <View style={styles.accountIcon}>
                           <TypeIcon size={16} color={colors.primary} />
                         </View>
                         <View style={styles.accountMain}>
-                          <Text style={styles.accountName} numberOfLines={1}>
-                            {acc.name}
-                          </Text>
+                          <Text style={styles.accountName} numberOfLines={1}>{acc.name}</Text>
                           <Text style={styles.accountMeta}>
                             {`${t('type.expense')} ${formatIDRCompact(acc.expense)} · ${t('type.income')} ${formatIDRCompact(acc.income)}`}
                           </Text>
@@ -352,12 +396,8 @@ export default function ReportScreen() {
                         <Text style={styles.rankText}>{i + 1}</Text>
                       </View>
                       <View style={styles.txMain}>
-                        <Text style={styles.txTitle} numberOfLines={1}>
-                          {find(tx.categoryId)?.name ?? t('common.other')}
-                        </Text>
-                        <Text style={styles.txMeta} numberOfLines={1}>
-                          {[formatDate(tx.date), tx.note].filter(Boolean).join(' · ')}
-                        </Text>
+                        <Text style={styles.txTitle} numberOfLines={1}>{find(tx.categoryId)?.name ?? t('common.other')}</Text>
+                        <Text style={styles.txMeta} numberOfLines={1}>{[formatDate(tx.date), tx.note].filter(Boolean).join(' · ')}</Text>
                       </View>
                       <Text style={styles.txAmount}>{formatIDR(tx.amount)}</Text>
                     </Pressable>
@@ -375,9 +415,7 @@ export default function ReportScreen() {
                 </View>
                 <View style={styles.metaCell}>
                   <Text style={styles.metaLabel}>{t('report.daysLogged')}</Text>
-                  <Text style={styles.metaValue}>
-                    {t('report.daysLoggedOf', { n: report.daysLogged, total: report.daysInRange })}
-                  </Text>
+                  <Text style={styles.metaValue}>{t('report.daysLoggedOf', { n: report.daysLogged, total: report.daysInRange })}</Text>
                 </View>
                 <View style={styles.metaCell}>
                   <Text style={styles.metaLabel}>{t('report.perTx')}</Text>
@@ -408,10 +446,7 @@ export default function ReportScreen() {
                     </View>
                     <View style={styles.adjustMain}>
                       <Text style={styles.adjustTitle}>
-                        {t('report.adjustmentsSummary', {
-                          in: formatIDRCompact(report.adjustments.in),
-                          out: formatIDRCompact(report.adjustments.out),
-                        })}
+                        {t('report.adjustmentsSummary', { in: formatIDRCompact(report.adjustments.in), out: formatIDRCompact(report.adjustments.out) })}
                       </Text>
                       <Text style={styles.adjustHint}>{t('report.adjustmentsHint')}</Text>
                     </View>
@@ -422,15 +457,13 @@ export default function ReportScreen() {
                 </Card>
               </>
             ) : null}
+
+            <Button label={t('report.exportCsv')} Icon={FileDown} variant="secondary" onPress={exportCsv} loading={exporting} />
           </>
         )}
       </ScrollView>
 
-      <Fab
-        Icon={Plus}
-        bottom={fabBottomForTabScreen(insets.bottom)}
-        onPress={() => router.push({ pathname: '/', params: { returnTo: 'report' } })}
-      />
+      <Fab Icon={Plus} bottom={fabBottomForTabScreen(insets.bottom)} onPress={() => router.push({ pathname: '/', params: { returnTo: 'report' } })} accessibilityLabel={t('input.headingAdd')} />
     </Screen>
   );
 }

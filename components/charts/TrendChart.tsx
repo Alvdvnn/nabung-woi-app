@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { fontSize, radius, spacing, weight } from '../../constants/theme';
 import { useTheme } from '../../hooks/useTheme';
 import { formatIDRCompact } from '../../utils/format';
@@ -9,21 +9,25 @@ interface Props {
   buckets: ReportBucket[];
   incomeLabel: string;
   expenseLabel: string;
+  /** Makes columns tappable. */
+  onPressBucket?: (index: number) => void;
+  selectedIndex?: number | null;
+  emptyLabel?: string;
 }
 
 const CHART_HEIGHT = 132;
 // Past this many columns the chart scrolls instead of squeezing bars to slivers.
 const SCROLL_THRESHOLD = 14;
-const COLUMN_WIDTH = 26;
+const COLUMN_WIDTH = 28;
 
 /**
  * Grouped income/expense bars, drawn with plain views.
  *
  * A charting library would pull in an SVG renderer for what is a pair of scaled
  * rectangles per bucket; this stays theme-aware, works identically on web, and
- * costs one layout pass.
+ * costs one layout pass. Columns are 44pt-tall touch targets when tappable.
  */
-export default function TrendChart({ buckets, incomeLabel, expenseLabel }: Props) {
+export default function TrendChart({ buckets, incomeLabel, expenseLabel, onPressBucket, selectedIndex, emptyLabel }: Props) {
   const { colors } = useTheme();
 
   const max = useMemo(
@@ -46,7 +50,8 @@ export default function TrendChart({ buckets, incomeLabel, expenseLabel }: Props
         legendText: { fontSize: fontSize.xs, color: colors.textSecondary, fontWeight: weight.semibold },
         maxText: { flex: 1, textAlign: 'right', fontSize: fontSize.xs, color: colors.textMuted },
         plot: { flexDirection: 'row', alignItems: 'flex-end', height: CHART_HEIGHT, gap: 2 },
-        column: { alignItems: 'center', justifyContent: 'flex-end', gap: 4 },
+        column: { alignItems: 'center', justifyContent: 'flex-end', gap: 4, borderRadius: radius.xs },
+        columnSelected: { backgroundColor: colors.surfaceSunken },
         bars: { flexDirection: 'row', alignItems: 'flex-end', gap: 2, height: CHART_HEIGHT - 18 },
         bar: { width: 8, borderTopLeftRadius: radius.xs, borderTopRightRadius: radius.xs, minHeight: 2 },
         label: { fontSize: 9, color: colors.textMuted, height: 12 },
@@ -57,7 +62,7 @@ export default function TrendChart({ buckets, incomeLabel, expenseLabel }: Props
   );
 
   if (max === 0) {
-    return <Text style={styles.empty}>-</Text>;
+    return <Text style={styles.empty}>{emptyLabel ?? '-'}</Text>;
   }
 
   const plotHeight = CHART_HEIGHT - 18;
@@ -68,20 +73,26 @@ export default function TrendChart({ buckets, incomeLabel, expenseLabel }: Props
         const incomeH = Math.round((b.income / max) * plotHeight);
         const expenseH = Math.round((b.expense / max) * plotHeight);
         const showLabel = i % labelEvery === 0 || i === buckets.length - 1;
+        const selected = selectedIndex === i;
+        const dim = selectedIndex != null && !selected;
         return (
-          <View
+          <Pressable
             key={b.key}
-            style={[styles.column, scrolls ? { width: COLUMN_WIDTH } : { flex: 1 }]}
+            style={[styles.column, scrolls ? { width: COLUMN_WIDTH } : { flex: 1 }, selected && styles.columnSelected]}
+            onPress={onPressBucket ? () => onPressBucket(i) : undefined}
+            disabled={!onPressBucket}
+            accessibilityRole={onPressBucket ? 'button' : undefined}
+            accessibilityState={{ selected }}
             accessibilityLabel={`${b.label}: ${incomeLabel} ${formatIDRCompact(b.income)}, ${expenseLabel} ${formatIDRCompact(b.expense)}`}
           >
             <View style={styles.bars}>
-              <View style={[styles.bar, { height: incomeH, backgroundColor: colors.income }]} />
-              <View style={[styles.bar, { height: expenseH, backgroundColor: colors.expense }]} />
+              <View style={[styles.bar, { height: incomeH, backgroundColor: colors.income, opacity: dim ? 0.4 : 1 }]} />
+              <View style={[styles.bar, { height: expenseH, backgroundColor: colors.expense, opacity: dim ? 0.4 : 1 }]} />
             </View>
-            <Text style={styles.label} numberOfLines={1}>
-              {showLabel ? b.label : ''}
+            <Text style={[styles.label, selected && { color: colors.textPrimary, fontWeight: weight.bold }]} numberOfLines={1}>
+              {showLabel || selected ? b.label : ''}
             </Text>
-          </View>
+          </Pressable>
         );
       })}
     </View>

@@ -464,6 +464,12 @@ export const en = {
     noIncome: 'No income in this period',
     ofExpenses: 'of expenses',
     ofIncome: 'of income',
+    trendHint: 'Tap a bar to see that day or month',
+    noActivity: 'Nothing here yet',
+    overTime: 'Last {n} periods',
+    viewTransactions: 'View transactions',
+    exportCsv: 'Export this range as CSV',
+    csvReady: 'CSV ready ({n} rows)',
   },
 
   date: {
@@ -562,6 +568,13 @@ export const en = {
     nudgeNever: 'No backup yet. Export one to keep your data safe.',
     nudgeOld: 'Last backup was {n} days ago. Export a fresh one.',
     dismiss: 'Remind me later',
+  },
+
+  csv: {
+    date: 'Date',
+    time: 'Time',
+    type: 'Type',
+    note: 'Note',
   },
 
   categories: {
@@ -1052,6 +1065,12 @@ export const id: typeof en = {
     noIncome: 'Tidak ada pemasukan di periode ini',
     ofExpenses: 'dari pengeluaran',
     ofIncome: 'dari pemasukan',
+    trendHint: 'Ketuk batang untuk melihat hari atau bulan itu',
+    noActivity: 'Belum ada apa-apa',
+    overTime: '{n} periode terakhir',
+    viewTransactions: 'Lihat transaksi',
+    exportCsv: 'Ekspor rentang ini ke CSV',
+    csvReady: 'CSV siap ({n} baris)',
   },
 
   date: {
@@ -1150,6 +1169,13 @@ export const id: typeof en = {
     nudgeNever: 'Belum ada cadangan. Ekspor agar data aman.',
     nudgeOld: 'Cadangan terakhir {n} hari lalu. Ekspor yang baru.',
     dismiss: 'Ingatkan nanti',
+  },
+
+  csv: {
+    date: 'Tanggal',
+    time: 'Jam',
+    type: 'Jenis',
+    note: 'Catatan',
   },
 
   categories: {
