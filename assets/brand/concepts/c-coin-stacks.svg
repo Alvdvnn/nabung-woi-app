@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Concept C: Coin Stacks. Three rising stacks of coins, the tallest topped with gold. -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#14b8a6"/>
+      <stop offset="1" stop-color="#0d9488"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" rx="224" fill="url(#bg)"/>
+
+  <!-- stack 1 (2 coins) -->
+  <rect x="246" y="704" width="160" height="62" rx="31" fill="#fff8e7"/>
+  <rect x="246" y="628" width="160" height="62" rx="31" fill="#fff8e7"/>
+
+  <!-- stack 2 (4 coins) -->
+  <rect x="432" y="704" width="160" height="62" rx="31" fill="#fff8e7"/>
+  <rect x="432" y="628" width="160" height="62" rx="31" fill="#fff8e7"/>
+  <rect x="432" y="552" width="160" height="62" rx="31" fill="#fff8e7"/>
+  <rect x="432" y="476" width="160" height="62" rx="31" fill="#fff8e7"/>
+
+  <!-- stack 3 (6 coins) + gold top -->
+  <rect x="618" y="704" width="160" height="62" rx="31" fill="#fff8e7"/>
+  <rect x="618" y="628" width="160" height="62" rx="31" fill="#fff8e7"/>
+  <rect x="618" y="552" width="160" height="62" rx="31" fill="#fff8e7"/>
+  <rect x="618" y="476" width="160" height="62" rx="31" fill="#fff8e7"/>
+  <rect x="618" y="400" width="160" height="62" rx="31" fill="#fff8e7"/>
+  <rect x="618" y="324" width="160" height="62" rx="31" fill="#f7b928"/>
+
+  <!-- rising arrow -->
+  <path d="M286 500 L512 372 L698 240" fill="none" stroke="#0f766e" stroke-width="44" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M600 228 L710 232 L706 340" fill="none" stroke="#0f766e" stroke-width="44" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
