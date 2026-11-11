@@ -3,6 +3,7 @@ import { Pressable, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-n
 import { LucideIcon } from 'lucide-react-native';
 import { fontSize, radius, spacing, weight } from '../../constants/theme';
 import { useTheme } from '../../hooks/useTheme';
+import { inkOn } from '../../utils/contrast';
 
 export interface Segment<T extends string> {
   id: T;
@@ -62,7 +63,7 @@ export default function SegmentedControl<T extends string>({
           fontWeight: weight.semibold,
           color: colors.textSecondary,
         },
-        labelActive: { color: colors.white, fontWeight: weight.bold },
+        labelActive: { fontWeight: weight.bold },
       }),
     [colors, compact, stacked],
   );
@@ -72,7 +73,9 @@ export default function SegmentedControl<T extends string>({
       {options.map((opt) => {
         const active = opt.id === value;
         const activeBg = opt.activeColor ?? colors.primary;
-        const fg = active ? colors.white : colors.textSecondary;
+        // The active fill can be any accent (primary, income, expense...), and
+        // those are light in dark mode: pick the ink per fill, never plain white.
+        const fg = active ? inkOn(colors, activeBg) : colors.textSecondary;
         return (
           <Pressable
             key={opt.id}
@@ -87,7 +90,7 @@ export default function SegmentedControl<T extends string>({
             ]}
           >
             {opt.Icon ? <opt.Icon size={stacked ? 18 : compact ? 14 : 16} color={fg} /> : null}
-            <Text style={[styles.label, active && styles.labelActive]} numberOfLines={1}>
+            <Text style={[styles.label, active && styles.labelActive, active && { color: fg }]} numberOfLines={1}>
               {opt.label}
             </Text>
           </Pressable>

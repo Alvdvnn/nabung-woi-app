@@ -3,6 +3,7 @@ import { Pressable, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-n
 import { LucideIcon, X } from 'lucide-react-native';
 import { fontSize, radius, spacing, weight } from '../../constants/theme';
 import { useTheme } from '../../hooks/useTheme';
+import { inkOn } from '../../utils/contrast';
 
 interface Props {
   label: string;
@@ -44,7 +45,8 @@ export default function Chip({ label, Icon, selected = false, color, onPress, on
       }),
     [colors, size, onRemove],
   );
-  const fg = selected ? colors.onPrimary : colors.textSecondary;
+  // `fill` may be any accent passed by the caller, not just primary.
+  const fg = selected ? inkOn(colors, fill) : colors.textSecondary;
 
   return (
     <Pressable

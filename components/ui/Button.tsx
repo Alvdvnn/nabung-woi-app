@@ -11,6 +11,7 @@ import {
 import { LucideIcon } from 'lucide-react-native';
 import { fontSize, radius, spacing, weight } from '../../constants/theme';
 import { useTheme } from '../../hooks/useTheme';
+import { inkOn } from '../../utils/contrast';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 export type ButtonSize = 'sm' | 'md' | 'lg';
@@ -50,7 +51,7 @@ export default function Button({
       case 'ghost':
         return { bg: 'transparent', fg: colors.primary, border: 'transparent' };
       case 'danger':
-        return { bg: colors.expense, fg: colors.white, border: colors.expense };
+        return { bg: colors.expense, fg: inkOn(colors, colors.expense), border: colors.expense };
       case 'primary':
       default:
         return { bg: colors.primary, fg: colors.onPrimary, border: colors.primary };

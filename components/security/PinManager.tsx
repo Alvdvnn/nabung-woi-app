@@ -103,7 +103,7 @@ export default function PinManager({ onChange }: Props) {
         cancelBtn: { backgroundColor: colors.bg, borderWidth: 1, borderColor: colors.border },
         submitBtn: { backgroundColor: colors.primary },
         cancelText: { fontSize: fontSize.sm, fontWeight: '600', color: colors.textSecondary },
-        submitText: { fontSize: fontSize.sm, fontWeight: '700', color: colors.white },
+        submitText: { fontSize: fontSize.sm, fontWeight: '700', color: colors.onPrimary },
         helper: { fontSize: fontSize.xs, color: colors.textMuted },
       }),
     [colors],

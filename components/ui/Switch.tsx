@@ -48,7 +48,6 @@ export default function Switch({ value, onValueChange, disabled = false, accessi
           width: KNOB,
           height: KNOB,
           borderRadius: radius.full,
-          backgroundColor: colors.white,
           shadowColor: '#000',
           shadowOpacity: 0.15,
           shadowRadius: 2,
@@ -56,7 +55,7 @@ export default function Switch({ value, onValueChange, disabled = false, accessi
           elevation: 2,
         },
       }),
-    [colors],
+    [],
   );
 
   return (
@@ -79,7 +78,11 @@ export default function Switch({ value, onValueChange, disabled = false, accessi
         },
       ]}
     >
-      <Animated.View style={[styles.knob, knobStyle]} />
+      {/* On: the track is primary, which is near-white in some dark palettes,
+          so the knob takes onPrimary instead of a fixed white. */}
+      <Animated.View
+        style={[styles.knob, { backgroundColor: value ? colors.onPrimary : colors.white }, knobStyle]}
+      />
     </Pressable>
   );
 }

@@ -233,7 +233,8 @@ export default function DashboardScreen() {
     <Screen>
       <TopBar title={t('tabs.dashboard')} showLogo={false} />
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        <LinearGradient colors={[colors.primaryLight, colors.primary, colors.primaryDark]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.hero}>
+        {/* primaryLight is left out: onPrimary fails AA on it in most light palettes. */}
+        <LinearGradient colors={[colors.primary, colors.primaryDark]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.hero}>
           <View style={styles.balanceLabelRow}>
             <Wallet size={14} color={colors.onPrimary} />
             <Text style={styles.balanceLabel}>{t('dashboard.totalBalance')}</Text>

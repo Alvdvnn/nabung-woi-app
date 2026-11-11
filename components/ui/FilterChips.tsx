@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { LucideIcon } from 'lucide-react-native';
 import { fontSize, radius, spacing, weight } from '../../constants/theme';
 import { useTheme } from '../../hooks/useTheme';
+import { inkOn } from '../../utils/contrast';
 
 export interface FilterOption<T extends string> {
   id: T;
@@ -52,7 +53,7 @@ export default function FilterChips<T extends string>({ options, value, onChange
       {options.map((opt) => {
         const active = opt.id === value;
         const activeBg = opt.activeColor ?? colors.primary;
-        const fg = active ? colors.white : colors.textSecondary;
+        const fg = active ? inkOn(colors, activeBg) : colors.textSecondary;
         return (
           <Pressable
             key={opt.id}

@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { fontSize, radius, spacing, weight } from '../../constants/theme';
 import { useTheme } from '../../hooks/useTheme';
+import { blendHex, inkOn } from '../../utils/contrast';
 import { getWeekStart, isoDay } from '../../utils/date';
 import { formatDate } from '../../utils/format';
 import { useLocale, useT } from '../../i18n';
@@ -110,11 +111,18 @@ export default function MonthGrid({
   const maxIso = maxDate ? isoDay(maxDate) : null;
 
   // Heat tints: light expense tint growing to the solid expense color at 4.
-  const heatBg = (heat: number) => {
-    if (heat <= 0) return undefined;
-    const alpha = ['00', '33', '66', '99', 'cc'][heat] ?? 'cc';
-    return `${colors.expense}${alpha}`;
-  };
+  // Blended against the card surface up front so the ink for each level can be
+  // chosen from the color that is actually painted.
+  const heatLevels = useMemo(
+    () =>
+      [0, 0.2, 0.4, 0.6, 0.8].map((alpha, level) => {
+        if (level === 0) return { bg: undefined, ink: undefined };
+        const bg = blendHex(colors.expense, colors.surface, alpha);
+        // Level 1 is faint enough for the regular text and label colors.
+        return { bg, ink: level >= 2 ? inkOn(colors, bg) : undefined };
+      }),
+    [colors],
+  );
 
   return (
     <View>
@@ -159,10 +167,11 @@ export default function MonthGrid({
           const disabled = maxIso !== null && iso > maxIso;
           const decor = decorate?.(iso);
           const heat = decor?.heat ?? 0;
+          const heatInk = isSelected ? undefined : heatLevels[heat]?.ink;
           const bg = isSelected
             ? undefined
             : heat > 0
-              ? heatBg(heat)
+              ? heatLevels[heat]?.bg
               : decor?.income
                 ? `${colors.income}33`
                 : undefined;
@@ -188,7 +197,7 @@ export default function MonthGrid({
                   style={[
                     styles.dayNum,
                     isToday && !isSelected && { fontWeight: weight.bold, color: colors.primary },
-                    heat >= 3 && !isSelected && { color: colors.white },
+                    heatInk ? { color: heatInk } : null,
                     isSelected && styles.dayNumSelected,
                     disabled && styles.dayNumDisabled,
                   ]}
@@ -199,7 +208,7 @@ export default function MonthGrid({
                   <Text
                     style={[
                       styles.label,
-                      { color: isSelected ? colors.onPrimary : heat >= 3 ? colors.white : (decor.labelColor ?? colors.textMuted) },
+                      { color: isSelected ? colors.onPrimary : (heatInk ?? decor.labelColor ?? colors.textMuted) },
                     ]}
                     numberOfLines={1}
                   >

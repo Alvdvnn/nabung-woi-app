@@ -28,7 +28,7 @@ const theme = loadTs(path.join(root, 'constants', 'theme.ts'));
 const contrast = loadTs(path.join(root, 'utils', 'contrast.ts'));
 
 const { PALETTES } = await import(theme.url);
-const { contrastRatio, AA_TEXT } = await import(contrast.url);
+const { contrastRatio, inkOn, AA_TEXT } = await import(contrast.url);
 fs.unlinkSync(theme.tmp);
 fs.unlinkSync(contrast.tmp);
 
@@ -59,6 +59,20 @@ for (const [id, palette] of Object.entries(PALETTES)) {
     for (const s of ['income', 'expense', 'adjustment', 'warning', 'info']) check(s, `${s}Light`, AA_TEXT);
     check('primary', 'primarySoft', AA_TEXT);
     check('transfer', 'transferLight', AA_TEXT);
+
+    // Dashboard hero: onPrimary text sits on a primary -> primaryDark gradient.
+    check('onPrimary', 'primaryDark', AA_TEXT);
+
+    // Filled accents (selected type pill, danger button, selected filter chip)
+    // take their ink from inkOn(); it must find a readable one on every accent.
+    for (const s of SEMANTIC) {
+      const ink = inkOn(c, c[s]);
+      const r = contrastRatio(ink, c[s]);
+      checked += 1;
+      if (r === null || r < AA_TEXT) {
+        failures.push(`${id}/${mode}: inkOn(${s}) = ${ink} on ${c[s]} = ${r ? r.toFixed(2) : 'n/a'} < ${AA_TEXT}`);
+      }
+    }
   }
 }
 

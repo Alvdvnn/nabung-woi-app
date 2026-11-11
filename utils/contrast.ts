@@ -34,3 +34,46 @@ export function contrastRatio(a: string, b: string): number | null {
 
 export const AA_TEXT = 4.5;
 export const AA_LARGE = 3;
+
+/** `fg` at `alpha` (0 to 1) composited over an opaque `bg`, as a hex color. */
+export function blendHex(fg: string, bg: string, alpha: number): string {
+  const f = hexToRgb(fg);
+  const b = hexToRgb(bg);
+  if (!f || !b) return bg;
+  const mix = (i: number) =>
+    Math.round(f[i] * alpha + b[i] * (1 - alpha))
+      .toString(16)
+      .padStart(2, '0');
+  return `#${mix(0)}${mix(1)}${mix(2)}`;
+}
+
+/** The candidate with the highest contrast against `bg`. */
+export function readableOn(bg: string, candidates: readonly string[]): string {
+  let best = candidates[0];
+  let bestRatio = -1;
+  for (const c of candidates) {
+    const r = contrastRatio(c, bg) ?? 0;
+    if (r > bestRatio) {
+      best = c;
+      bestRatio = r;
+    }
+  }
+  return best;
+}
+
+/** Tokens `inkOn` chooses between: white plus the palette's two dark inks. */
+export const INK_TOKENS = ['white', 'onPrimary', 'textPrimary'] as const;
+
+/**
+ * Text/icon color for a filled accent background (a selected pill, a danger
+ * button, a heat cell). Accent tokens are dark in light mode and light in dark
+ * mode, so no single ink works on all of them: `white` vanishes on a dark-mode
+ * accent. Use this whenever the fill is not known to be `primary` (which has
+ * its own `onPrimary`).
+ */
+export function inkOn(colors: Record<(typeof INK_TOKENS)[number], string>, bg: string): string {
+  return readableOn(
+    bg,
+    INK_TOKENS.map((k) => colors[k]),
+  );
+}
