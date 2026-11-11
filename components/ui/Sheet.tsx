@@ -26,6 +26,12 @@ interface Props {
   scroll?: boolean;
   /** Pinned below the content (action buttons); never scrolls away. */
   footer?: ReactNode;
+  /**
+   * Modals opened from this sheet (a date picker, a confirm dialog). They are
+   * rendered inside this Modal because iOS will not present a sibling Modal
+   * while another one is already on screen.
+   */
+  overlay?: ReactNode;
 }
 
 /**
@@ -33,7 +39,7 @@ interface Props {
  * Handles the backdrop, the grab handle, the close affordance, keyboard
  * avoidance (visualViewport on web), and home-indicator padding once.
  */
-export default function Sheet({ visible, title, subtitle, onClose, children, scroll = false, footer }: Props) {
+export default function Sheet({ visible, title, subtitle, onClose, children, scroll = false, footer, overlay }: Props) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const t = useT();
@@ -131,6 +137,7 @@ export default function Sheet({ visible, title, subtitle, onClose, children, scr
           </Pressable>
         </Pressable>
       </KeyboardAvoidingView>
+      {overlay}
     </Modal>
   );
 }

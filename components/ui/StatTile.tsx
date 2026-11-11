@@ -99,7 +99,11 @@ export default function StatTile({ label, value, Icon, tone = 'neutral', caption
           <Text style={[styles.trendText, { color: trendColor }]}>
             {`${Math.abs(pct).toFixed(0)}%`}
           </Text>
-          {caption ? <Text style={styles.caption}> {caption}</Text> : null}
+          {caption ? (
+            <Text style={[styles.caption, { flexShrink: 1 }]} numberOfLines={1}>
+              {caption}
+            </Text>
+          ) : null}
         </View>
       ) : caption ? (
         <Text style={styles.caption} numberOfLines={1}>

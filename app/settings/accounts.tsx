@@ -133,20 +133,21 @@ export default function AccountsSettingsScreen() {
           setAdjustTarget(a);
         }}
         onDelete={(a) => setPendingDelete(a)}
+        overlay={
+          <ConfirmModal
+            visible={!!pendingDelete}
+            title={t('account.deleteTitle')}
+            message={pendingDelete ? t('account.deleteMsg', { name: pendingDelete.name }) : ''}
+            confirmLabel={t('common.delete')}
+            cancelLabel={t('common.cancel')}
+            tone="danger"
+            onConfirm={confirmDelete}
+            onCancel={() => setPendingDelete(null)}
+          />
+        }
       />
 
       <AdjustBalanceSheet visible={!!adjustTarget} account={adjustTarget} onClose={() => setAdjustTarget(null)} />
-
-      <ConfirmModal
-        visible={!!pendingDelete}
-        title={t('account.deleteTitle')}
-        message={pendingDelete ? t('account.deleteMsg', { name: pendingDelete.name }) : ''}
-        confirmLabel={t('common.delete')}
-        cancelLabel={t('common.cancel')}
-        tone="danger"
-        onConfirm={confirmDelete}
-        onCancel={() => setPendingDelete(null)}
-      />
     </Screen>
   );
 }

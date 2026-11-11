@@ -28,7 +28,7 @@ import { useT } from '../../i18n';
 import { DateRange, rangeFor, rangeFromParams, shiftRange } from '../../utils/period';
 import { addDays, isoDay, parseIsoDay } from '../../utils/date';
 import { adjustmentTotals, filterByRange, totalsOf } from '../../utils/aggregate';
-import { formatDateLong, formatIDR, formatIDRCompact } from '../../utils/format';
+import { formatDateLong, formatIDR, formatIDRCompact, formatIDRFit } from '../../utils/format';
 
 interface DaySection {
   title: string;
@@ -56,8 +56,8 @@ export default function HistoryScreen() {
   const prefsLoaded = useRef(false);
 
   // Report (and other screens) can open History scoped to a range.
-  const incoming = useLocalSearchParams<{ granularity?: string; start?: string; end?: string }>();
-  const incomingKey = `${incoming.granularity ?? ''}|${incoming.start ?? ''}|${incoming.end ?? ''}`;
+  const incoming = useLocalSearchParams<{ granularity?: string; start?: string; end?: string; ts?: string }>();
+  const incomingKey = `${incoming.granularity ?? ''}|${incoming.start ?? ''}|${incoming.end ?? ''}|${incoming.ts ?? ''}`;
   useEffect(() => {
     const r = rangeFromParams(incoming);
     if (r) setRange(r);
@@ -219,7 +219,7 @@ export default function HistoryScreen() {
         summary: { flexDirection: 'row', gap: spacing.md },
         summaryCell: { flex: 1, gap: 2 },
         summaryLabel: { fontSize: fontSize.xs, color: colors.textMuted, fontWeight: weight.semibold, textTransform: 'uppercase', letterSpacing: 0.4 },
-        summaryValue: { fontSize: fontSize.md, fontWeight: weight.heavy },
+        summaryValue: { fontSize: fontSize.sm, fontWeight: weight.heavy },
         adjustNote: { fontSize: fontSize.xs, color: colors.textMuted, marginTop: spacing.xs },
         chips: { marginTop: spacing.xs },
         resultCount: { fontSize: fontSize.xs, color: colors.textMuted, paddingTop: spacing.sm },
@@ -273,13 +273,13 @@ export default function HistoryScreen() {
             <View style={styles.summaryCell}>
               <Text style={styles.summaryLabel}>{t('type.income')}</Text>
               <Text style={[styles.summaryValue, { color: colors.income }]} numberOfLines={1} adjustsFontSizeToFit>
-                {formatIDR(periodTotals.income)}
+                {formatIDRFit(periodTotals.income)}
               </Text>
             </View>
             <View style={styles.summaryCell}>
               <Text style={styles.summaryLabel}>{t('type.expense')}</Text>
               <Text style={[styles.summaryValue, { color: colors.expense }]} numberOfLines={1} adjustsFontSizeToFit>
-                {formatIDR(periodTotals.expense)}
+                {formatIDRFit(periodTotals.expense)}
               </Text>
             </View>
             <View style={styles.summaryCell}>
@@ -289,7 +289,7 @@ export default function HistoryScreen() {
                 numberOfLines={1}
                 adjustsFontSizeToFit
               >
-                {`${periodTotals.net >= 0 ? '+' : '-'}${formatIDR(Math.abs(periodTotals.net))}`}
+                {`${periodTotals.net >= 0 ? '+' : '-'}${formatIDRFit(Math.abs(periodTotals.net), 12)}`}
               </Text>
             </View>
           </View>

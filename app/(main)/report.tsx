@@ -127,7 +127,7 @@ export default function ReportScreen() {
     (index: number) => {
       const b = report.buckets[index];
       if (!b) return;
-      router.push({ pathname: '/history', params: { ...rangeToParams(bucketRange(b)) } });
+      router.push({ pathname: '/history', params: { ...rangeToParams(bucketRange(b)), ts: String(Date.now()) } });
     },
     [report.buckets, router],
   );

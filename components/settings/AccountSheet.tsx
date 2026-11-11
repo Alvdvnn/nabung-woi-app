@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { ReactNode, useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { ArrowDown, ArrowUp, Scale, Trash2 } from 'lucide-react-native';
 import Sheet from '../ui/Sheet';
@@ -22,10 +22,12 @@ interface Props {
   onClose: () => void;
   onAdjust?: (account: Account) => void;
   onDelete?: (account: Account) => void;
+  /** Dialogs shown on top of this sheet (delete confirm). */
+  overlay?: ReactNode;
 }
 
 /** Create or edit an account. Reordering lives here too (position = card order). */
-export default function AccountSheet({ visible, account, onClose, onAdjust, onDelete }: Props) {
+export default function AccountSheet({ visible, account, onClose, onAdjust, onDelete, overlay }: Props) {
   const { colors } = useTheme();
   const toast = useToast();
   const t = useT();
@@ -118,6 +120,7 @@ export default function AccountSheet({ visible, account, onClose, onAdjust, onDe
       subtitle={account ? `${t('adjust.currentBalance')}: ${formatIDR(balances.get(account.id) ?? account.startingBalance)}` : undefined}
       onClose={onClose}
       scroll
+      overlay={overlay}
       footer={<Button label={account ? t('common.save') : t('account.create')} onPress={save} loading={saving} size="lg" />}
     >
       <View style={{ gap: spacing.lg }}>

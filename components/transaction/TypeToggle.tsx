@@ -28,5 +28,5 @@ export default function TypeToggle({ value, onChange }: Props) {
     [t, colors],
   );
 
-  return <SegmentedControl options={options} value={value} onChange={onChange} compact />;
+  return <SegmentedControl options={options} value={value} onChange={onChange} stacked />;
 }

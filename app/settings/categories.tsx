@@ -146,17 +146,18 @@ export default function CategoriesSettingsScreen() {
         kind={kind}
         onClose={() => setSheetOpen(false)}
         onDelete={(c) => setPendingDelete(c)}
-      />
-
-      <ConfirmModal
-        visible={!!pendingDelete}
-        title={t('category.deleteTitle')}
-        message={pendingDelete ? t('category.deleteMsg', { name: pendingDelete.name }) : ''}
-        confirmLabel={t('common.delete')}
-        cancelLabel={t('common.cancel')}
-        tone="danger"
-        onConfirm={confirmDelete}
-        onCancel={() => setPendingDelete(null)}
+        overlay={
+          <ConfirmModal
+            visible={!!pendingDelete}
+            title={t('category.deleteTitle')}
+            message={pendingDelete ? t('category.deleteMsg', { name: pendingDelete.name }) : ''}
+            confirmLabel={t('common.delete')}
+            cancelLabel={t('common.cancel')}
+            tone="danger"
+            onConfirm={confirmDelete}
+            onCancel={() => setPendingDelete(null)}
+          />
+        }
       />
     </Screen>
   );

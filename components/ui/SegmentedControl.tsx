@@ -18,6 +18,8 @@ interface Props<T extends string> {
   onChange: (id: T) => void;
   /** Tightens padding and type for rows of four or more segments. */
   compact?: boolean;
+  /** Icon above the label. Gives each label the full segment width. */
+  stacked?: boolean;
   style?: StyleProp<ViewStyle>;
 }
 
@@ -30,6 +32,7 @@ export default function SegmentedControl<T extends string>({
   value,
   onChange,
   compact = false,
+  stacked = false,
   style,
 }: Props<T>) {
   const { colors } = useTheme();
@@ -39,29 +42,29 @@ export default function SegmentedControl<T extends string>({
         wrap: {
           flexDirection: 'row',
           backgroundColor: colors.surfaceSunken,
-          borderRadius: radius.full,
+          borderRadius: stacked ? radius.lg : radius.full,
           padding: 4,
           borderWidth: 1,
           borderColor: colors.border,
         },
         btn: {
           flex: 1,
-          minHeight: 40,
-          flexDirection: 'row',
+          minHeight: stacked ? 54 : 40,
+          flexDirection: stacked ? 'column' : 'row',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: compact ? 4 : 6,
-          paddingHorizontal: compact ? spacing.xs : spacing.sm,
-          borderRadius: radius.full,
+          gap: stacked ? 3 : compact ? 4 : 6,
+          paddingHorizontal: compact || stacked ? spacing.xs : spacing.sm,
+          borderRadius: stacked ? radius.md + 2 : radius.full,
         },
         label: {
-          fontSize: compact ? fontSize.xs : fontSize.sm,
+          fontSize: compact || stacked ? fontSize.xs : fontSize.sm,
           fontWeight: weight.semibold,
           color: colors.textSecondary,
         },
         labelActive: { color: colors.white, fontWeight: weight.bold },
       }),
-    [colors, compact],
+    [colors, compact, stacked],
   );
 
   return (
@@ -83,7 +86,7 @@ export default function SegmentedControl<T extends string>({
               pressed && !active && { backgroundColor: colors.border },
             ]}
           >
-            {opt.Icon ? <opt.Icon size={compact ? 14 : 16} color={fg} /> : null}
+            {opt.Icon ? <opt.Icon size={stacked ? 18 : compact ? 14 : 16} color={fg} /> : null}
             <Text style={[styles.label, active && styles.labelActive]} numberOfLines={1}>
               {opt.label}
             </Text>

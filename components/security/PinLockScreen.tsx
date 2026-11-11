@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -169,11 +169,6 @@ export default function PinLockScreen({ onUnlock, onRecovered }: Props) {
     [busy, submitPin],
   );
 
-  // Clear the error as soon as the user starts over.
-  useEffect(() => {
-    if (pin.length > 0 && error) setError('');
-  }, [pin.length, error]);
-
   async function startRecover() {
     const q = await getRecoveryQuestion();
     setQuestion(q);
@@ -240,7 +235,10 @@ export default function PinLockScreen({ onUnlock, onRecovered }: Props) {
               <View style={{ gap: spacing.sm }}>
                 <Keypad
                   onDigit={onDigit}
-                  onBackspace={() => setPin((p) => p.slice(0, -1))}
+                  onBackspace={() => {
+                    setError('');
+                    setPin((p) => p.slice(0, -1));
+                  }}
                   onSubmit={() => submitPin(pin)}
                   submitEnabled={pin.length >= PIN_MIN}
                   disabled={busy}

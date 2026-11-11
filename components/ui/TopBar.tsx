@@ -93,7 +93,7 @@ export default function TopBar({ title, showBack, showLogo = true, showActions =
             onPress={() => calc.open()}
             style={({ pressed }) => [styles.iconBtn, pressed && { backgroundColor: colors.surfaceSunken }]}
             accessibilityRole="button"
-            accessibilityLabel="Calculator"
+            accessibilityLabel={t('calc.title')}
           >
             <Calculator size={20} color={colors.primary} />
           </Pressable>

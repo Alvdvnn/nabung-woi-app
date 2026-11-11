@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { ReactNode, useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Trash2 } from 'lucide-react-native';
 import Sheet from '../ui/Sheet';
@@ -21,9 +21,11 @@ interface Props {
   kind: CategoryKind;
   onClose: () => void;
   onDelete?: (category: CustomCategory) => void;
+  /** Dialogs shown on top of this sheet (delete confirm). */
+  overlay?: ReactNode;
 }
 
-export default function CategorySheet({ visible, category, kind, onClose, onDelete }: Props) {
+export default function CategorySheet({ visible, category, kind, onClose, onDelete, overlay }: Props) {
   const { colors } = useTheme();
   const toast = useToast();
   const t = useT();
@@ -120,6 +122,7 @@ export default function CategorySheet({ visible, category, kind, onClose, onDele
       title={category ? t('category.edit') : t('category.add')}
       onClose={onClose}
       scroll
+      overlay={overlay}
       footer={<Button label={t('common.save')} onPress={save} loading={saving} size="lg" />}
     >
       <View style={{ gap: spacing.lg }}>

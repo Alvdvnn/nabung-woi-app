@@ -7,6 +7,7 @@ import { hapticError, hapticSuccess } from '../../utils/haptics';
 import { useTheme } from '../../hooks/useTheme';
 import { spacing, radius, fontSize, weight, elevation, motion } from '../../constants/theme';
 import type { ToastAction } from '../../context/ToastContext';
+import { useT } from '../../i18n';
 
 export type ToastVariant = 'success' | 'error' | 'info';
 
@@ -21,6 +22,7 @@ interface Props {
 export default function Toast({ variant, message, duration, action, onDismiss }: Props) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const t = useT();
   const translateY = useSharedValue(-120);
   const opacity = useSharedValue(0);
 
@@ -112,7 +114,7 @@ export default function Toast({ variant, message, duration, action, onDismiss }:
           <Text style={styles.actionText}>{action.label}</Text>
         </Pressable>
       ) : (
-        <Pressable style={styles.close} onPress={onDismiss} accessibilityRole="button" accessibilityLabel="Dismiss">
+        <Pressable style={styles.close} onPress={onDismiss} accessibilityRole="button" accessibilityLabel={t('common.close')}>
           <X size={16} color={colors.textMuted} />
         </Pressable>
       )}

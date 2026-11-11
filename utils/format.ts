@@ -53,10 +53,24 @@ export function formatIDRCompact(amount: number): string {
   const m = isId ? 'jt' : 'M';
   const k = isId ? 'rb' : 'K';
   const abs = Math.abs(amount);
-  if (abs >= 1_000_000_000) return `Rp ${(amount / 1_000_000_000).toFixed(1)}${isId ? 'M' : 'B'}`;
-  if (abs >= 1_000_000) return `Rp ${(amount / 1_000_000).toFixed(1)}${m}`;
+  // One decimal, dropped when it is zero ("2jt", not "2.0jt"); comma in Indonesian.
+  const short = (n: number) => {
+    const s = n.toFixed(1).replace(/\.0$/, '');
+    return isId ? s.replace('.', ',') : s;
+  };
+  if (abs >= 1_000_000_000) return `Rp ${short(amount / 1_000_000_000)}${isId ? 'M' : 'B'}`;
+  if (abs >= 1_000_000) return `Rp ${short(amount / 1_000_000)}${m}`;
   if (abs >= 1_000) return `Rp ${(amount / 1_000).toFixed(0)}${k}`;
   return formatIDR(amount);
+}
+
+/**
+ * Full amount when it fits in `maxChars`, compact otherwise. For narrow
+ * multi-column summaries, where web has no `adjustsFontSizeToFit`.
+ */
+export function formatIDRFit(amount: number, maxChars = 13): string {
+  const full = formatIDR(amount);
+  return full.length <= maxChars ? full : formatIDRCompact(amount);
 }
 
 export function formatDate(iso: string): string {

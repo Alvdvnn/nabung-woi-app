@@ -24,7 +24,7 @@ import { useData } from '../../context/DataContext';
 import { useDeleteWithUndo } from '../../hooks/useTransactionActions';
 import { hapticSelection } from '../../utils/haptics';
 import { addMonths, isoDay, startOfMonth } from '../../utils/date';
-import { formatDateLong, formatIDR, formatIDRCompact } from '../../utils/format';
+import { formatDateLong, formatIDR, formatIDRCompact, formatIDRFit } from '../../utils/format';
 import { totalsOf } from '../../utils/aggregate';
 
 interface DayStat {
@@ -55,7 +55,7 @@ export default function CalendarScreen() {
         summaryRow: { flexDirection: 'row', justifyContent: 'space-between', gap: spacing.md },
         summaryCell: { flex: 1, gap: 2 },
         summaryLabel: { fontSize: fontSize.xs, color: colors.textMuted, fontWeight: weight.semibold },
-        summaryValue: { fontSize: fontSize.md, fontWeight: weight.heavy },
+        summaryValue: { fontSize: fontSize.sm, fontWeight: weight.heavy },
         legend: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, justifyContent: 'flex-end', marginTop: spacing.sm },
         legendText: { fontSize: fontSize.xs, color: colors.textMuted },
         swatch: { width: 10, height: 10, borderRadius: 3 },
@@ -207,13 +207,13 @@ export default function CalendarScreen() {
               <View style={styles.summaryCell}>
                 <Text style={styles.summaryLabel}>{t('type.income')}</Text>
                 <Text style={[styles.summaryValue, { color: colors.income }]} numberOfLines={1}>
-                  {formatIDR(dayTotals.income)}
+                  {formatIDRFit(dayTotals.income)}
                 </Text>
               </View>
               <View style={styles.summaryCell}>
                 <Text style={styles.summaryLabel}>{t('type.expense')}</Text>
                 <Text style={[styles.summaryValue, { color: colors.expense }]} numberOfLines={1}>
-                  {formatIDR(dayTotals.expense)}
+                  {formatIDRFit(dayTotals.expense)}
                 </Text>
               </View>
               <View style={styles.summaryCell}>

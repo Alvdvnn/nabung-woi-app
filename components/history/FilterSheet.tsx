@@ -52,7 +52,7 @@ export default function FilterSheet({ visible, filters, range, countFor, onApply
       { id: 'expense', label: t('type.expense'), activeColor: colors.expense },
       { id: 'income', label: t('type.income'), activeColor: colors.income },
       { id: 'transfer', label: t('type.transfer'), activeColor: colors.transfer },
-      { id: 'adjustment', label: t('type.adjustmentShort'), activeColor: colors.adjustment },
+      { id: 'adjustment', label: t('type.adjustment'), activeColor: colors.adjustment },
     ],
     [t, colors],
   );
@@ -72,6 +72,7 @@ export default function FilterSheet({ visible, filters, range, countFor, onApply
         section: { gap: spacing.sm },
         label: { fontSize: fontSize.xs, fontWeight: weight.heavy, color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.8 },
         chips: { flexDirection: 'row', gap: spacing.sm, paddingRight: spacing.lg },
+        wrapChips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
         rangeRow: { flexDirection: 'row', gap: spacing.sm },
         rangeBtn: {
           flex: 1,
@@ -139,11 +140,36 @@ export default function FilterSheet({ visible, filters, range, countFor, onApply
             <Button label={t('history.showResults', { n: count })} onPress={() => onApply(effective, draftRange)} fullWidth />
           </View>
         }
+        overlay={
+          <>
+            <DateSheet
+              visible={picking === 'start'}
+              value={draftRange.start}
+              onChange={(d) => setDraftRange((r) => customRange(d, d > r.end ? d : r.end))}
+              onClose={() => setPicking(null)}
+              withTime={false}
+              title={t('range.from')}
+            />
+            <DateSheet
+              visible={picking === 'end'}
+              value={draftRange.end}
+              onChange={(d) => setDraftRange((r) => customRange(d < r.start ? d : r.start, d))}
+              onClose={() => setPicking(null)}
+              withTime={false}
+              title={t('range.to')}
+            />
+          </>
+        }
       >
         <View style={{ gap: spacing.lg }}>
           <View style={styles.section}>
             <Text style={styles.label}>{t('history.typeLabel')}</Text>
-            <SegmentedControl options={typeOptions} value={draft.type} onChange={setType} compact />
+            {/* Five labels do not fit a segmented row at 375pt; chips wrap instead. */}
+            <View style={styles.wrapChips}>
+              {typeOptions.map((o) => (
+                <Chip key={o.id} label={o.label} size="sm" selected={draft.type === o.id} color={o.activeColor} onPress={() => setType(o.id)} />
+              ))}
+            </View>
           </View>
 
           <View style={styles.section}>
@@ -223,22 +249,6 @@ export default function FilterSheet({ visible, filters, range, countFor, onApply
         </View>
       </Sheet>
 
-      <DateSheet
-        visible={picking === 'start'}
-        value={draftRange.start}
-        onChange={(d) => setDraftRange((r) => customRange(d, d > r.end ? d : r.end))}
-        onClose={() => setPicking(null)}
-        withTime={false}
-        title={t('range.from')}
-      />
-      <DateSheet
-        visible={picking === 'end'}
-        value={draftRange.end}
-        onChange={(d) => setDraftRange((r) => customRange(d < r.start ? d : r.start, d))}
-        onClose={() => setPicking(null)}
-        withTime={false}
-        title={t('range.to')}
-      />
     </>
   );
 }

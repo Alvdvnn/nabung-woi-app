@@ -80,6 +80,32 @@ export default function RangeFilter({ preset, range, onChange }: Props) {
         title={t('range.customTitle')}
         onClose={() => setCustomOpen(false)}
         footer={<Button label={t('common.apply')} onPress={applyCustom} size="lg" />}
+        overlay={
+          <>
+            <DateSheet
+              visible={picking === 'start'}
+              value={start}
+              onChange={(d) => {
+                setStart(d);
+                if (d > end) setEnd(d);
+              }}
+              onClose={() => setPicking(null)}
+              withTime={false}
+              title={t('range.from')}
+            />
+            <DateSheet
+              visible={picking === 'end'}
+              value={end}
+              onChange={(d) => {
+                setEnd(d);
+                if (d < start) setStart(d);
+              }}
+              onClose={() => setPicking(null)}
+              withTime={false}
+              title={t('range.to')}
+            />
+          </>
+        }
       >
         <SectionGroup>
           <ListRow title={t('range.from')} value={formatDateLong(start.toISOString())} trailing="chevron" onPress={() => setPicking('start')} />
@@ -87,28 +113,6 @@ export default function RangeFilter({ preset, range, onChange }: Props) {
         </SectionGroup>
       </Sheet>
 
-      <DateSheet
-        visible={picking === 'start'}
-        value={start}
-        onChange={(d) => {
-          setStart(d);
-          if (d > end) setEnd(d);
-        }}
-        onClose={() => setPicking(null)}
-        withTime={false}
-        title={t('range.from')}
-      />
-      <DateSheet
-        visible={picking === 'end'}
-        value={end}
-        onChange={(d) => {
-          setEnd(d);
-          if (d < start) setStart(d);
-        }}
-        onClose={() => setPicking(null)}
-        withTime={false}
-        title={t('range.to')}
-      />
     </View>
   );
 }

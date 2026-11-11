@@ -6,7 +6,7 @@ import IconBadge from '../ui/IconBadge';
 import ProgressBar from '../ui/ProgressBar';
 import { fontSize, spacing, weight } from '../../constants/theme';
 import { useTheme } from '../../hooks/useTheme';
-import { formatIDR, formatIDRCompact } from '../../utils/format';
+import { formatIDRCompact } from '../../utils/format';
 import type { Pace } from '../../utils/report';
 import { useT } from '../../i18n';
 
@@ -26,7 +26,7 @@ export default function PaceCard({ pace, previousExpense }: Props) {
         row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
         main: { flex: 1, gap: 2 },
         title: { fontSize: fontSize.sm, fontWeight: weight.bold, color: colors.textSecondary },
-        value: { fontSize: fontSize.xl, fontWeight: weight.black, color: colors.textPrimary, letterSpacing: -0.4 },
+        value: { fontSize: fontSize.lg, fontWeight: weight.black, color: colors.textPrimary, letterSpacing: -0.3 },
         body: { fontSize: fontSize.sm, color: colors.textSecondary, lineHeight: 19, marginTop: spacing.sm },
         meta: { flexDirection: 'row', justifyContent: 'space-between', marginTop: spacing.xs },
         metaText: { fontSize: fontSize.xs, color: colors.textMuted },
@@ -48,8 +48,8 @@ export default function PaceCard({ pace, previousExpense }: Props) {
         <IconBadge Icon={Gauge} size={40} tint={colors.warning} bg={colors.warningLight} />
         <View style={styles.main}>
           <Text style={styles.title}>{t('pace.title')}</Text>
-          <Text style={styles.value} numberOfLines={1} adjustsFontSizeToFit>
-            {t('pace.projected', { n: formatIDR(pace.projected) })}
+          <Text style={styles.value} numberOfLines={2}>
+            {t('pace.projected', { n: formatIDRCompact(pace.projected) })}
           </Text>
         </View>
       </View>

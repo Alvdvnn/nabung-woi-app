@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Delete, History, Trash2 } from 'lucide-react-native';
 import Sheet from '../ui/Sheet';
@@ -85,10 +85,23 @@ export default function Calculator({ visible, onClose, onApply }: Props) {
   const [state, setState] = useState<CalcState>(INITIAL_CALC);
   const [history, setHistory] = useState<CalcHistoryEntry[]>([]);
   const [showHistory, setShowHistory] = useState(false);
+  // Latest values for the key handler, so it never does work inside a state updater.
+  const stateRef = useRef(state);
+  const historyRef = useRef(history);
+
+  const applyState = useCallback((next: CalcState) => {
+    stateRef.current = next;
+    setState(next);
+  }, []);
+
+  const applyHistory = useCallback((next: CalcHistoryEntry[]) => {
+    historyRef.current = next;
+    setHistory(next);
+  }, []);
 
   useEffect(() => {
-    if (visible) getCalcHistory().then(setHistory);
-  }, [visible]);
+    if (visible) getCalcHistory().then(applyHistory);
+  }, [visible, applyHistory]);
 
   const styles = useMemo(
     () =>
@@ -154,33 +167,31 @@ export default function Calculator({ visible, onClose, onApply }: Props) {
   const press = useCallback(
     (key: CalcKey) => {
       hapticLight();
-      setState((prev) => {
-        const next = reduce(prev, key);
-        if (key === '=' && !prev.evaluated && next.evaluated && next.result !== null) {
-          const entry: CalcHistoryEntry = {
-            expr: expressionText(next, fmtNum),
-            result: next.result,
-            at: new Date().toISOString(),
-          };
-          setHistory((h) => {
-            const list = [entry, ...h].slice(0, CALC_HISTORY_MAX);
-            setCalcHistory(list).catch(() => {});
-            return list;
-          });
-        }
-        return next;
-      });
+      const prev = stateRef.current;
+      const next = reduce(prev, key);
+      applyState(next);
+      // Only a real evaluation with an operator is worth remembering.
+      if (key === '=' && !prev.evaluated && next.evaluated && next.result !== null && next.tokens.length >= 3) {
+        const entry: CalcHistoryEntry = {
+          expr: expressionText(next, fmtNum),
+          result: next.result,
+          at: new Date().toISOString(),
+        };
+        const list = [entry, ...historyRef.current].slice(0, CALC_HISTORY_MAX);
+        applyHistory(list);
+        setCalcHistory(list).catch(() => {});
+      }
     },
-    [],
+    [applyState, applyHistory],
   );
 
   const reuse = (entry: CalcHistoryEntry) => {
-    setState({ ...INITIAL_CALC, current: String(entry.result) });
+    applyState({ ...INITIAL_CALC, current: String(entry.result) });
     setShowHistory(false);
   };
 
   const clearHistory = () => {
-    setHistory([]);
+    applyHistory([]);
     setCalcHistory([]).catch(() => {});
   };
 
