@@ -55,7 +55,7 @@ Plus stack routes:
 - `app/index.tsx`: the **transaction add/edit form** (default entry point). Four types: expense, income, transfer, adjustment. Accepts `?date=YYYY-MM-DD`, `?id=`, `?returnTo=`, and prefill params.
 - `app/settings/*`: the settings pages.
 - `app/account-detail.tsx`, `app/category-detail.tsx`: drilldowns that receive the caller's exact date range and can step it.
-- `app/(main)/gacha.tsx`: the impulse wheel; reachable from the dice icon in the header.
+- `app/gacha.tsx`: the impulse wheel; a root stack screen reachable from the dice icon in the header.
 
 ---
 
@@ -90,7 +90,7 @@ app/                            # routes only: screens stay thin
 ├── category-detail.tsx         # per-category view for an exact range + 6-period trend
 ├── settings/                   # accounts, categories, budgets, appearance, security, data,
 │                               #   preferences, about
-└── (main)/                     # 5 tabs: dashboard, calendar, report, history, settings (+ hidden gacha)
+└── (main)/                     # 5 tabs: dashboard, calendar, report, history, settings (gacha is a root stack screen)
 
 components/                     # grouped by domain, not by file type
 ├── ui/                         #   Screen, Card, Button, SegmentedControl, Chip, Sheet, ListRow,

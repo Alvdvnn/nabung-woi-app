@@ -73,11 +73,10 @@ export default function MainLayout() {
         }}
       />
       {/*
-        Gacha keeps its route (TopBar has a dice shortcut on every screen) but
-        stays out of the tab bar: six tabs push each target under the 44pt
-        minimum on a 375pt-wide phone and truncate the labels.
+        Gacha is a root stack screen (app/gacha.tsx), not a hidden tab: Expo
+        Router 58 redirects away from a tab hidden with `href: null`, so the
+        TopBar dice could never open it.
       */}
-      <Tabs.Screen name="gacha" options={{ href: null, title: t('tabs.gacha') }} />
     </Tabs>
   );
 }

@@ -1,9 +1,9 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { fabBottomForTabScreen } from '../../constants/layout';
-import { hapticError, hapticLight, hapticMedium, hapticSuccess } from '../../utils/haptics';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { contentBottomForFab, fabBottomForFullScreen } from '../constants/layout';
+import { hapticError, hapticLight, hapticMedium, hapticSuccess } from '../utils/haptics';
 import {
   Plus,
   Coins,
@@ -12,31 +12,37 @@ import {
   CircleX,
   Sparkles,
   Crown,
+  LucideIcon,
 } from 'lucide-react-native';
-import TopBar from '../../components/ui/TopBar';
-import Fab from '../../components/ui/Fab';
-import { radius, spacing, fontSize, shadow } from '../../constants/theme';
-import { useTheme } from '../../hooks/useTheme';
-import { useT } from '../../i18n';
+import Screen from '../components/ui/Screen';
+import TopBar from '../components/ui/TopBar';
+import Fab from '../components/ui/Fab';
+import { elevation, fontSize, radius, spacing, weight } from '../constants/theme';
+import { useTheme } from '../hooks/useTheme';
+import { useT } from '../i18n';
 
 type Result = 'buy' | 'skip' | null;
+type SymbolTone = 'primary' | 'warning' | 'info' | 'expense';
 
 const REEL_HEIGHT = 92;
-const REEL_WIDTH = 76;
+
+// react-native-web has no native animated module; asking for it only logs a warning.
+const NATIVE_DRIVER = Platform.OS !== 'web';
 
 interface ReelSymbol {
-  Icon: any;
+  Icon: LucideIcon;
   key: string;
   win: boolean;
+  tone: SymbolTone;
 }
 
 const SYMBOLS: ReelSymbol[] = [
-  { key: 'coin', Icon: Coins, win: true },
-  { key: 'gem', Icon: Gem, win: true },
-  { key: 'dollar', Icon: DollarSign, win: true },
-  { key: 'crown', Icon: Crown, win: true },
-  { key: 'sparkle', Icon: Sparkles, win: true },
-  { key: 'x', Icon: CircleX, win: false },
+  { key: 'coin', Icon: Coins, win: true, tone: 'primary' },
+  { key: 'gem', Icon: Gem, win: true, tone: 'info' },
+  { key: 'dollar', Icon: DollarSign, win: true, tone: 'primary' },
+  { key: 'crown', Icon: Crown, win: true, tone: 'warning' },
+  { key: 'sparkle', Icon: Sparkles, win: true, tone: 'primary' },
+  { key: 'x', Icon: CircleX, win: false, tone: 'expense' },
 ];
 
 // Build a long strip; result symbol placed at a known index.
@@ -49,6 +55,15 @@ function buildStrip(targetIdx: number, cycles: number) {
   return strip;
 }
 
+/**
+ * Buy-or-skip slot machine. A root stack screen, not a tab: Expo Router 58
+ * redirects away from a tab hidden with `href: null`, so a hidden tab can no
+ * longer be opened from the TopBar dice.
+ *
+ * Every color is a theme token. The reels sit on `surface`, so the symbol
+ * tones (primary, info, warning, expense) keep AA contrast in every palette
+ * and mode.
+ */
 export default function GachaScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -72,12 +87,18 @@ export default function GachaScreen() {
   const leverY = useRef(new Animated.Value(0)).current;
 
   const styles = useMemo(() => StyleSheet.create({
-    safe: { flex: 1, backgroundColor: colors.bg },
-    content: { flex: 1, alignItems: 'center', paddingHorizontal: spacing.lg, paddingTop: spacing.md, gap: spacing.lg },
+    content: {
+      flexGrow: 1,
+      alignItems: 'center',
+      paddingHorizontal: spacing.lg,
+      paddingTop: spacing.md,
+      paddingBottom: contentBottomForFab(insets.bottom),
+      gap: spacing.lg,
+    },
 
     title: {
       fontSize: fontSize.xxl,
-      fontWeight: '900',
+      fontWeight: weight.black,
       color: colors.textPrimary,
       letterSpacing: 1,
       textTransform: 'uppercase',
@@ -98,11 +119,9 @@ export default function GachaScreen() {
       backgroundColor: colors.primary,
       padding: spacing.md,
       gap: spacing.md,
-      ...shadow.card,
-      shadowOpacity: 0.25,
-      shadowRadius: 14,
+      ...elevation[3],
       borderWidth: 3,
-      borderColor: resolved === 'dark' ? '#0b1220' : '#0d3d3a',
+      borderColor: colors.primaryDark,
     },
     cabinetTopRow: {
       flexDirection: 'row',
@@ -111,10 +130,10 @@ export default function GachaScreen() {
       paddingHorizontal: spacing.xs,
     },
     cabinetLabel: {
-      fontSize: 10,
+      fontSize: fontSize.xs,
       letterSpacing: 3,
-      color: colors.primarySoft,
-      fontWeight: '800',
+      color: colors.onPrimary,
+      fontWeight: weight.heavy,
     },
     bulbRow: {
       flexDirection: 'row',
@@ -122,31 +141,36 @@ export default function GachaScreen() {
       paddingHorizontal: 6,
     },
     bulb: {
-      width: 8, height: 8, borderRadius: 4,
+      width: 8,
+      height: 8,
+      borderRadius: radius.full,
+      backgroundColor: colors.onPrimary,
     },
+    bulbDim: { opacity: 0.4 },
 
     reels: {
       flexDirection: 'row',
-      backgroundColor: '#0a0a0a',
+      backgroundColor: colors.surfaceSunken,
       borderRadius: radius.md,
       padding: spacing.sm,
       gap: spacing.sm,
       borderWidth: 2,
-      borderColor: '#f5c842',
+      borderColor: colors.borderStrong,
     },
     reel: {
       flex: 1,
       height: REEL_HEIGHT,
-      backgroundColor: '#fffaf0',
+      backgroundColor: colors.surface,
       borderRadius: radius.sm,
       overflow: 'hidden',
       borderWidth: 1,
-      borderColor: '#d4a017',
+      borderColor: colors.border,
     },
     reelGlare: {
       position: 'absolute',
       top: 0, left: 0, right: 0, height: REEL_HEIGHT / 3,
-      backgroundColor: 'rgba(255,255,255,0.4)',
+      backgroundColor: colors.white,
+      opacity: resolved === 'dark' ? 0.05 : 0.35,
       zIndex: 2,
       pointerEvents: 'none',
     },
@@ -164,7 +188,7 @@ export default function GachaScreen() {
       left: -4, right: -4,
       top: REEL_HEIGHT / 2 + spacing.sm - 1,
       height: 2,
-      backgroundColor: '#f5c842',
+      backgroundColor: colors.warning,
       opacity: 0.7,
       zIndex: 3,
     },
@@ -178,23 +202,23 @@ export default function GachaScreen() {
     },
     creditBox: {
       flex: 1,
-      backgroundColor: '#0a0a0a',
+      backgroundColor: colors.surfaceSunken,
       borderRadius: radius.sm,
       paddingVertical: 10,
       paddingHorizontal: spacing.md,
       borderWidth: 1,
-      borderColor: '#f5c842',
+      borderColor: colors.borderStrong,
     },
     creditLabel: {
-      fontSize: 9,
+      fontSize: fontSize.xs,
       letterSpacing: 2,
-      color: '#f5c842',
-      fontWeight: '700',
+      color: colors.textMuted,
+      fontWeight: weight.bold,
     },
     creditValue: {
       fontSize: fontSize.lg,
-      color: '#fffaf0',
-      fontWeight: '900',
+      color: colors.textPrimary,
+      fontWeight: weight.black,
       letterSpacing: 1,
       fontVariant: ['tabular-nums'],
     },
@@ -206,21 +230,19 @@ export default function GachaScreen() {
     leverShaft: {
       width: 6,
       height: 56,
-      backgroundColor: '#5a5a5a',
+      backgroundColor: colors.onPrimary,
+      opacity: 0.55,
       borderRadius: 3,
     },
     leverKnob: {
       width: 36,
       height: 36,
-      borderRadius: 18,
-      backgroundColor: '#e63946',
+      borderRadius: radius.full,
+      backgroundColor: colors.expense,
       borderWidth: 3,
-      borderColor: '#0a0a0a',
+      borderColor: colors.surface,
       marginTop: -8,
-      shadowColor: '#000',
-      shadowOpacity: 0.4,
-      shadowRadius: 4,
-      shadowOffset: { width: 0, height: 3 },
+      ...elevation[2],
     },
 
     flashOverlay: {
@@ -242,7 +264,7 @@ export default function GachaScreen() {
     resultSkip: { backgroundColor: colors.expenseLight, borderColor: colors.expense },
     resultText: {
       fontSize: fontSize.xl,
-      fontWeight: '900',
+      fontWeight: weight.black,
       letterSpacing: 2,
     },
     resultSub: {
@@ -250,7 +272,7 @@ export default function GachaScreen() {
       marginTop: 2,
       letterSpacing: 1,
       textTransform: 'uppercase',
-      fontWeight: '700',
+      fontWeight: weight.bold,
     },
 
     spinBtn: {
@@ -261,18 +283,18 @@ export default function GachaScreen() {
       minWidth: 220,
       alignItems: 'center',
       borderWidth: 2,
-      borderColor: resolved === 'dark' ? '#0b1220' : '#0d3d3a',
-      ...shadow.card,
+      borderColor: colors.primaryDark,
+      ...elevation[2],
     },
     spinBtnDisabled: { opacity: 0.5 },
     spinText: {
       fontSize: fontSize.md,
-      fontWeight: '900',
-      color: colors.white,
+      fontWeight: weight.black,
+      color: colors.onPrimary,
       letterSpacing: 3,
       textTransform: 'uppercase',
     },
-  }), [colors, resolved]);
+  }), [colors, resolved, insets.bottom]);
 
   const spin = useCallback(() => {
     if (spinning) return;
@@ -297,8 +319,8 @@ export default function GachaScreen() {
 
     // Lever pull-down animation
     Animated.sequence([
-      Animated.timing(leverY, { toValue: 1, duration: 180, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-      Animated.timing(leverY, { toValue: 0, duration: 280, easing: Easing.out(Easing.elastic(1.4)), useNativeDriver: true }),
+      Animated.timing(leverY, { toValue: 1, duration: 180, easing: Easing.out(Easing.cubic), useNativeDriver: NATIVE_DRIVER }),
+      Animated.timing(leverY, { toValue: 0, duration: 280, easing: Easing.out(Easing.elastic(1.4)), useNativeDriver: NATIVE_DRIVER }),
     ]).start();
 
     // Reset each reel position
@@ -315,26 +337,16 @@ export default function GachaScreen() {
       }, ms);
     });
 
-    Animated.parallel([
-      Animated.timing(reelAnims[0], {
-        toValue: 1,
-        duration: reelTimings[0],
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-      Animated.timing(reelAnims[1], {
-        toValue: 1,
-        duration: reelTimings[1],
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-      Animated.timing(reelAnims[2], {
-        toValue: 1,
-        duration: reelTimings[2],
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
+    Animated.parallel(
+      reelAnims.map((anim, i) =>
+        Animated.timing(anim, {
+          toValue: 1,
+          duration: reelTimings[i],
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: NATIVE_DRIVER,
+        }),
+      ),
+    ).start(() => {
       setResult(isBuy ? 'buy' : 'skip');
       setSpinning(false);
 
@@ -345,23 +357,26 @@ export default function GachaScreen() {
       }
 
       Animated.sequence([
-        Animated.timing(flash, { toValue: 1, duration: 140, useNativeDriver: true }),
-        Animated.timing(flash, { toValue: 0, duration: 320, useNativeDriver: true }),
+        Animated.timing(flash, { toValue: 1, duration: 140, useNativeDriver: NATIVE_DRIVER }),
+        Animated.timing(flash, { toValue: 0, duration: 320, useNativeDriver: NATIVE_DRIVER }),
       ]).start();
     });
   }, [spinning, flash, leverY, reelAnims]);
 
   const leverTranslate = leverY.interpolate({ inputRange: [0, 1], outputRange: [0, 22] });
+  // 0x59 is 35% alpha on the six-digit semantic token.
   const flashColor = result === 'buy'
-    ? 'rgba(34,197,94,0.35)'
+    ? `${colors.income}59`
     : result === 'skip'
-      ? 'rgba(220,38,38,0.35)'
+      ? `${colors.expense}59`
       : 'transparent';
 
+  const spinLabel = spinning ? t('gacha.rolling') : result ? t('gacha.pullAgain') : t('gacha.pullLever');
+
   return (
-    <SafeAreaView style={styles.safe} edges={['left', 'right']}>
-      <TopBar title={t('gacha.title')} showLogo={false} />
-      <View style={styles.content}>
+    <Screen>
+      <TopBar title={t('gacha.title')} showBack showLogo={false} showActions={false} />
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Text style={styles.title}>
           <Text style={{ color: colors.income }}>{t('gacha.buy')}</Text>
           {` ${t('gacha.or')} `}
@@ -377,13 +392,7 @@ export default function GachaScreen() {
 
           <View style={styles.bulbRow}>
             {Array.from({ length: 12 }).map((_, i) => (
-              <View
-                key={i}
-                style={[
-                  styles.bulb,
-                  { backgroundColor: i % 2 === 0 ? '#f5c842' : '#e63946' },
-                ]}
-              />
+              <View key={i} style={[styles.bulb, i % 2 === 1 && styles.bulbDim]} />
             ))}
           </View>
 
@@ -403,12 +412,9 @@ export default function GachaScreen() {
                   <Animated.View style={[styles.reelInner, { transform: [{ translateY }] }]}>
                     {strip.map((s, i) => {
                       const Icon = s.Icon;
-                      const color = s.win
-                        ? (s.key === 'crown' ? '#d4a017' : s.key === 'gem' ? '#0ea5e9' : colors.primary)
-                        : colors.expense;
                       return (
                         <View key={`${idx}-${i}-${s.key}`} style={styles.reelCell}>
-                          <Icon size={44} color={color} strokeWidth={2.4} />
+                          <Icon size={44} color={colors[s.tone]} strokeWidth={2.4} />
                         </View>
                       );
                     })}
@@ -417,7 +423,7 @@ export default function GachaScreen() {
               );
             })}
             <Animated.View
-              style={[styles.flashOverlay, { backgroundColor: flashColor, opacity: flash, pointerEvents: 'none' }]}
+              style={[styles.flashOverlay, { backgroundColor: flashColor, opacity: flash }]}
             />
           </View>
 
@@ -450,13 +456,19 @@ export default function GachaScreen() {
           style={[styles.spinBtn, spinning && styles.spinBtnDisabled]}
           onPress={spin}
           disabled={spinning}
+          accessibilityRole="button"
+          accessibilityLabel={spinLabel}
+          accessibilityState={{ disabled: spinning, busy: spinning }}
         >
-          <Text style={styles.spinText}>
-            {spinning ? t('gacha.rolling') : result ? t('gacha.pullAgain') : t('gacha.pullLever')}
-          </Text>
+          <Text style={styles.spinText}>{spinLabel}</Text>
         </Pressable>
-      </View>
-      <Fab Icon={Plus} bottom={fabBottomForTabScreen(insets.bottom)} onPress={() => router.push('/')} />
-    </SafeAreaView>
+      </ScrollView>
+      <Fab
+        Icon={Plus}
+        bottom={fabBottomForFullScreen(insets.bottom)}
+        onPress={() => router.push('/')}
+        accessibilityLabel={t('input.headingAdd')}
+      />
+    </Screen>
   );
 }
