@@ -62,9 +62,19 @@ Styling: per-component `StyleSheet.create` reading tokens from `constants/theme.
 
 Adjustments exist so a balance can be corrected without distorting budgets. If you add a new place that sums money (budgets, pace, trends, CSV all follow this), decide explicitly what it does with `transfer` and `adjustment`; the default must be to skip both.
 
-## Platform config (SDK 57)
+## Platform config (SDK 58)
+
+Expo Go only opens a project whose SDK matches its own; the store build of Expo Go is SDK 58.
 
 `app.json` no longer carries `newArchEnabled`, `android.edgeToEdgeEnabled`, or a top-level `splash` block. The New Architecture and Android edge-to-edge are always on, and the splash image is configured through the `expo-splash-screen` plugin. `expo-status-bar` dropped `backgroundColor`. Run `npx expo-doctor@latest` after touching `app.json`.
+
+SDK 58 rules this project depends on:
+
+- `web.output` must stay `"static"` (SDK 58 defaults to `"server"`).
+- The `expo-router` plugin sets `asyncRoutes: { web: false }` so the PWA ships one bundle and opens offline after a single visit.
+- `app/+html.tsx` must render `headNodes` in `<head>` and `bodyNodes` after `children` in `<body>` (from `useServerDocumentContext()`), and spread `htmlAttributes` / `bodyAttributes`. Without `bodyNodes` the exported HTML has no JS bundle and the web app renders blank.
+- Expo Router no longer feeds safe-area insets on web; this app has its own `SafeAreaProvider` in `app/_layout.tsx`, keep it.
+- React Native 0.88 uses the Strict TypeScript API: no deep imports from `react-native/Libraries/*`; `InteractionManager` is gone (use `requestIdleCallback`).
 
 Icons are generated: edit `assets/brand/logo.svg` / `logo-mark.svg`, then `npm run icons` (needs the `sharp` devDependency). Icon and splash changes need a new native build (`eas build`); OTA cannot carry them.
 
@@ -81,7 +91,7 @@ Icons are generated: edit `assets/brand/logo.svg` / `logo-mark.svg`, then `npm r
 ```bash
 npm start                # Expo dev menu
 npm run android | ios | web
-npm run typecheck        # node --stack-size=8000 ./node_modules/typescript/lib/_tsc.js --noEmit
+npm run typecheck        # node --stack-size=16000 ./node_modules/typescript/lib/_tsc.js --noEmit
 npm run check:contrast   # WCAG AA check for every palette
 npm run icons            # regenerate icons from assets/brand/*.svg
 npx expo export -p web   # static web/PWA build into ./dist
@@ -91,7 +101,8 @@ Plain `npx tsc --noEmit` dies on this machine with `RangeError: Maximum call sta
 
 ## Technology Stack
 
-- React Native 0.86 (New Architecture), Expo 57, Expo Router 57, TypeScript 6.0 strict.
+- React Native 0.88 (New Architecture), Expo 58, Expo Router 58, React 19.3, TypeScript 6.0 strict.
+- `react-native-gesture-handler` 3, `react-native-reanimated` 4.7 + `react-native-worklets` 0.13.
 - `lucide-react-native`, `react-native-gifted-charts` (donut only; bars are hand-rolled views), `react-native-svg` (logo), `react-native-reanimated` + `react-native-gesture-handler`, `expo-linear-gradient`.
 - `react-native-web` for the browser/PWA target; `expo-updates` for OTA.
 - No native date picker and no bottom-sheet library: `DateSheet` and `Sheet` are plain RN and identical on every platform.

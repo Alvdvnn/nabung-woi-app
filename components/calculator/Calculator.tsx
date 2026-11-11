@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { Delete, History, Trash2 } from 'lucide-react-native';
 import Sheet from '../ui/Sheet';
 import Button from '../ui/Button';
@@ -81,6 +81,12 @@ function fmtResult(n: number): string {
  */
 export default function Calculator({ visible, onClose, onApply }: Props) {
   const { colors } = useTheme();
+  // The sheet holds a display, a toolbar, five key rows, and an optional
+  // footer button. On short phones (667pt) full-size keys push the last row
+  // under the footer, so keys and display shrink with the window height.
+  const { height: windowHeight } = useWindowDimensions();
+  const compact = windowHeight < 760;
+  const keyHeight = compact ? 46 : 56;
   const t = useT();
   const [state, setState] = useState<CalcState>(INITIAL_CALC);
   const [history, setHistory] = useState<CalcHistoryEntry[]>([]);
@@ -116,7 +122,7 @@ export default function Calculator({ visible, onClose, onApply }: Props) {
           alignItems: 'flex-end',
           justifyContent: 'flex-end',
           gap: 4,
-          minHeight: 104,
+          minHeight: compact ? 84 : 104,
         },
         expr: { fontSize: fontSize.lg, color: colors.textPrimary, fontWeight: weight.semibold, textAlign: 'right' },
         exprMuted: { color: colors.textSecondary },
@@ -130,7 +136,7 @@ export default function Calculator({ visible, onClose, onApply }: Props) {
         row: { flexDirection: 'row', gap: spacing.sm },
         key: {
           flex: 1,
-          height: 56,
+          height: keyHeight,
           borderRadius: radius.md,
           backgroundColor: colors.surface,
           borderWidth: 1,
@@ -144,7 +150,7 @@ export default function Calculator({ visible, onClose, onApply }: Props) {
         keyLabel: { fontSize: fontSize.xl, fontWeight: weight.bold, color: colors.textPrimary },
         keyLabelOp: { color: colors.primary },
         keyLabelEq: { color: colors.onPrimary },
-        histList: { maxHeight: 220, gap: spacing.xs },
+        histList: { maxHeight: keyHeight * 5 + spacing.sm * 4, gap: spacing.xs },
         histRow: {
           flexDirection: 'row',
           alignItems: 'center',
@@ -161,7 +167,7 @@ export default function Calculator({ visible, onClose, onApply }: Props) {
         histResult: { fontSize: fontSize.md, fontWeight: weight.bold, color: colors.textPrimary },
         histEmpty: { fontSize: fontSize.sm, color: colors.textMuted, textAlign: 'center', paddingVertical: spacing.lg },
       }),
-    [colors],
+    [colors, compact, keyHeight],
   );
 
   const press = useCallback(

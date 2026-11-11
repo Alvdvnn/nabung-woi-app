@@ -1,12 +1,17 @@
-import { ScrollViewStyleReset } from 'expo-router/html';
+import { ScrollViewStyleReset, useServerDocumentContext } from 'expo-router/html';
 import { type PropsWithChildren } from 'react';
 import { PALETTES } from '../constants/theme';
 
 // Web-only HTML shell. Used during static export for every route.
 // Adds iOS PWA / Add-to-Home-Screen meta + safe-area viewport.
+//
+// SDK 58: the router no longer injects anything on its own. `headNodes`
+// carries the generated styles and metadata, `bodyNodes` carries the JS
+// bundles; leave either out and the page renders blank and never hydrates.
 export default function Root({ children }: PropsWithChildren) {
+  const { headNodes, bodyNodes, htmlAttributes, bodyAttributes } = useServerDocumentContext();
   return (
-    <html lang="en">
+    <html lang="en" {...htmlAttributes}>
       <head>
         <meta charSet="utf-8" />
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
@@ -40,8 +45,12 @@ export default function Root({ children }: PropsWithChildren) {
         <style dangerouslySetInnerHTML={{ __html: rawCss }} />
         <script dangerouslySetInnerHTML={{ __html: prePaintTheme }} />
         <script dangerouslySetInnerHTML={{ __html: swRegister }} />
+        {headNodes}
       </head>
-      <body>{children}</body>
+      <body {...bodyAttributes}>
+        {children}
+        {bodyNodes}
+      </body>
     </html>
   );
 }

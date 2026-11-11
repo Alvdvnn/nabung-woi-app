@@ -5,8 +5,8 @@
 > An offline-first personal finance tracker for the rupiah-spending crowd. One codebase ships a native **Android/iOS app** _and_ an installable **PWA** — same buttery dark/light UI, same PIN gate, zero backend. No accounts, no cloud, no ads. Your money data never leaves your device.
 
 <p align="center">
-  <a href="https://expo.dev/"><img src="https://img.shields.io/badge/Expo-57-000020?logo=expo&logoColor=white" alt="Expo"></a>
-  <a href="https://reactnative.dev/"><img src="https://img.shields.io/badge/React%20Native-0.86-61DAFB?logo=react&logoColor=white" alt="React Native"></a>
+  <a href="https://expo.dev/"><img src="https://img.shields.io/badge/Expo-58-000020?logo=expo&logoColor=white" alt="Expo"></a>
+  <a href="https://reactnative.dev/"><img src="https://img.shields.io/badge/React%20Native-0.88-61DAFB?logo=react&logoColor=white" alt="React Native"></a>
   <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-6.0%20strict-3178C6?logo=typescript&logoColor=white" alt="TypeScript"></a>
   <a href="https://reactnative.dev/architecture/landing-page"><img src="https://img.shields.io/badge/New%20Architecture-on-success" alt="New Architecture"></a>
   <a href="#-web--pwa"><img src="https://img.shields.io/badge/PWA-installable-5A0FC8?logo=pwa&logoColor=white" alt="PWA"></a>
@@ -210,7 +210,7 @@ npm run icons            # regenerate icons from assets/brand/*.svg
 > No linter, formatter, or test runner is wired up. `npm run typecheck` plus `npx expo export -p web` are the gates.
 > On Node 22+ the checker can blow the default V8 stack; if `npx tsc --noEmit` dies with
 > `RangeError: Maximum call stack size exceeded`, run
-> `node --stack-size=8000 ./node_modules/typescript/lib/_tsc.js --noEmit` instead.
+> `node --stack-size=16000 ./node_modules/typescript/lib/_tsc.js --noEmit` instead.
 
 ### Native production builds (EAS)
 
@@ -234,8 +234,8 @@ eas update --channel preview --message "fix: …"
 
 | Layer | Choice |
 |---|---|
-| Runtime | **React Native 0.86** (New Architecture only — Fabric + TurboModules) |
-| Meta-framework | **Expo 57** + **Expo Router 57** (file-based) |
+| Runtime | **React Native 0.88** (New Architecture only — Fabric + TurboModules) |
+| Meta-framework | **Expo 58** + **Expo Router 58** (file-based) |
 | Language | **TypeScript 6.0** (strict) |
 | Persistence | **AsyncStorage** (native) / `localStorage` (web) — no remote backend |
 | State | React Context + an in-memory `DataContext` cache with derived indexes |
