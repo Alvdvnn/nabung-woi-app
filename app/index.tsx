@@ -11,10 +11,11 @@ import {
 } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ArrowRight, CalendarDays, Info, Minus, Plus, Wallet } from 'lucide-react-native';
+import { ArrowRight, CalendarDays, Info, LayoutDashboard, Minus, Plus, Wallet } from 'lucide-react-native';
 import Screen from '../components/ui/Screen';
 import TopBar from '../components/ui/TopBar';
 import Button from '../components/ui/Button';
+import Fab from '../components/ui/Fab';
 import ListRow from '../components/ui/ListRow';
 import SectionGroup from '../components/ui/SectionGroup';
 import TypeToggle from '../components/transaction/TypeToggle';
@@ -24,6 +25,7 @@ import DateSheet from '../components/transaction/DateSheet';
 import AccountPickerSheet from '../components/account/AccountPickerSheet';
 import ConfirmModal from '../components/feedback/ConfirmModal';
 import { fontSize, radius, spacing, weight } from '../constants/theme';
+import { FAB_BOTTOM_OFFSET, FAB_SIZE } from '../constants/layout';
 import { findAccountType } from '../constants/accountTypes';
 import { useTheme } from '../hooks/useTheme';
 import { useToast } from '../hooks/useToast';
@@ -43,7 +45,8 @@ import { genId } from '../utils/id';
 type ReturnTarget = '/calendar' | '/history' | '/dashboard' | '/report';
 
 const TYPES: TransactionType[] = ['expense', 'income', 'transfer', 'adjustment'];
-const FOOTER_HEIGHT = 76;
+// Sticky Save bar: 12 top padding + 54 button + 12 bottom padding (plus the inset).
+const FOOTER_HEIGHT = 78;
 
 export default function InputScreen() {
   const router = useRouter();
@@ -266,7 +269,9 @@ export default function InputScreen() {
     flex: { flex: 1 },
     content: {
       padding: spacing.lg,
-      paddingBottom: FOOTER_HEIGHT + insets.bottom + spacing.xl,
+      // Room for the Save bar and the dashboard FAB above it, so the note field
+      // is never hidden behind either when scrolled to the end.
+      paddingBottom: FOOTER_HEIGHT + insets.bottom + FAB_SIZE + FAB_BOTTOM_OFFSET * 2,
       gap: spacing.lg,
     },
     heading: { fontSize: fontSize.xxl, fontWeight: weight.heavy, color: colors.textPrimary, letterSpacing: -0.3 },
@@ -494,6 +499,19 @@ export default function InputScreen() {
           />
         </View>
       </KeyboardAvoidingView>
+
+      {/* The way back to the dashboard. The form is the default route, so
+          without this a user who opens the app straight into it has no exit.
+          It sits above the Save bar and hides while the keyboard is up. */}
+      {!isEditing && keyboard === 0 ? (
+        <Fab
+          Icon={LayoutDashboard}
+          variant="light"
+          bottom={insets.bottom + FOOTER_HEIGHT + FAB_BOTTOM_OFFSET}
+          onPress={() => router.push('/dashboard')}
+          accessibilityLabel={t('tabs.dashboard')}
+        />
+      ) : null}
 
       <AccountPickerSheet
         visible={fromPickerOpen}
