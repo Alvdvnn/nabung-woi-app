@@ -13,7 +13,8 @@ Expo Router file-based navigation rooted at `app/`. Routes stay thin: layout and
 - `app/_layout.tsx`: root stack. Wraps the app (outer to inner) in `ErrorBoundary`, `GestureHandlerRootView`, `SafeAreaProvider`, `LocaleProvider`, `ThemeProvider`, `PrefsProvider`, `ToastProvider`, `CalculatorProvider`, `PinProvider`, `CategoriesProvider`, `DataProvider`. Renders `PinLockScreen` ahead of the stack when the PIN gate is locked.
 - `app/+html.tsx`: web-only HTML shell (PWA meta, safe-area viewport, service-worker registration, and a pre-paint script that reads `nw.theme` from `localStorage` so the first paint already matches the stored palette).
 - `app/index.tsx`: transaction add/edit form (default route). Reads `?id=` (edit), `?date=YYYY-MM-DD`, `?returnTo=` (dashboard | calendar | history | report), and prefill params `?type&amount&categoryId&accountId&note` (dashboard quick add; nothing is saved until Save).
-- `app/(main)/_layout.tsx`: five bottom tabs: dashboard, calendar, report, history, settings. `gacha` stays registered but hidden (`href: null`).
+- `app/(main)/_layout.tsx`: five bottom tabs: dashboard, calendar, report, history, settings.
+- `app/gacha.tsx`: buy-or-skip slot machine, opened from the TopBar dice. A root stack screen, not a hidden tab: Expo Router 58 redirects away from any tab with `href: null`, so never hide a route that way if it must stay reachable.
 - `app/(main)/dashboard.tsx`: balance hero, account cards (long-press opens `AdjustBalanceSheet`), `RangeFilter`, totals with deltas, pace, budgets, quick add, top categories, donut, streak. Everything below the hero comes from one `buildReport()` call.
 - `app/(main)/report.tsx`: day/week/month/year analytics from `buildReport()`; tappable trend bars, 6-period trend, CSV export.
 - `app/(main)/history.tsx`: day-grouped `SectionList`, `FilterSheet`, search, `ActiveFilters`. Accepts `?granularity&start&end` to open scoped to a range.
@@ -81,7 +82,7 @@ Icons are generated: edit `assets/brand/logo.svg` / `logo-mark.svg`, then `npm r
 ## Web & PWA
 
 - Built with `react-native-web` via `npx expo export -p web` (static), deployed on Vercel (`vercel.json`).
-- `public/sw.js` is hand-written: network-first for HTML navigations, stale-while-revalidate for assets. **Bump `CACHE_VERSION` on every deploy** (currently `v5`).
+- `public/sw.js` is hand-written: network-first for HTML navigations, stale-while-revalidate for assets. **Bump `CACHE_VERSION` on every deploy** (currently `v6`).
 - `apple-mobile-web-app-status-bar-style` must stay `default`, and the manifest `background_color` / `theme_color` must match the default light background (`#f4f6f9`). The runtime theme then rewrites `theme-color`.
 - iOS rules that are easy to break: every `TextInput` uses `fontSize.input` (16) or larger, or Safari zooms the page; sticky footers add `useKeyboardInset()` on web (visualViewport); a Modal opened from inside a `Sheet` goes in the sheet's `overlay` prop, never as a sibling; no native-only module without a `Platform.OS` guard.
 - Web/PWA storage is per-origin and **separate from the native app**. Move data via Settings, Data, Export/Import.
@@ -117,6 +118,7 @@ Plain `npx tsc --noEmit` dies on this machine with `RangeError: Maximum call sta
 - Build screens from `components/ui/` primitives. Settings-like lists are `SectionGroup` + `ListRow`.
 - Every interactive element: 44pt target or larger, `accessibilityRole`, `accessibilityLabel`, and `accessibilityState` when selectable. Labels are localized, never literals.
 - No literal colors, font sizes, radii, or durations: import them from `constants/theme.ts`.
+- Text or icons on a filled accent (selected pill, danger button, heat cell): `onPrimary` when the fill is `primary`, otherwise `inkOn(colors, fill)` from `utils/contrast.ts`. Never `colors.white`: accents are light in dark mode, so white disappears on them.
 - Haptics only through `utils/haptics.ts`.
 - IDs come from `genId()`.
 - Money via `formatIDR` / `formatIDRCompact` / `formatIDRSigned` / `formatIDRFit` (narrow columns); never `toLocaleString`.
